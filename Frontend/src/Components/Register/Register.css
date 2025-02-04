@@ -1,0 +1,281 @@
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+  padding: 20px;
+}
+
+.auth-box {
+  background: rgba(255, 255, 255, 0.98);
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 500px;
+  backdrop-filter: blur(10px);
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.auth-icon {
+  font-size: 48px;
+  color: var(--primary-color);
+  margin-bottom: 15px;
+}
+
+.auth-box h2 {
+  color: var(--primary-color);
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 30px;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.user-type-toggle {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 30px;
+  padding: 5px;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.user-type-toggle button {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: transparent;
+  color: #1e3c72;
+}
+
+.user-type-toggle button.active {
+  background: #1e3c72;
+  color: white;
+  box-shadow: 0 4px 15px rgba(30, 60, 114, 0.2);
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.input-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 15px;
+  color: var(--secondary-color);
+  font-size: 18px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 15px 15px 15px 45px;
+  border: 2px solid #e1e5ea;
+  border-radius: 10px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  background: white;
+  color: var(--text-primary);
+}
+
+.form-control:focus {
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  outline: none;
+}
+
+.form-control.error {
+  border-color: var(--accent-color);
+}
+
+.error-message {
+  color: var(--accent-color);
+  font-size: 14px;
+  margin-top: 5px;
+  display: block;
+}
+
+.auth-button {
+  width: 100%;
+  padding: 15px;
+  background: var(--gradient-primary);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 20px;
+}
+
+.auth-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.auth-links {
+  margin-top: 25px;
+  text-align: center;
+}
+
+.auth-links a {
+  color: var(--secondary-color);
+  text-decoration: none;
+  font-size: 15px;
+  transition: color 0.3s ease;
+}
+
+.auth-links a:hover {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+/* Form Grid for College Fields */
+.college-fields {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+/* Add CSS variables at the top */
+:root {
+  --primary-color: #2c3e50;
+  --secondary-color: #3498db;
+  --accent-color: #e74c3c;
+  --text-primary: #2c3e50;
+  --text-secondary: #4a5568;
+  --gradient-primary: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+  --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 6px 15px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .auth-box {
+    padding: 30px;
+  }
+
+  .college-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-box {
+    padding: 25px;
+  }
+
+  .auth-box h2 {
+    font-size: 24px;
+  }
+
+  .user-type-toggle button {
+    padding: 10px 15px;
+    font-size: 14px;
+  }
+
+  .form-control {
+    padding: 12px 12px 12px 40px;
+  }
+}
+
+/* Add these styles to your existing CSS */
+
+.university-search {
+  margin-bottom: 10px;
+}
+
+.university-search input {
+  padding-right: 15px;
+}
+
+select.form-control {
+  appearance: none;
+  padding-right: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+}
+
+select.form-control:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.input-icon-wrapper select.form-control {
+  padding-left: 45px;
+}
+
+.form-group + .form-group {
+  margin-top: 20px;
+}
+
+/* Style for disabled select */
+select:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+/* Custom scrollbar for select dropdowns */
+select {
+  scrollbar-width: thin;
+  scrollbar-color: var(--secondary-color) #f1f1f1;
+}
+
+select::-webkit-scrollbar {
+  width: 8px;
+}
+
+select::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+select::-webkit-scrollbar-thumb {
+  background: var(--secondary-color);
+  border-radius: 4px;
+}
+
+.verification-container {
+  text-align: center;
+}
+
+.verification-container p {
+  margin-bottom: 20px;
+  color: #4a5568;
+}
+
+.verification-container input {
+  text-align: center;
+  letter-spacing: 4px;
+  font-size: 24px;
+}
+
+.auth-button.secondary {
+  background: transparent;
+  color: #3498db;
+  margin-top: 10px;
+  border: 2px solid #3498db;
+}
+
+.auth-button.secondary:hover {
+  background: rgba(52, 152, 219, 0.1);
+} 

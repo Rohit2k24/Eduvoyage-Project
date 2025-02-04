@@ -1,0 +1,373 @@
+/* Header container styling */
+.header-container {
+    display: flex;
+    justify-content: space-between; /* Space between elements */
+    align-items: center; /* Vertically center items */
+    background-color: #0b0b0b; /* Dark green background */
+    padding: 15px 30px; /* Padding around the header */
+    color: white; /* White text color */
+    position: relative; /* Positioned relative for dropdowns */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  }
+  
+  /* Logo styling */
+  .logo {
+    font-size: 24px; /* Logo font size */
+    cursor: pointer; /* Pointer cursor on hover */
+    text-decoration: none; /* No underline */
+  }
+  
+  /* Search container styling */
+  .search-container {
+    display: flex;
+    align-items: center; /* Center items vertically */
+    flex-grow: 0; /* Allow search to take available space */
+    margin: 0 20px; 
+    width:550px;/* Margin between elements */
+  }
+  
+  /* Search input field styling */
+  .search-container input {
+    width: 100%; /* Full width of the container */
+    padding: 10px; /* Padding inside input */
+    border: none; /* No border */
+    border-radius: 5px; /* Slightly rounded corners */
+    font-size: 16px; /* Font size */
+    transition: box-shadow 0.3s ease; /* Smooth shadow transition */
+  }
+  
+  /* Search input focus styling */
+  .search-container input:focus {
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.6); /* White shadow on focus */
+    outline: none; /* Remove default outline */
+  }
+  
+  /* Search button styling */
+  .search-button {
+    background-color: #45a049; /* Darker green for button */
+    border: none; /* No border */
+    border-radius: 5px; /* Slightly rounded corners */
+    padding: 5px 10px; /* Reduced padding for smaller size */
+    cursor: pointer; /* Pointer cursor on hover */
+    margin-left: 10px; /* Space between input and button */
+    color: white; /* White text */
+    display: flex; /* Flexbox for centering icon */
+    align-items: center;
+    width:50px; /* Center icon vertically */
+  }
+  
+  /* Search button hover styling */
+  .search-button:hover {
+    background-color: #388e3c; /* Darker green on hover */
+  }
+  
+  /* Navigation menu styling */
+  .nav-menu {
+    display: flex;
+    align-items: center; /* Center items vertically */
+    transition: max-height 0.3s ease; /* Smooth transition */
+  }
+  
+  /* Links styling in the navigation */
+  .nav-menu a {
+    margin: 0 15px; /* Space between links */
+    color: white; /* White text */
+    text-decoration: none; /* No underline */
+    font-weight: bold; /* Bold text */
+  }
+  
+  /* Links hover styling */
+  .nav-menu a:hover {
+    text-decoration: underline; /* Underline on hover */
+  }
+  .search-icon{
+    font-size:xx-large;
+  }
+  /* Menu toggle styling */
+  .menu-toggle {
+    display: none; /* Hide by default */
+    cursor: pointer; /* Pointer cursor on hover */
+  }
+  
+  /* Login/Signup container styling */
+  .login-signup-container {
+    display: flex; /* Flex display for alignment */
+    align-items: center; /* Center items vertically */
+  }
+  
+  /* Login button styling */
+  .login-button {
+    margin-left: 15px; /* Space between links */
+    color: rgb(91, 88, 88); /* White text */
+    text-decoration: none; /* No underline */
+    font-weight: bold; /* Bold text */
+    background-color: #e7e014; /* Bootstrap green */
+    padding: 10px 15px; /* Padding for button */
+    border-radius: 5px; /* Rounded corners */
+    transition: background-color 0.3s; /* Transition for hover effect */
+  }
+  
+  /* Signup button styling */
+  .signup-button {
+    margin-left: 15px; /* Space between links */
+    color: white; /* White text */
+    text-decoration: none; /* No underline */
+    font-weight: bold; /* Bold text */
+    background-color: #0275d8; /* Bootstrap blue */
+    padding: 10px 15px; /* Padding for button */
+    border-radius: 5px; /* Rounded corners */
+    transition: background-color 0.3s; /* Transition for hover effect */
+  }
+  
+  /* Button hover styling */
+  .login-button:hover {
+    background-color: #ed3f0f; /* Darker green on hover */
+  }
+  
+  .signup-button:hover {
+    background-color: #05376c; /* Darker blue on hover */
+  }
+  
+  /* Responsive styles */
+  @media (max-width: 768px) {
+    .nav-menu {
+        display: none; /* Hide nav menu by default on small screens */
+        flex-direction: column; /* Vertical layout */
+        position: absolute; /* Absolute positioning */
+        top: 60px; /* Position below the header */
+        left: 0; /* Align left */
+        background-color: #4CAF50; /* Same background as header */
+        width: 100%; /* Full width */
+        z-index: 100; /* Bring to front */
+    }
+  
+    .nav-menu.active {
+        display: flex; /* Show menu when active */
+    }
+  
+    .menu-toggle {
+        display: block; /* Show menu toggle on small screens */
+    }
+  }
+  
+  .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: #ffffff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+  
+  .headerContent {
+    max-width: 1400px;
+    margin: 0 auto;
+    height: 90px; /* Increased from 80px */
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+  }
+  
+  /* Logo Section - Increased sizes */
+  .logoSection {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Increased from 10px */
+    cursor: pointer;
+  }
+  
+  .logoImage {
+    height: 150px;
+    width: auto;
+    object-fit: contain;
+}
+  
+  .logo {
+    font-size: 28px; /* Increased from 24px */
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0;
+  }
+  
+  .logo span {
+    color: var(--secondary-color);
+  }
+  
+  /* Navigation Links - Adjusted for bigger header */
+  .navLinksContainer {
+    display: flex;
+    gap: 40px;
+    margin: 0 50px; /* Increased margin */
+  }
+  
+  .navLinksContainer a {
+    color: #475569;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 17px; /* Increased from 16px */
+    transition: color 0.3s ease;
+    white-space: nowrap;
+  }
+  
+  .navLinksContainer a:hover,
+  .navLinksContainer a.active {
+    color: #4f46e5;
+  }
+  
+  /* Auth Buttons - Made bigger */
+  .authButtons {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-left: auto; /* Pushes auth buttons to the right */
+  }
+  
+  .loginButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px; /* Increased padding */
+    color: #475569;
+    text-decoration: none;
+    font-weight: 500;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    font-size: 16px; /* Increased font size */
+  }
+  
+  .loginButton:hover {
+    border-color: #4f46e5;
+    color: #4f46e5;
+  }
+  
+  .registerButton {
+    padding: 14px 28px; /* Increased padding */
+    background: #4f46e5;
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    font-size: 16px; /* Increased font size */
+  }
+  
+  .registerButton:hover {
+    background: #4338ca;
+    transform: translateY(-2px);
+  }
+  
+  /* Mobile Menu */
+  .menuToggle {
+    display: none;
+  }
+  
+  .mobileMenu {
+    display: none;
+  }
+  
+  @media (max-width: 1024px) {
+    .headerContent {
+      padding: 0 20px;
+    }
+  
+    .navLinksContainer {
+      gap: 30px;
+      margin: 0 20px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .headerContent {
+      justify-content: space-between; /* Ensures proper spacing in mobile */
+      height: 80px; /* Slightly smaller on mobile but still bigger than original */
+    }
+  
+    .navLinksContainer {
+      display: none;
+    }
+  
+    .authButtons {
+      display: none;
+    }
+  
+    .menuToggle {
+      display: block;
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: #475569;
+      cursor: pointer;
+      margin-left: auto; /* Pushes menu toggle to the right */
+    }
+  
+    .mobileMenu {
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 80px;
+      left: 0;
+      right: 0;
+      background: white;
+      padding: 20px;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+  
+    .mobileMenu.active {
+      transform: translateX(0);
+    }
+  
+    .mobileMenu a {
+      padding: 15px;
+      color: #475569;
+      text-decoration: none;
+      font-weight: 500;
+      border-bottom: 1px solid #e2e8f0;
+    }
+  
+    .mobileAuthButtons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+    }
+  
+    .mobileAuthButtons .loginButton,
+    .mobileAuthButtons .registerButton {
+      width: 100%;
+      text-align: center;
+      justify-content: center;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .headerContent {
+      padding: 0 15px;
+      height: 70px;
+    }
+  
+    .logoImage {
+      height: 40px;
+    }
+    
+    .logo {
+      font-size: 22px;
+    }
+  }
+  
+  /* Add responsive styles for the logo */
+  @media (max-width: 768px) {
+    .logoImage {
+      height: 45px; /* Increased from 32px */
+    }
+    
+    .logo {
+      font-size: 24px; /* Increased from 20px */
+    }
+  }
+  
