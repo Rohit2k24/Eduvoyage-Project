@@ -1,8 +1,10 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Student = require('../models/Student');
 const College = require('../models/College');
 const jwt = require('jsonwebtoken');
-const { sendVerificationEmail } = require('../utils/emailService');
+const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/emailService');
+const crypto = require('crypto');
 
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
@@ -230,6 +232,111 @@ exports.verifyAndRegister = async (req, res) => {
   } catch (error) {
     console.error('Registration error:', error);
     res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// Generate password reset token
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    console.log('Received forgot password request for:', email);
+
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found with that email'
+      });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = Date.now() + 30 * 60 * 1000; // 30 minutes
+
+    // Save hashed token to user
+    user.resetPasswordToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+    user.resetPasswordExpire = resetTokenExpiry;
+    await user.save();
+
+    // Create reset URL
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    console.log('Reset URL:', resetUrl);
+
+    try {
+      // Send email
+      await sendPasswordResetEmail(email, resetUrl);
+      console.log('Password reset email sent successfully');
+      
+      res.status(200).json({
+        success: true,
+        message: 'Password reset link sent to email'
+      });
+    } catch (emailError) {
+      console.error('Failed to send password reset email:', emailError);
+
+      // Reset the token fields if email fails
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save();
+
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send password reset email'
+      });
+    }
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Reset password
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    // Get hashed token
+    const resetPasswordToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    // Find user by token and check if expired
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired reset token'
+      });
+    }
+
+    // Set new password
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successful'
+    });
+  } catch (error) {
+    res.status(500).json({
       success: false,
       message: error.message
     });

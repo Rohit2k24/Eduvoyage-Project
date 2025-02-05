@@ -5,6 +5,8 @@ import { getCountries, getUniversitiesByCountry, countryNames } from '../../util
 import './Register.css';
 import Swal from 'sweetalert2';
 
+const API_BASE_URL = 'http://localhost:3000';
+
 const ACCREDITATIONS = [
   'NAAC A++',
   'NAAC A+',
@@ -180,8 +182,8 @@ const Register = ({ userType }) => {
     if (Object.keys(newErrors).length === 0) {
       try {
         Swal.fire({
-          title: 'Sending verification code...',
-          text: 'Please wait',
+          title: 'Sending...',
+          text: 'Please wait while we send the verification code',
           allowOutsideClick: false,
           showConfirmButton: false,
           willOpen: () => {
@@ -189,26 +191,27 @@ const Register = ({ userType }) => {
           }
         });
 
-        // Add timeout to the fetch request
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-        const response = await fetch('http://localhost:3000/api/auth/send-verification', {
+        const response = await fetch(`${API_BASE_URL}/api/auth/send-verification`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ email: formData.email }),
+          body: JSON.stringify({
+            email: formData.email,
+            role: userType,
+            ...formData
+          }),
           signal: controller.signal
         });
 
         clearTimeout(timeoutId);
 
         const data = await response.json();
-        console.log('Server response:', data);
 
-        if (response.ok && data.success) {
-          Swal.close();
+        if (data.success) {
           setVerificationStep('verification');
           Swal.fire({
             icon: 'success',
@@ -220,43 +223,33 @@ const Register = ({ userType }) => {
           throw new Error(data.message || 'Failed to send verification code');
         }
       } catch (error) {
-        console.error('Verification error:', error);
-        let errorMessage = 'Failed to send verification code. Please try again.';
-        
+        // Handle abort error separately
         if (error.name === 'AbortError') {
-          errorMessage = 'Request timed out. Please check your connection and try again.';
-        } else if (!navigator.onLine) {
-          errorMessage = 'No internet connection. Please check your network.';
+          Swal.fire({
+            icon: 'error',
+            title: 'Request Timeout',
+            text: 'The request took too long. Please try again.',
+            confirmButtonColor: '#3498db',
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Verification Failed',
+            text: error.message || 'Failed to send verification code',
+            confirmButtonColor: '#3498db',
+          });
         }
-
-        Swal.fire({
-          icon: 'error',
-          title: 'Error Sending Code',
-          text: error.message || errorMessage,
-          confirmButtonColor: '#3498db',
-        });
       }
     } else {
       setErrors(newErrors);
-      Swal.fire({
-        icon: 'warning',
-        title: 'Validation Error',
-        text: Object.values(newErrors)[0],
-        confirmButtonColor: '#3498db',
-      });
     }
   };
 
   const handleVerifyAndRegister = async () => {
-    if (!verificationCode) {
-      showErrorAlert('Please enter the verification code');
-      return;
-    }
-
     try {
       Swal.fire({
         title: 'Verifying...',
-        text: 'Please wait',
+        text: 'Please wait while we verify your code',
         allowOutsideClick: false,
         showConfirmButton: false,
         willOpen: () => {
@@ -264,36 +257,62 @@ const Register = ({ userType }) => {
         }
       });
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
       const finalFormData = {
-        ...formData,
-        role: userType,
+        email: formData.email,
         verificationCode,
+        role: userType,
+        ...formData,
         ...(userType === 'college' && {
-          name: formData.name,
           university: formData.university === 'other' ? formData.customUniversity : formData.university,
           accreditation: formData.accreditation === 'other' ? formData.customAccreditation : formData.accreditation
         })
       };
 
-      const response = await fetch('http://localhost:3000/api/auth/verify-and-register', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/verify-and-register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(finalFormData)
+        body: JSON.stringify(finalFormData),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+
       const data = await response.json();
-      Swal.close();
 
       if (data.success) {
-        localStorage.setItem('token', data.token);
-        showSuccessAlert();
+        Swal.fire({
+          icon: 'success',
+          title: 'Registration Successful!',
+          text: 'You can now login to your account',
+          confirmButtonColor: '#3498db',
+        }).then(() => {
+          navigate('/login');
+        });
       } else {
-        showErrorAlert(data.message);
+        throw new Error(data.message || 'Verification failed');
       }
     } catch (error) {
-      showErrorAlert('Registration failed. Please try again.');
+      // Handle abort error separately
+      if (error.name === 'AbortError') {
+        Swal.fire({
+          icon: 'error',
+          title: 'Request Timeout',
+          text: 'The request took too long. Please try again.',
+          confirmButtonColor: '#3498db',
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Verification Failed',
+          text: error.message || 'Failed to verify code',
+          confirmButtonColor: '#3498db',
+        });
+      }
     }
   };
 

@@ -85,7 +85,22 @@ const Login = () => {
 
         if (data.success) {
           localStorage.setItem('token', data.token);
-          showSuccessAlert(data.role);
+          localStorage.setItem('userRole', data.role);
+
+          // Redirect based on role
+          switch (data.role) {
+            case 'student':
+              navigate('/student-dashboard');
+              break;
+            case 'college':
+              navigate('/college-dashboard');
+              break;
+            case 'admin':
+              navigate('/admin-dashboard');
+              break;
+            default:
+              navigate('/');
+          }
         } else {
           showErrorAlert(data.message || 'Invalid credentials');
         }

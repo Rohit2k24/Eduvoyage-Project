@@ -4,6 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const session = require('express-session');
 const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
 
 // Import routes (we'll create these next)
 // const authRoutes = require('./routes/auth');
@@ -35,6 +36,7 @@ app.use(session({
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -51,9 +53,14 @@ app.get('/health', (req, res) => {
 });
 
 // Database connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/eduvoyage')
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 30000, // Timeout after 30s instead of 10s
+  socketTimeoutMS: 45000, // Close sockets after 45 seconds
+})
+.then(() => console.log('Connected to MongoDB'))
+.catch(err => console.error('MongoDB connection error:', err));
 
 // Routes
 // app.use('/api/auth', authRoutes);
