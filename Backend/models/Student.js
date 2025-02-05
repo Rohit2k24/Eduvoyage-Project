@@ -14,7 +14,7 @@ const studentSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
-  nationality: {
+  country: {
     type: String,
     required: true
   }

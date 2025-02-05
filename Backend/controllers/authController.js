@@ -105,8 +105,11 @@ exports.sendVerificationCode = async (req, res) => {
       });
     }
 
-    console.log('Generating verification code for:', email);
+    console.log('Starting verification process for:', email);
+    
+    // Generate 6-digit code
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log('Generated verification code:', verificationCode);
     
     // Store code with timestamp
     verificationCodes.set(email, {
@@ -116,28 +119,30 @@ exports.sendVerificationCode = async (req, res) => {
     });
 
     try {
+      console.log('Attempting to send email...');
       await sendVerificationEmail(email, verificationCode);
+      console.log('Email sent successfully');
       
       res.status(200).json({
         success: true,
         message: 'Verification code sent successfully'
       });
     } catch (emailError) {
-      console.error('Email sending error details:', emailError);
+      console.error('Email sending failed:', emailError);
       
       // Delete the stored code if email fails
       verificationCodes.delete(email);
       
       res.status(500).json({
         success: false,
-        message: `Email sending failed: ${emailError.message}`
+        message: emailError.message
       });
     }
   } catch (error) {
-    console.error('Verification code generation error:', error);
+    console.error('Server error:', error);
     res.status(500).json({
       success: false,
-      message: `Server error: ${error.message}`
+      message: error.message
     });
   }
 };
@@ -194,12 +199,20 @@ exports.verifyAndRegister = async (req, res) => {
         user: user._id,
         name: userData.name,
         dateOfBirth: userData.dateOfBirth,
-        nationality: userData.nationality
+        country: userData.country
       });
     } else if (userData.role === 'college') {
       await College.create({
         user: user._id,
-        ...userData
+        name: userData.name,
+        country: userData.country,
+        university: userData.university === 'other' ? userData.customUniversity : userData.university,
+        accreditation: userData.accreditation === 'other' ? userData.customAccreditation : userData.accreditation,
+        establishmentYear: userData.establishmentYear,
+        website: userData.website,
+        address: userData.address,
+        contactPerson: userData.contactPerson,
+        phoneNumber: userData.phoneNumber
       });
     }
 
@@ -215,6 +228,7 @@ exports.verifyAndRegister = async (req, res) => {
       role: user.role
     });
   } catch (error) {
+    console.error('Registration error:', error);
     res.status(400).json({
       success: false,
       message: error.message

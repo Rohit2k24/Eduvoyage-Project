@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaUserGraduate, FaUniversity, FaEnvelope, FaLock, FaUser, FaPassport, FaCalendar, FaBuilding, FaGlobe, FaSearch, FaPlus } from 'react-icons/fa';
 import { getCountries, getUniversitiesByCountry, countryNames } from '../../utils/universityData';
@@ -38,8 +38,9 @@ const Register = ({ userType }) => {
     confirmPassword: '',
     ...(userType === 'student' ? {
       dateOfBirth: '',
-      nationality: ''
+      country: ''
     } : {
+      name: '',
       country: '',
       university: '',
       customUniversity: '',
@@ -95,10 +96,6 @@ const Register = ({ userType }) => {
     const newErrors = {};
     
     // Basic validations for all users
-    if (!formData.name) {
-      newErrors.name = 'Name is required';
-    }
-    
     if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Valid email is required';
     }
@@ -111,28 +108,28 @@ const Register = ({ userType }) => {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
-    // Student specific validations
+    // Role specific validations
     if (userType === 'student') {
+      if (!formData.name) {
+        newErrors.name = 'Name is required';
+      }
       if (!formData.dateOfBirth) {
         newErrors.dateOfBirth = 'Date of birth is required';
-      } else {
-        // Validate age (optional)
-        const birthDate = new Date(formData.dateOfBirth);
-        const today = new Date();
-        const age = today.getFullYear() - birthDate.getFullYear();
-        if (age < 15) { // Example minimum age
-          newErrors.dateOfBirth = 'You must be at least 15 years old';
-        }
       }
-
-      if (!formData.nationality) {
-        newErrors.nationality = 'Nationality is required';
+      if (!formData.country) {
+        newErrors.country = 'Country is required';
       }
-    } 
-    // College specific validations
-    else {
-      if (!formData.country) newErrors.country = 'Country is required';
-      if (!formData.university) newErrors.university = 'University is required';
+    } else {
+      // College validations
+      if (!formData.name) {
+        newErrors.name = 'College name is required';
+      }
+      if (!formData.country) {
+        newErrors.country = 'Country is required';
+      }
+      if (!formData.university) {
+        newErrors.university = 'University is required';
+      }
       if (formData.university === 'other' && !formData.customUniversity) {
         newErrors.customUniversity = 'University name is required';
       }
@@ -150,11 +147,6 @@ const Register = ({ userType }) => {
           newErrors.establishmentYear = 'Please enter a valid establishment year';
         }
       }
-    }
-
-    // Remove duplicate accreditation validation
-    if (formData.accreditation === 'other' && !formData.customAccreditation) {
-      newErrors.customAccreditation = 'Please specify the accreditation';
     }
 
     return newErrors;
@@ -197,13 +189,20 @@ const Register = ({ userType }) => {
           }
         });
 
+        // Add timeout to the fetch request
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
         const response = await fetch('http://localhost:3000/api/auth/send-verification', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ email: formData.email })
+          body: JSON.stringify({ email: formData.email }),
+          signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
 
         const data = await response.json();
         console.log('Server response:', data);
@@ -222,10 +221,18 @@ const Register = ({ userType }) => {
         }
       } catch (error) {
         console.error('Verification error:', error);
+        let errorMessage = 'Failed to send verification code. Please try again.';
+        
+        if (error.name === 'AbortError') {
+          errorMessage = 'Request timed out. Please check your connection and try again.';
+        } else if (!navigator.onLine) {
+          errorMessage = 'No internet connection. Please check your network.';
+        }
+
         Swal.fire({
           icon: 'error',
           title: 'Error Sending Code',
-          text: error.message || 'Failed to send verification code. Please try again.',
+          text: error.message || errorMessage,
           confirmButtonColor: '#3498db',
         });
       }
@@ -257,16 +264,23 @@ const Register = ({ userType }) => {
         }
       });
 
+      const finalFormData = {
+        ...formData,
+        role: userType,
+        verificationCode,
+        ...(userType === 'college' && {
+          name: formData.name,
+          university: formData.university === 'other' ? formData.customUniversity : formData.university,
+          accreditation: formData.accreditation === 'other' ? formData.customAccreditation : formData.accreditation
+        })
+      };
+
       const response = await fetch('http://localhost:3000/api/auth/verify-and-register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          role: userType,
-          verificationCode
-        })
+        body: JSON.stringify(finalFormData)
       });
 
       const data = await response.json();
@@ -305,9 +319,9 @@ const Register = ({ userType }) => {
                 <FaUser className="input-icon" />
                 <input
                   type="text"
-                  name={userType === 'student' ? 'name' : 'collegeName'}
-                  placeholder={userType === 'student' ? 'Full Name' : 'Institution Name'}
-                  value={userType === 'student' ? formData.name : formData.collegeName}
+                  name="name"
+                  placeholder={userType === 'student' ? "Student Name" : "Institution Name"}
+                  value={formData.name}
                   onChange={handleChange}
                   className={errors.name ? 'form-control error' : 'form-control'}
                 />
@@ -349,17 +363,22 @@ const Register = ({ userType }) => {
 
                 <div className="form-group">
                   <div className="input-icon-wrapper">
-                    <FaUser className="input-icon" />
-                    <input
-                      type="text"
-                      name="nationality"
-                      placeholder="Nationality"
-                      value={formData.nationality}
+                    <FaGlobe className="input-icon" />
+                    <select
+                      name="country"
+                      value={formData.country}
                       onChange={handleChange}
-                      className={errors.nationality ? 'form-control error' : 'form-control'}
-                    />
+                      className={errors.country ? 'form-control error' : 'form-control'}
+                    >
+                      <option value="">Select Country</option>
+                      {countries.map(code => (
+                        <option key={code} value={code}>
+                          {countryNames[code] || code}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  {errors.nationality && <span className="error-message">{errors.nationality}</span>}
+                  {errors.country && <span className="error-message">{errors.country}</span>}
                 </div>
               </>
             ) : (
@@ -395,8 +414,8 @@ const Register = ({ userType }) => {
                       disabled={!formData.country}
                     >
                       <option value="">Select University</option>
-                      {universities.map(uni => (
-                        <option key={uni.url} value={uni.name}>
+                      {universities.map((uni, index) => (
+                        <option key={`${uni.name}-${index}`} value={uni.name}>
                           {uni.name}
                         </option>
                       ))}
