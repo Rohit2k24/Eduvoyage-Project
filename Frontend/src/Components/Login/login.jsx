@@ -87,19 +87,27 @@ const Login = () => {
           localStorage.setItem('token', data.token);
           localStorage.setItem('userRole', data.role);
 
-          // Redirect based on role
-          switch (data.role) {
-            case 'student':
-              navigate('/student-dashboard');
-              break;
-            case 'college':
-              navigate('/college-dashboard');
-              break;
-            case 'admin':
-              navigate('/admin-dashboard');
-              break;
-            default:
-              navigate('/');
+          // Check if college needs to complete verification
+          if (data.role === 'college') {
+            const verificationResponse = await fetch('http://localhost:3000/api/college/verification-status', {
+              headers: {
+                'Authorization': `Bearer ${data.token}`
+              }
+            });
+            
+            const verificationData = await verificationResponse.json();
+            
+            if (!verificationData.status || verificationData.status === 'pending') {
+              navigate('/college/verification-form');
+            } else if (verificationData.status === 'approved') {
+              navigate('/college/verification-status');
+            } else {
+              navigate('/college/dashboard');
+            }
+          } else if (data.role === 'admin') {
+            navigate('/admin-dashboard');
+          } else {
+            navigate('/student-dashboard');
           }
         } else {
           showErrorAlert(data.message || 'Invalid credentials');

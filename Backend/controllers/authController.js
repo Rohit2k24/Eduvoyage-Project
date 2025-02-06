@@ -83,10 +83,18 @@ exports.login = async (req, res) => {
     // Generate token
     const token = generateToken(user._id);
 
+    // If college user, get verification status
+    let verificationStatus = null;
+    if (user.role === 'college') {
+      const college = await College.findOne({ user: user._id });
+      verificationStatus = college ? college.verificationStatus : null;
+    }
+
     res.status(200).json({
       success: true,
       token,
-      role: user.role
+      role: user.role,
+      verificationStatus
     });
   } catch (error) {
     res.status(400).json({
@@ -188,7 +196,7 @@ exports.verifyAndRegister = async (req, res) => {
       });
     }
 
-    // Code is valid, proceed with registration
+    // Create user
     const user = await User.create({
       email,
       password: userData.password,
@@ -204,17 +212,23 @@ exports.verifyAndRegister = async (req, res) => {
         country: userData.country
       });
     } else if (userData.role === 'college') {
+      // Create college profile with all required fields
       await College.create({
         user: user._id,
         name: userData.name,
         country: userData.country,
         university: userData.university === 'other' ? userData.customUniversity : userData.university,
         accreditation: userData.accreditation === 'other' ? userData.customAccreditation : userData.accreditation,
-        establishmentYear: userData.establishmentYear,
-        website: userData.website,
-        address: userData.address,
-        contactPerson: userData.contactPerson,
-        phoneNumber: userData.phoneNumber
+        establishmentYear: parseInt(userData.establishmentYear),
+        verificationStatus: 'pending',
+        // Optional fields can be added later during verification
+        description: '',
+        address: '',
+        contactEmail: email, // Use registration email as initial contact
+        phoneNumber: '',
+        facilities: '',
+        courses: '',
+        documents: {}
       });
     }
 
