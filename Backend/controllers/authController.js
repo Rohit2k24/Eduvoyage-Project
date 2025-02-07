@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 const Student = require('../models/Student');
 const College = require('../models/College');
+const student = require('../models/Student');
 const jwt = require('jsonwebtoken');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/emailService');
 const crypto = require('crypto');
@@ -63,7 +64,7 @@ exports.login = async (req, res) => {
     const { email, password } = req.body;
 
     // Check if user exists
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password');
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -83,20 +84,33 @@ exports.login = async (req, res) => {
     // Generate token
     const token = generateToken(user._id);
 
-    // If college user, get verification status
+    // Get user details based on role
+    let username = user.name;
     let verificationStatus = null;
-    if (user.role === 'college') {
+    let paymentStatus = null;
+
+    if (user.role === 'student') {
+      const student = await Student.findOne({ user: user._id });
+      if (student) {
+        username = student.name;
+      }
+    } else if (user.role === 'college') {
       const college = await College.findOne({ user: user._id });
       verificationStatus = college ? college.verificationStatus : null;
+      username = college ? college.name : user.name;
+      paymentStatus = college ? college.paymentStatus : 'pending';
     }
 
     res.status(200).json({
       success: true,
       token,
       role: user.role,
-      verificationStatus
+      username,
+      verificationStatus,
+      paymentStatus
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(400).json({
       success: false,
       message: error.message || 'Login failed'

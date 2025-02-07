@@ -4,6 +4,8 @@ import { FaSpinner, FaCheckCircle, FaCreditCard, FaSignOutAlt } from 'react-icon
 import Swal from 'sweetalert2';
 import './VerificationStatus.css';
 
+const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID;
+
 const VerificationStatus = () => {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,6 +34,7 @@ const VerificationStatus = () => {
 
   const handlePayment = async () => {
     try {
+      console.log('Initiating payment...');
       const response = await fetch('http://localhost:3000/api/college/initiate-payment', {
         method: 'POST',
         headers: {
@@ -41,18 +44,23 @@ const VerificationStatus = () => {
       });
 
       const data = await response.json();
+      console.log('Payment initiation response:', data);
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to initiate payment');
+      }
 
       if (data.success) {
-        // Initialize Razorpay
         const options = {
-          key: process.env.RAZORPAY_KEY_ID,
+          key: RAZORPAY_KEY,
           amount: data.amount,
           currency: data.currency,
           order_id: data.orderId,
           name: 'EduVoyage',
           description: '2 Months College Listing Payment',
-          handler: async (response) => {
+          handler: async function(response) {
             try {
+              console.log('Payment successful, verifying...', response);
               const verifyResponse = await fetch('http://localhost:3000/api/college/verify-payment', {
                 method: 'POST',
                 headers: {
@@ -67,36 +75,47 @@ const VerificationStatus = () => {
               });
 
               const verifyData = await verifyResponse.json();
+              console.log('Payment verification response:', verifyData);
 
               if (verifyData.success) {
                 Swal.fire({
                   icon: 'success',
                   title: 'Payment Successful!',
-                  text: 'You can now access your college dashboard',
+                  text: 'Welcome to EduVoyage! You can now manage your college profile.',
                   confirmButtonColor: '#3498db'
                 }).then(() => {
                   navigate('/college/dashboard');
                 });
+              } else {
+                throw new Error(verifyData.message);
               }
             } catch (error) {
+              console.error('Payment verification error:', error);
               Swal.fire({
                 icon: 'error',
                 title: 'Payment Verification Failed',
-                text: error.message,
+                text: 'Please contact support if amount was deducted',
                 confirmButtonColor: '#3498db'
               });
             }
+          },
+          prefill: {
+            email: localStorage.getItem('userEmail'),
+          },
+          theme: {
+            color: '#3498db'
           }
         };
 
-        const razorpay = new window.Razorpay(options);
-        razorpay.open();
+        const razorpayInstance = new window.Razorpay(options);
+        razorpayInstance.open();
       }
     } catch (error) {
+      console.error('Payment initiation error:', error);
       Swal.fire({
         icon: 'error',
         title: 'Payment Initiation Failed',
-        text: error.message,
+        text: error.message || 'Unable to start payment process',
         confirmButtonColor: '#3498db'
       });
     }

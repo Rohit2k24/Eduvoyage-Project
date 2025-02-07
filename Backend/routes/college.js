@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
-const { submitVerification, getVerificationStatus, initiatePayment, verifyPayment } = require('../controllers/collegeController');
+const { submitVerification, getVerificationStatus, initiatePayment, verifyPayment, getDashboardStats } = require('../controllers/collegeController');
 const upload = require('../middleware/upload');
 
 // Configure multer for file uploads
@@ -16,5 +16,6 @@ router.post('/submit-verification', protect, upload.fields(uploadFields), submit
 router.get('/verification-status', protect, getVerificationStatus);
 router.post('/initiate-payment', protect, initiatePayment);
 router.post('/verify-payment', protect, verifyPayment);
+router.get('/dashboard-stats', protect, getDashboardStats);
 
 module.exports = router; 

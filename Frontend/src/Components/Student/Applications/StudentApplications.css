@@ -1,0 +1,230 @@
+.student-applications-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f8f9fa;
+}
+
+.applications-main {
+  flex: 1;
+  margin-left: 250px;
+  padding: 30px;
+}
+
+.applications-header {
+  margin-bottom: 30px;
+}
+
+.applications-header h1 {
+  color: #2c3e50;
+  margin: 0 0 20px;
+  font-size: 2rem;
+}
+
+.filters-section {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 250px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 10px 40px;
+  border: 2px solid #e1e5ea;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.search-box svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #95a5a6;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-group label {
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.filter-group select {
+  padding: 8px 12px;
+  border: 2px solid #e1e5ea;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  background: white;
+  cursor: pointer;
+}
+
+.applications-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.application-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.application-card:hover {
+  transform: translateY(-5px);
+}
+
+.course-image {
+  position: relative;
+  height: 200px;
+}
+
+.course-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.status-badge {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  padding: 5px 15px;
+  border-radius: 20px;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.application-details {
+  padding: 20px;
+}
+
+.application-details h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
+}
+
+.college-name {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin: 5px 0 15px;
+}
+
+.application-info {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f2f6;
+}
+
+.info-item label {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.info-item span {
+  color: #2c3e50;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.download-receipt {
+  width: 100%;
+  padding: 10px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.download-receipt:hover {
+  background: #2980b9;
+}
+
+.loading-spinner {
+  text-align: center;
+  padding: 50px;
+  color: #7f8c8d;
+}
+
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.no-applications {
+  text-align: center;
+  padding: 50px;
+  color: #7f8c8d;
+}
+
+.no-applications img {
+  width: 200px;
+  margin-bottom: 20px;
+}
+
+.no-applications h2 {
+  color: #2c3e50;
+  margin: 0 0 10px;
+}
+
+@media (max-width: 768px) {
+  .applications-main {
+    margin-left: 0;
+    padding: 20px;
+  }
+
+  .filters-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .applications-grid {
+    grid-template-columns: 1fr;
+  }
+} 

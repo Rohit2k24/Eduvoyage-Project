@@ -10,6 +10,17 @@ import CollegeVerificationForm from './Components/College/CollegeVerification/Co
 import VerificationStatus from './Components/College/CollegeVerification/VerificationStatus'
 import ProtectedRoute from './Components/Common/ProtectedRoute'
 import CollegeManagement from './Admin Module/Components/CollegeManagement/CollegeManagement'
+import CourseManagement from './Components/College/Courses/CourseManagement'
+import CourseForm from './Components/College/Courses/CourseForm'
+import StudentManagement from './Components/College/Students/StudentManagement'
+import CollegeDashboard from './Components/College/CollegeDashboard/CollegeDashboard'
+import StudentDashboard from './Components/Student/Dashboard/StudentDashboard'
+import CourseList from './Components/Student/Courses/CourseList'
+import StudentApplications from './Components/Student/Applications/StudentApplications'
+import StudentNotifications from './Components/Student/Notifications/StudentNotifications'
+import StudentProfile from './Components/Student/Profile/StudentProfile'
+import StudentSettings from './Components/Student/Settings/StudentSettings'
+// import StudentSupport from './Components/Student/Support/StudentSupport'
 import './App.css'
 
 function App() {
@@ -47,6 +58,78 @@ function App() {
             <CollegeManagement />
           </ProtectedRoute>
         } />
+        
+        <Route path="/college/courses" element={
+          <ProtectedRoute allowedRoles={['college']}>
+            <CourseManagement />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/college/courses/add" element={
+          <ProtectedRoute allowedRoles={['college']}>
+            <CourseForm />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/college/courses/edit/:id" element={
+          <ProtectedRoute allowedRoles={['college']}>
+            <CourseForm />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/college/students" element={
+          <ProtectedRoute allowedRoles={['college']}>
+            <StudentManagement />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/college/dashboard" element={
+          <ProtectedRoute allowedRoles={['college']}>
+            <CollegeDashboard />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/student/dashboard" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <StudentDashboard />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/student/courses" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <CourseList />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/student/applications" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <StudentApplications />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/student/notifications" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <StudentNotifications />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/student/profile" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <StudentProfile />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/student/settings" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <StudentSettings />
+          </ProtectedRoute>
+        } />
+        
+        {/* <Route path="/student/support" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <StudentSupport />
+          </ProtectedRoute>
+        } /> */}
       </Routes>
     </Router>
   )

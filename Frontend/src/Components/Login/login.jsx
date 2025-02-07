@@ -84,30 +84,38 @@ const Login = () => {
         Swal.close();
 
         if (data.success) {
+          // Store user data in localStorage
           localStorage.setItem('token', data.token);
           localStorage.setItem('userRole', data.role);
+          localStorage.setItem('username', data.username);
 
-          // Check if college needs to complete verification
+          // Navigate based on role
           if (data.role === 'college') {
-            const verificationResponse = await fetch('http://localhost:3000/api/college/verification-status', {
-              headers: {
-                'Authorization': `Bearer ${data.token}`
-              }
-            });
-            
-            const verificationData = await verificationResponse.json();
-            
-            if (!verificationData.status || verificationData.status === 'pending') {
-              navigate('/college/verification-form');
-            } else if (verificationData.status === 'approved') {
-              navigate('/college/verification-status');
-            } else {
+            if (data.paymentStatus === 'completed') {
+              // If payment is completed, go directly to dashboard
               navigate('/college/dashboard');
+            } else {
+              // Check verification status only if payment is not completed
+              const verificationResponse = await fetch('http://localhost:3000/api/college/verification-status', {
+                headers: {
+                  'Authorization': `Bearer ${data.token}`
+                }
+              });
+              
+              const verificationData = await verificationResponse.json();
+              
+              if (!verificationData.status || verificationData.status === 'pending') {
+                navigate('/college/verification-form');
+              } else if (verificationData.status === 'approved') {
+                navigate('/college/payment'); // Redirect to payment if verification is approved
+              } else {
+                navigate('/college/verification-status');
+              }
             }
           } else if (data.role === 'admin') {
             navigate('/admin-dashboard');
           } else {
-            navigate('/student-dashboard');
+            navigate('/student/dashboard');
           }
         } else {
           showErrorAlert(data.message || 'Invalid credentials');

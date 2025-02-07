@@ -54,7 +54,9 @@ const collegeSchema = new mongoose.Schema({
     enum: ['pending', 'completed'],
     default: 'pending'
   },
-  subscriptionEndDate: Date,
+  subscriptionEndDate: {
+    type: Date
+  },
   rejectionReason: String
 }, {
   timestamps: true

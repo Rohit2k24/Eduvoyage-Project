@@ -56,20 +56,12 @@ const CollegeVerificationForm = () => {
       });
       
       // Append files
-      if (documents.registrationCertificate) {
-        formDataToSend.append('registrationCertificate', documents.registrationCertificate);
-      }
-      if (documents.accreditationCertificate) {
-        formDataToSend.append('accreditationCertificate', documents.accreditationCertificate);
-      }
-      if (documents.collegeLogo) {
-        formDataToSend.append('collegeLogo', documents.collegeLogo);
-      }
-      if (documents.collegeImages && documents.collegeImages.length > 0) {
-        documents.collegeImages.forEach(image => {
-          formDataToSend.append('collegeImages', image);
-        });
-      }
+      formDataToSend.append('registrationCertificate', documents.registrationCertificate);
+      formDataToSend.append('accreditationCertificate', documents.accreditationCertificate);
+      formDataToSend.append('collegeLogo', documents.collegeLogo);
+      documents.collegeImages.forEach(image => {
+        formDataToSend.append('collegeImages', image);
+      });
 
       const response = await fetch('http://localhost:3000/api/college/submit-verification', {
         method: 'POST',
@@ -91,23 +83,7 @@ const CollegeVerificationForm = () => {
           navigate('/college/verification-status');
         });
       } else {
-        if (data.errors) {
-          // Handle validation errors
-          const errorMessage = Object.entries(data.errors)
-            .map(([field, message]) => `${field}: ${message}`)
-            .join('\n');
-          
-          Swal.fire({
-            icon: 'error',
-            title: 'Validation Error',
-            text: 'Please fill in all required fields',
-            footer: errorMessage,
-            confirmButtonColor: '#3498db'
-          });
-        } else {
-          throw new Error(data.message);
-        }
-        return;
+        throw new Error(data.message);
       }
     } catch (error) {
       Swal.fire({

@@ -5,16 +5,23 @@ const crypto = require('crypto');
 const fs = require('fs').promises;
 const path = require('path');
 const User = require('../models/User');
+const Course = require('../models/Course');
+const Student = require('../models/Student');
 
 // Move Razorpay initialization inside the functions where it's needed
 const getRazorpayInstance = () => {
-  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-    throw new Error('Razorpay credentials are not configured');
+  try {
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      throw new Error('Razorpay credentials are not configured');
+    }
+    return new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET
+    });
+  } catch (error) {
+    console.error('Razorpay initialization error:', error);
+    throw error;
   }
-  return new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET
-  });
 };
 
 // Helper function to handle file upload to Cloudinary
@@ -245,25 +252,51 @@ exports.getVerificationStatus = async (req, res) => {
 
 exports.initiatePayment = async (req, res) => {
   try {
+    // First check if college exists and is approved
+    const college = await College.findOne({ user: req.user._id });
+    if (!college) {
+      throw new Error('College not found');
+    }
+
+    if (college.verificationStatus !== 'approved') {
+      throw new Error('College verification is pending');
+    }
+
+    // Initialize Razorpay
     const razorpay = getRazorpayInstance();
-    const amount = 20000; // ₹200 in paise
     
-    const order = await razorpay.orders.create({
-      amount,
+    // Create order options
+    const options = {
+      amount: 20000, // ₹200 in paise
       currency: 'INR',
-      receipt: `receipt_${Date.now()}`
-    });
+      receipt: `receipt_${Date.now()}`,
+      payment_capture: 1,
+      notes: {
+        collegeId: college._id.toString()
+      }
+    };
+
+    console.log('Creating Razorpay order with options:', options);
+
+    // Create order
+    const order = await razorpay.orders.create(options);
+    console.log('Razorpay order created:', order);
+
+    if (!order) {
+      throw new Error('Unable to create Razorpay order');
+    }
 
     res.status(200).json({
       success: true,
-      amount,
-      currency: 'INR',
+      amount: options.amount,
+      currency: options.currency,
       orderId: order.id
     });
   } catch (error) {
+    console.error('Payment initiation error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || 'Error initiating payment'
     });
   }
 };
@@ -275,6 +308,10 @@ exports.verifyPayment = async (req, res) => {
       razorpay_order_id,
       razorpay_signature
     } = req.body;
+
+    if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
+      throw new Error('Missing payment verification parameters');
+    }
 
     // Verify signature
     const sign = razorpay_order_id + "|" + razorpay_payment_id;
@@ -288,25 +325,82 @@ exports.verifyPayment = async (req, res) => {
       const subscriptionEndDate = new Date();
       subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + 2);
 
-      await College.findOneAndUpdate(
+      const college = await College.findOneAndUpdate(
         { user: req.user._id },
         {
           paymentStatus: 'completed',
-          subscriptionEndDate
-        }
+          subscriptionEndDate,
+          verificationStatus: 'approved'
+        },
+        { new: true }
       );
+
+      if (!college) {
+        throw new Error('College not found');
+      }
 
       res.status(200).json({
         success: true,
         message: 'Payment verified successfully'
       });
     } else {
-      throw new Error('Invalid signature');
+      throw new Error('Invalid payment signature');
     }
   } catch (error) {
+    console.error('Payment verification error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || 'Error verifying payment'
+    });
+  }
+};
+
+exports.getDashboardStats = async (req, res) => {
+  try {
+    // Get college ID from authenticated user
+    const college = await College.findOne({ user: req.user._id });
+    if (!college) {
+      return res.status(404).json({
+        success: false,
+        message: 'College not found'
+      });
+    }
+
+    // Get total active courses
+    const totalCourses = await Course.countDocuments({ 
+      college: college._id,
+      // Add any active status condition if you have one
+    });
+
+    // Get total enrolled students
+    const totalStudents = await Student.countDocuments({
+      college: college._id,
+      status: 'active' // Assuming you have a status field
+    });
+
+    // Get recent applications (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const recentApplications = await Student.countDocuments({
+      college: college._id,
+      createdAt: { $gte: thirtyDaysAgo },
+      status: 'pending' // Or whatever status you use for new applications
+    });
+
+    res.status(200).json({
+      success: true,
+      stats: {
+        totalCourses,
+        totalStudents,
+        recentApplications
+      }
+    });
+  } catch (error) {
+    console.error('Get dashboard stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error fetching dashboard stats'
     });
   }
 }; 
