@@ -44,9 +44,9 @@ app.get('/test', (req, res) => {
 // Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/student', studentRoutes);
 app.use('/api/college/courses', courseRoutes);
 app.use('/api/college', collegeRoutes);
-app.use('/api/student', studentRoutes);
 
 // Print all registered routes
 console.log('Registered Routes:');

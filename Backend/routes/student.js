@@ -10,6 +10,12 @@ const {
   downloadReceipt
 } = require('../controllers/studentController');
 
+const {
+  submitApplication,
+  getApplication,
+  cancelApplication
+} = require('../controllers/applicationController');
+
 console.log('Initializing student routes');
 
 // Test route (no auth required)
@@ -24,10 +30,16 @@ router.get('/dashboard', protect, (req, res, next) => {
   getDashboardStats(req, res, next);
 });
 
+// Application routes
+router.post('/applications', protect, submitApplication);
+router.get('/applications', protect, getApplications);
+router.get('/applications/:id', protect, getApplication);
+router.delete('/applications/:id', protect, cancelApplication);
+
+// Notification routes
 router.get('/notifications', protect, getNotifications);
 router.put('/notifications/:id/read', protect, markNotificationAsRead);
 router.delete('/notifications/:id', protect, deleteNotification);
-router.get('/applications', protect, getApplications);
 router.get('/applications/:id/receipt', protect, downloadReceipt);
 
 // Log registered routes

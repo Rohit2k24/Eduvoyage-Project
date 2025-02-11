@@ -23,15 +23,14 @@ router.use((req, res, next) => {
   next();
 });
 
-// Routes
-router.route('/')
-  .get(protect, getCourses)
-  .post(protect, upload.single('image'), createCourse);
+// Public routes
+router.get('/', getCourses);
 
-router.route('/:id')
-  .get(protect, getCourse)
-  .put(protect, upload.single('image'), updateCourse)
-  .delete(protect, deleteCourse);
+// Protected routes
+router.post('/', protect, upload.single('image'), createCourse);
+router.get('/:id', protect, getCourse);
+router.put('/:id', protect, upload.single('image'), updateCourse);
+router.delete('/:id', protect, deleteCourse);
 
 // Error handler
 router.use((error, req, res, next) => {

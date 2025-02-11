@@ -2,6 +2,8 @@ const Course = require('../models/Course');
 const College = require('../models/College');
 const cloudinary = require('../config/cloudinary');
 const fs = require('fs').promises;
+const asyncHandler = require('../middleware/async');
+const ErrorResponse = require('../utils/errorResponse');
 
 // Helper function to upload to Cloudinary
 const uploadToCloudinary = async (file) => {
@@ -179,23 +181,44 @@ exports.deleteCourse = async (req, res) => {
   }
 };
 
-exports.getCourses = async (req, res) => {
+exports.getCourses = asyncHandler(async (req, res, next) => {
   try {
-    const college = await College.findOne({ user: req.user._id });
-    const courses = await Course.find({ college: college._id });
+    console.log('Getting courses...');
+    
+    // For public access, show all active courses with college info
+    const courses = await Course.find()
+      .populate({
+        path: 'college',
+        select: 'name location'
+      })
+      .select('name description duration fees image college')
+      .lean();
+
+    console.log(`Found ${courses.length} courses`);
+
+    // Add default values for any missing fields
+    const processedCourses = courses.map(course => ({
+      ...course,
+      image: course.image || '/default-course.jpg',
+      description: course.description || 'No description available',
+      duration: course.duration || 'Not specified',
+      fees: course.fees || 0,
+      college: {
+        name: course.college?.name || 'Unknown College',
+        location: course.college?.location || 'Location not specified'
+      }
+    }));
 
     res.status(200).json({
       success: true,
-      courses
+      count: processedCourses.length,
+      courses: processedCourses
     });
   } catch (error) {
-    console.error('Get courses error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Error fetching courses'
-    });
+    console.error('Error fetching courses:', error);
+    return next(new ErrorResponse('Error fetching courses', 500));
   }
-};
+});
 
 exports.getCourse = async (req, res) => {
   try {
