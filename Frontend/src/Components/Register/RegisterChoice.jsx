@@ -4,22 +4,40 @@ import './RegisterChoice.css';
 
 const RegisterChoice = () => {
   return (
-    <div className="register-choice-container">
-      <div className="register-choice-box">
-        <h2>Choose Registration Type</h2>
-        <div className="choice-cards">
-          <Link to="/register/student" className="choice-card">
-            <FaUserGraduate className="choice-icon" />
-            <h3>Student</h3>
-            <p>Register as a student to explore and apply to universities worldwide</p>
+    <div className="register-container">
+      <div className="register-glass-panel">
+        <div className="register-header">
+          <h1>Start Your Journey 🚀</h1>
+          <p>Join EduVoyage as...</p>
+        </div>
+        
+        <div className="choice-grid">
+          <Link to="/register/student" className="choice-card student">
+            <div className="card-content">
+              <div className="icon-wrapper">
+                <FaUserGraduate className="choice-icon" />
+              </div>
+              <h2>Student</h2>
+              <p>Begin your global education adventure with personalized university matching</p>
+              <span className="cta-text">Explore Opportunities →</span>
+            </div>
           </Link>
-          
-          <Link to="/register/college" className="choice-card">
-            <FaUniversity className="choice-icon" />
-            <h3>University/College</h3>
-            <p>Register your institution to connect with international students</p>
+
+          <Link to="/register/college" className="choice-card college">
+            <div className="card-content">
+              <div className="icon-wrapper">
+                <FaUniversity className="choice-icon" />
+              </div>
+              <h2>University</h2>
+              <p>Connect with top international students and showcase your programs</p>
+              <span className="cta-text">Attract Talent →</span>
+            </div>
           </Link>
         </div>
+
+        <p className="existing-account">
+          Already registered? <Link to="/login">Sign in here</Link>
+        </p>
       </div>
     </div>
   );

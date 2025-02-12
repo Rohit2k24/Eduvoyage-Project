@@ -1,22 +1,28 @@
 import { useState, useEffect } from 'react';
-import { FaBell, FaLock, FaToggleOn, FaToggleOff } from 'react-icons/fa';
-import StudentSidebar from '../Dashboard/StudentSidebar';
+import { FaBell, FaLock, FaPalette, FaGlobe, FaToggleOn, FaToggleOff } from 'react-icons/fa';
+import StudentSidebar from '../Sidebar/StudentSidebar';
 import Swal from 'sweetalert2';
 import './StudentSettings.css';
 
+const defaultSettings = {
+  notifications: {
+    emailAlerts: true,
+    applicationUpdates: true,
+    courseRecommendations: true,
+    deadlineReminders: true
+  },
+  privacy: {
+    showProfile: true,
+    showEducation: true
+  },
+  appearance: {
+    darkMode: false,
+    fontSize: 'medium'
+  }
+};
+
 const StudentSettings = () => {
-  const [settings, setSettings] = useState({
-    notifications: {
-      emailAlerts: true,
-      applicationUpdates: true,
-      courseRecommendations: true,
-      deadlineReminders: true
-    },
-    privacy: {
-      showProfile: true,
-      showEducation: true
-    }
-  });
+  const [settings, setSettings] = useState(defaultSettings);
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -44,7 +50,11 @@ const StudentSettings = () => {
 
       const data = await response.json();
       if (data.success) {
-        setSettings(data.settings);
+        setSettings({
+          notifications: { ...defaultSettings.notifications, ...data.settings.notifications },
+          privacy: { ...defaultSettings.privacy, ...data.settings.privacy },
+          appearance: { ...defaultSettings.appearance, ...data.settings.appearance }
+        });
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -111,202 +121,331 @@ const StudentSettings = () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       Swal.fire({
         icon: 'error',
-        title: 'Error',
-        text: 'New passwords do not match',
+        title: 'Password Mismatch',
+        text: 'New password and confirm password do not match',
         confirmButtonColor: '#3498db'
       });
       return;
     }
 
+    setLoading(true);
     try {
       const response = await fetch('http://localhost:3000/api/student/change-password', {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify(passwordData)
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword
+        })
       });
 
       if (!response.ok) {
         throw new Error('Failed to change password');
       }
 
-      const data = await response.json();
-      if (data.success) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Success',
-          text: 'Password changed successfully',
-          confirmButtonColor: '#3498db'
-        });
-        setPasswordData({
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: ''
-        });
-      }
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Password Updated',
+        text: 'Your password has been changed successfully',
+        confirmButtonColor: '#3498db'
+      });
     } catch (error) {
-      console.error('Error changing password:', error);
+      console.error('Password change error:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'Failed to change password',
+        text: 'Failed to change password. Please try again.',
+        confirmButtonColor: '#3498db'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNotificationChange = async (e) => {
+    const { name, checked } = e.target;
+    const newNotifications = {
+      ...settings.notifications,
+      [name]: checked
+    };
+
+    try {
+      const response = await fetch('http://localhost:3000/api/student/notification-preferences', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          ...newNotifications
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update notification preferences');
+      }
+
+      // Show a small success toast
+      const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+      });
+
+      Toast.fire({
+        icon: 'success',
+        title: 'Preferences updated successfully'
+      });
+
+      setSettings(prev => ({
+        ...prev,
+        notifications: newNotifications
+      }));
+    } catch (error) {
+      console.error('Notification preferences error:', error);
+      // Revert the change in UI
+      setSettings(prev => ({
+        ...prev,
+        notifications: {
+          ...prev.notifications,
+          [name]: !checked
+        }
+      }));
+      
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to update notification preferences',
         confirmButtonColor: '#3498db'
       });
     }
   };
 
-  const ToggleSwitch = ({ checked, onChange }) => (
-    <button 
-      className={`toggle-switch ${checked ? 'active' : ''}`}
-      onClick={onChange}
-      type="button"
-    >
-      {checked ? <FaToggleOn /> : <FaToggleOff />}
-    </button>
+  const handleAppearanceToggle = (setting) => {
+    const currentAppearance = settings.appearance || {};
+    const newSettings = {
+      ...settings,
+      appearance: {
+        ...currentAppearance,
+        [setting]: !currentAppearance[setting]
+      }
+    };
+    setSettings(newSettings);
+    // Update API call here too if needed
+  };
+
+  const setFontSize = async (size) => {
+    try {
+      const response = await fetch('http://localhost:3000/api/student/font-size-preferences', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ settings: { appearance: { fontSize: size } } })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update font size preferences');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setSettings(prev => ({
+          ...prev,
+          appearance: {
+            ...prev.appearance,
+            fontSize: size
+          }
+        }));
+        Swal.fire({
+          icon: 'success',
+          title: 'Font Size Updated',
+          text: `Text size set to ${size.charAt(0).toUpperCase() + size.slice(1)}`,
+          confirmButtonColor: '#3498db'
+        });
+      }
+    } catch (error) {
+      console.error('Error updating font size preferences:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to update font size preferences',
+        confirmButtonColor: '#3498db'
+      });
+    }
+  };
+
+  const ToggleSwitch = ({ checked, onChange, label, description }) => (
+    <div className="setting-card">
+      <div className="setting-content">
+        <h3>{label}</h3>
+        <p>{description}</p>
+      </div>
+      <button 
+        className={`toggle-switch ${checked ? 'active' : ''}`}
+        onClick={onChange}
+      >
+        <div className="toggle-knob"></div>
+      </button>
+    </div>
   );
 
   return (
     <div className="student-settings-layout">
       <StudentSidebar />
       
-      <div className="settings-main">
-        <h1>Settings</h1>
+      <main className="settings-main">
+        <header className="settings-header">
+          <h1>Account Settings</h1>
+          <p>Manage your preferences and security settings</p>
+        </header>
 
-        {loading ? (
-          <div className="loading-spinner">
-            <div className="spinner"></div>
-            <p>Loading settings...</p>
-          </div>
-        ) : (
-          <div className="settings-sections">
-            <section className="settings-section">
-              <h2><FaBell /> Notification Preferences</h2>
-              <div className="settings-grid">
-                <div className="setting-item">
-                  <div className="setting-info">
-                    <h3>Email Alerts</h3>
-                    <p>Receive important updates via email</p>
-                  </div>
-                  <ToggleSwitch
-                    checked={settings.notifications.emailAlerts}
-                    onChange={() => handleSettingToggle('notifications', 'emailAlerts')}
-                  />
-                </div>
+        <div className="settings-grid">
+          <section className="settings-section">
+            <div className="section-header">
+              <FaBell className="section-icon" />
+              <h2>Notifications</h2>
+            </div>
+            
+            <ToggleSwitch
+              checked={settings.notifications.emailAlerts}
+              onChange={() => handleSettingToggle('notifications', 'emailAlerts')}
+              label="Email Alerts"
+              description="Receive important updates via email"
+            />
 
-                <div className="setting-item">
-                  <div className="setting-info">
-                    <h3>Application Updates</h3>
-                    <p>Get notified about your application status</p>
-                  </div>
-                  <ToggleSwitch
-                    checked={settings.notifications.applicationUpdates}
-                    onChange={() => handleSettingToggle('notifications', 'applicationUpdates')}
-                  />
-                </div>
+            <ToggleSwitch
+              checked={settings.notifications.applicationUpdates}
+              onChange={() => handleSettingToggle('notifications', 'applicationUpdates')}
+              label="Application Updates"
+              description="Get notified about application status changes"
+            />
 
-                <div className="setting-item">
-                  <div className="setting-info">
-                    <h3>Course Recommendations</h3>
-                    <p>Receive personalized course suggestions</p>
-                  </div>
-                  <ToggleSwitch
-                    checked={settings.notifications.courseRecommendations}
-                    onChange={() => handleSettingToggle('notifications', 'courseRecommendations')}
-                  />
-                </div>
+            <ToggleSwitch
+              checked={settings.notifications.courseRecommendations}
+              onChange={() => handleSettingToggle('notifications', 'courseRecommendations')}
+              label="Course Recommendations"
+              description="Personalized course suggestions"
+            />
 
-                <div className="setting-item">
-                  <div className="setting-info">
-                    <h3>Deadline Reminders</h3>
-                    <p>Get reminded about important deadlines</p>
-                  </div>
-                  <ToggleSwitch
-                    checked={settings.notifications.deadlineReminders}
-                    onChange={() => handleSettingToggle('notifications', 'deadlineReminders')}
-                  />
-                </div>
-              </div>
-            </section>
+            <ToggleSwitch
+              checked={settings.notifications.deadlineReminders}
+              onChange={() => handleSettingToggle('notifications', 'deadlineReminders')}
+              label="Deadline Reminders"
+              description="Important deadline notifications"
+            />
+          </section>
 
-            <section className="settings-section">
-              <h2><FaLock /> Privacy Settings</h2>
-              <div className="settings-grid">
-                <div className="setting-item">
-                  <div className="setting-info">
-                    <h3>Profile Visibility</h3>
-                    <p>Allow colleges to view your profile</p>
-                  </div>
-                  <ToggleSwitch
-                    checked={settings.privacy.showProfile}
-                    onChange={() => handleSettingToggle('privacy', 'showProfile')}
-                  />
-                </div>
+          <section className="settings-section">
+            <div className="section-header">
+              <FaLock className="section-icon" />
+              <h2>Security & Privacy</h2>
+            </div>
 
-                <div className="setting-item">
-                  <div className="setting-info">
-                    <h3>Education Details</h3>
-                    <p>Show your educational background</p>
-                  </div>
-                  <ToggleSwitch
-                    checked={settings.privacy.showEducation}
-                    onChange={() => handleSettingToggle('privacy', 'showEducation')}
-                  />
-                </div>
-              </div>
-            </section>
+            <ToggleSwitch
+              checked={settings.privacy.showProfile}
+              onChange={() => handleSettingToggle('privacy', 'showProfile')}
+              label="Profile Visibility"
+              description="Allow universities to view your profile"
+            />
 
-            <section className="settings-section">
-              <h2><FaLock /> Change Password</h2>
+            <ToggleSwitch
+              checked={settings.privacy.showEducation}
+              onChange={() => handleSettingToggle('privacy', 'showEducation')}
+              label="Education Details"
+              description="Show your educational background"
+            />
+
+            <div className="security-card">
+              <h3>Password Management</h3>
               <form onSubmit={handlePasswordChange} className="password-form">
                 <div className="form-group">
                   <label>Current Password</label>
-                  <input
-                    type="password"
-                    value={passwordData.currentPassword}
-                    onChange={(e) => setPasswordData({
-                      ...passwordData,
-                      currentPassword: e.target.value
-                    })}
-                    required
-                  />
+                  <div className="input-wrapper">
+                    <input
+                      type="password"
+                      value={passwordData.currentPassword}
+                      onChange={(e) => setPasswordData({
+                        ...passwordData,
+                        currentPassword: e.target.value
+                      })}
+                      placeholder="••••••••"
+                    />
+                  </div>
                 </div>
 
                 <div className="form-group">
                   <label>New Password</label>
-                  <input
-                    type="password"
-                    value={passwordData.newPassword}
-                    onChange={(e) => setPasswordData({
-                      ...passwordData,
-                      newPassword: e.target.value
-                    })}
-                    required
-                  />
+                  <div className="input-wrapper">
+                    <input
+                      type="password"
+                      value={passwordData.newPassword}
+                      onChange={(e) => setPasswordData({
+                        ...passwordData,
+                        newPassword: e.target.value
+                      })}
+                      placeholder="••••••••"
+                    />
+                  </div>
                 </div>
 
-                <div className="form-group">
-                  <label>Confirm New Password</label>
-                  <input
-                    type="password"
-                    value={passwordData.confirmPassword}
-                    onChange={(e) => setPasswordData({
-                      ...passwordData,
-                      confirmPassword: e.target.value
-                    })}
-                    required
-                  />
-                </div>
-
-                <button type="submit" className="change-password-btn">
-                  Change Password
+                <button type="submit" className="save-button">
+                  Update Password
                 </button>
               </form>
-            </section>
-          </div>
-        )}
-      </div>
+            </div>
+          </section>
+
+          <section className="settings-section">
+            <div className="section-header">
+              <FaPalette className="section-icon" />
+              <h2>Appearance</h2>
+            </div>
+
+            <div className="theme-card">
+              <h3>Dark Mode</h3>
+              <button 
+                className={`theme-toggle ${settings.appearance?.darkMode ? 'active' : ''}`}
+                onClick={() => handleAppearanceToggle('darkMode')}
+              >
+                <span className="toggle-label">
+                  {settings.appearance?.darkMode ? 'On' : 'Off'}
+                </span>
+                <div className="toggle-track">
+                  <div className="toggle-thumb"></div>
+                </div>
+              </button>
+            </div>
+
+            <div className="font-size-card">
+              <h3>Text Size</h3>
+              <div className="size-options">
+                {['small', 'medium', 'large'].map(size => (
+                  <button
+                    key={size}
+                    className={`size-option ${settings.appearance?.fontSize === size ? 'active' : ''}`}
+                    onClick={() => setFontSize(size)}
+                  >
+                    {size.charAt(0).toUpperCase() + size.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
     </div>
   );
 };

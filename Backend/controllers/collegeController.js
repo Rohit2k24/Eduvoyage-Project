@@ -7,6 +7,10 @@ const path = require('path');
 const User = require('../models/User');
 const Course = require('../models/Course');
 const Student = require('../models/Student');
+const Application = require('../models/Application');
+const Notification = require('../models/Notification');
+const asyncHandler = require('../middleware/async');
+const ErrorResponse = require('../utils/errorResponse');
 
 // Move Razorpay initialization inside the functions where it's needed
 const getRazorpayInstance = () => {
@@ -403,4 +407,43 @@ exports.getDashboardStats = async (req, res) => {
       message: error.message || 'Error fetching dashboard stats'
     });
   }
-}; 
+};
+
+// @desc    Get college applications
+// @route   GET /api/college/applications
+exports.getCollegeApplications = asyncHandler(async (req, res) => {
+  const college = await College.findOne({ user: req.user._id });
+  
+  const applications = await Application.find({ 'course.college': college._id })
+    .populate({
+      path: 'student',
+      select: 'name email'
+    })
+    .populate('course', 'name');
+
+  res.status(200).json({ success: true, data: applications });
+});
+
+// @desc    Update application status
+// @route   PUT /api/college/applications/:id
+exports.updateApplicationStatus = asyncHandler(async (req, res, next) => {
+  const { status } = req.body;
+  const application = await Application.findByIdAndUpdate(
+    req.params.id,
+    { status },
+    { new: true, runValidators: true }
+  );
+
+  if (!application) {
+    return next(new ErrorResponse('Application not found', 404));
+  }
+
+  // Create notification
+  await Notification.create({
+    user: application.student,
+    type: 'application',
+    message: `Your application for ${application.course.name} has been ${status}`
+  });
+
+  res.status(200).json({ success: true, data: application });
+}); 

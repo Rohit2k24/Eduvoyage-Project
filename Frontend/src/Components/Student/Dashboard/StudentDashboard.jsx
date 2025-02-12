@@ -1,21 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaGraduationCap, FaClipboardList, FaBell, FaSignOutAlt } from 'react-icons/fa';
-import StudentSidebar from './StudentSidebar';
-import Swal from 'sweetalert2';
+import { 
+  FaGraduationCap, 
+  FaClipboardList, 
+  FaCalendarAlt,
+  FaUniversity,
+  FaChartLine,
+  FaRegClock,
+  FaRegCheckCircle
+} from 'react-icons/fa';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import StudentSidebar from '../Sidebar/StudentSidebar';
 import './StudentDashboard.css';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const StudentDashboard = () => {
   const [dashboardData, setDashboardData] = useState({
-    applicationStats: {},
-    recentApplications: [],
-    unreadNotifications: 0,
-    recommendedCourses: []
+    applications: 0,
+    accepted: 0,
+    pending: 0,
+    deadlines: [],
+    recommendations: []
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,49 +30,34 @@ const StudentDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      console.log('Fetching dashboard data...'); // Debug log
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      console.log('Using token:', token); // Debug log
-
-      const response = await fetch(`${API_URL}/api/student/dashboard`, {
-        method: 'GET',
+      const response = await fetch('http://localhost:3000/api/student/dashboard', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
 
-      console.log('Response status:', response.status); // Debug log
-
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error response:', errorData); // Debug log
-        throw new Error(errorData.message || 'Failed to fetch dashboard data');
+        throw new Error('Failed to fetch dashboard data');
       }
 
       const data = await response.json();
-      console.log('Dashboard data received:', data); // Debug log
-
-      if (data.success) {
-        setDashboardData(data.data);
-      }
+      setDashboardData({
+        applications: data.data.applications || 0,
+        accepted: data.data.accepted || 0,
+        pending: data.data.pending || 0,
+        deadlines: data.data.deadlines || [],
+        recommendations: data.data.recommendations || []
+      });
+      setLoading(false);
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      setError(error.message || 'Failed to load dashboard data');
+      console.error('Dashboard error:', error);
+      setLoading(false);
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: error.message || 'Failed to load dashboard data. Please try again later.',
+        text: 'Failed to load dashboard data',
         confirmButtonColor: '#3498db'
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -86,98 +77,174 @@ const StudentDashboard = () => {
     });
   };
 
-  const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
-      case 'pending': return 'orange';
-      case 'approved': return 'green';
-      case 'rejected': return 'red';
-      default: return 'gray';
-    }
-  };
+  const chartData = [
+    { name: 'Applied', value: dashboardData.applications },
+    { name: 'Accepted', value: dashboardData.accepted },
+    { name: 'Pending', value: dashboardData.pending }
+  ];
 
   return (
-    <div className="student-dashboard-layout">
+    <div className="student-dashboard-container">
       <StudentSidebar />
       
-      <div className="student-dashboard-main">
+      <main className="dashboard-main">
         <div className="dashboard-header">
-          <h1>Student Dashboard</h1>
-          <button onClick={handleLogout} className="logout-button">
-            <FaSignOutAlt />
-            Logout
-          </button>
+          <h1>Welcome Back, {localStorage.getItem('username') || 'Student'}! 👋</h1>
+          <p className="dashboard-subtitle">Your application journey at a glance</p>
         </div>
 
-        {loading ? (
-          <div className="loading-spinner">
-            <div className="spinner"></div>
-            <p>Loading dashboard...</p>
+        <div className="stats-grid">
+          <div className="stat-card gradient-blue">
+            <div className="stat-icon">
+              <FaUniversity />
+            </div>
+            <div className="stat-content">
+              <h3>{dashboardData.applications}</h3>
+              <p>Total Applications</p>
+              <span className="stat-trend">↑ 12% from last month</span>
+            </div>
           </div>
-        ) : error ? (
-          <div className="error-message">
-            <p>{error}</p>
+
+          <div className="stat-card gradient-green">
+            <div className="stat-icon">
+              <FaRegCheckCircle />
+            </div>
+            <div className="stat-content">
+              <h3>{dashboardData.accepted}</h3>
+              <p>Accepted Offers</p>
+              <span className="stat-trend">3 pending responses</span>
+            </div>
           </div>
-        ) : (
-          <>
-            <div className="dashboard-stats">
-              <div className="stat-card">
-                <FaClipboardList className="stat-icon" />
-                <div className="stat-info">
-                  <h3>Total Applications</h3>
-                  <p>{Object.values(dashboardData.applicationStats).reduce((a, b) => a + b, 0)}</p>
+
+          <div className="stat-card gradient-purple">
+            <div className="stat-icon">
+              <FaRegClock />
+            </div>
+            <div className="stat-content">
+              <h3>{dashboardData.deadlines?.length || 0}</h3>
+              <p>Upcoming Deadlines</p>
+              <span className="stat-trend">Nearest in 5 days</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="content-grid">
+          <div className="chart-card glass-card">
+            <div className="chart-header">
+              <h2>Application Progress</h2>
+              <div className="chart-legend">
+                <div className="legend-item applied">
+                  <span></span> Applied
                 </div>
-              </div>
-              <div className="stat-card">
-                <FaGraduationCap className="stat-icon" />
-                <div className="stat-info">
-                  <h3>Approved Applications</h3>
-                  <p>{dashboardData.applicationStats.approved || 0}</p>
-                </div>
-              </div>
-              <div className="stat-card">
-                <FaBell className="stat-icon" />
-                <div className="stat-info">
-                  <h3>Unread Notifications</h3>
-                  <p>{dashboardData.unreadNotifications}</p>
+                <div className="legend-item accepted">
+                  <span></span> Accepted
                 </div>
               </div>
             </div>
+            <div className="chart-container">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={chartData}>
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fill: '#64748b' }}
+                  />
+                  <YAxis 
+                    tick={{ fill: '#64748b' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      background: 'rgba(255, 255, 255, 0.95)',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Bar 
+                    dataKey="value" 
+                    radius={[6, 6, 0, 0]}
+                    animationBegin={100}
+                  >
+                    {chartData.map((entry, index) => (
+                      <stop 
+                        key={index}
+                        offset="0%" 
+                        stopColor={index === 0 ? '#4f46e5' : '#10b981'} 
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
 
-            <section className="recent-applications">
-              <h2>Recent Applications</h2>
-              {dashboardData.recentApplications.length === 0 ? (
-                <p>No recent applications</p>
-              ) : (
-                <div className="applications-grid">
-                  {dashboardData.recentApplications.map(app => (
-                    <div key={app._id} className="application-card">
-                      <h3>{app.course.name}</h3>
-                      <p>{app.course.college.name}</p>
-                      <span className={`status ${app.status}`}>{app.status}</span>
+          <div className="deadlines-card glass-card">
+            <div className="card-header">
+              <h2>⏳ Upcoming Deadlines</h2>
+              <button className="view-all">View All →</button>
+            </div>
+            <div className="deadlines-list">
+              {dashboardData.deadlines?.map((deadline, index) => (
+                <div key={index} className="deadline-item">
+                  <div className="deadline-meta">
+                    <div className="university-badge">
+                      <FaUniversity />
                     </div>
-                  ))}
+                    <div className="deadline-info">
+                      <h4>{deadline.university}</h4>
+                      <p className="deadline-date">
+                        {new Date(deadline.date).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="days-remaining">
+                    {Math.ceil((new Date(deadline.date) - new Date()) / (1000 * 3600 * 24))} days left
+                  </div>
                 </div>
-              )}
-            </section>
+              ))}
+            </div>
+          </div>
+        </div>
 
-            <section className="recommended-courses">
-              <h2>Recommended Courses</h2>
-              {dashboardData.recommendedCourses.length === 0 ? (
-                <p>No recommendations available</p>
-              ) : (
-                <div className="courses-grid">
-                  {dashboardData.recommendedCourses.map(course => (
-                    <div key={course._id} className="course-card">
-                      <h3>{course.name}</h3>
-                      <p>{course.college.name}</p>
-                    </div>
-                  ))}
+        <div className="recommendations-section">
+          <div className="section-header">
+            <h2>🌟 Recommended Universities</h2>
+            <p>Based on your profile and preferences</p>
+          </div>
+          <div className="recommendations-grid">
+            {dashboardData.recommendations?.map((uni, index) => (
+              <div key={index} className="university-card">
+                <div className="university-header">
+                  <div className="uni-avatar">
+                    <FaUniversity />
+                  </div>
+                  <h3>{uni.name}</h3>
+                  <span className="uni-location">{uni.location}</span>
                 </div>
-              )}
-            </section>
-          </>
-        )}
-      </div>
+                <div className="university-details">
+                  <div className="detail-item">
+                    <span>Application Deadline</span>
+                    <p>{new Date(uni.deadline).toLocaleDateString()}</p>
+                  </div>
+                  <div className="detail-item">
+                    <span>Acceptance Rate</span>
+                    <p>22%</p>
+                  </div>
+                </div>
+                <div className="card-actions">
+                  <button className="primary-action">
+                    Apply Now
+                  </button>
+                  <button className="secondary-action">
+                    Learn More
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
     </div>
   );
 };

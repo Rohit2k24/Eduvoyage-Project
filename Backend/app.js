@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const securityMiddleware = require('./middleware/security');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -31,6 +32,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Static folder for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static('uploads'));
 
 // Debug middleware
 app.use((req, res, next) => {
@@ -70,5 +72,7 @@ app.use((err, req, res, next) => {
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
+
+app.use(securityMiddleware);
 
 module.exports = { app }; 

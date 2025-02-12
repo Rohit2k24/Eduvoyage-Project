@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaEnvelope } from 'react-icons/fa';
+import { FaEnvelope, FaArrowRight, FaExclamationCircle } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import './Login.css';
 
@@ -71,32 +71,41 @@ const ForgotPassword = () => {
 
   return (
     <div className="auth-container">
-      <div className="auth-box">
-        <h2>Forgot Password</h2>
-        <p className="auth-subtitle">Enter your email to reset your password</p>
-        
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <div className="input-icon-wrapper">
+      <div className="auth-glass-card">
+        <div className="auth-header">
+          <h1>Reset Your Password 🔒</h1>
+          <p>Enter your email to receive a reset link</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="input-group">
+            <label htmlFor="email">Email Address</label>
+            <div className="input-field">
               <FaEnvelope className="input-icon" />
               <input
                 type="email"
-                placeholder="Email Address"
+                id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={errors.email ? 'form-control error' : 'form-control'}
+                placeholder="name@example.com"
               />
             </div>
-            {errors.email && <span className="error-message">{errors.email}</span>}
+            {errors.email && (
+              <span className="error-message">
+                <FaExclamationCircle /> {errors.email}
+              </span>
+            )}
           </div>
 
           <button type="submit" className="auth-button">
-            Send Reset Link
+            Send Reset Link <FaArrowRight className="arrow-icon" />
           </button>
         </form>
 
-        <div className="auth-links">
-          <Link to="/login">Back to Login</Link>
+        <div className="auth-footer">
+          <Link to="/login" className="back-to-login">
+            Remember your password? Sign In
+          </Link>
         </div>
       </div>
     </div>

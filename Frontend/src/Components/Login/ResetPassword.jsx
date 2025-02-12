@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FaLock } from 'react-icons/fa';
+import { FaLock, FaCheck, FaExclamationCircle, FaArrowRight } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import './Login.css';
 
@@ -89,45 +89,58 @@ const ResetPassword = () => {
 
   return (
     <div className="auth-container">
-      <div className="auth-box">
-        <h2>Reset Password</h2>
-        <p className="auth-subtitle">Enter your new password</p>
-        
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <div className="input-icon-wrapper">
+      <div className="auth-glass-card">
+        <div className="auth-header">
+          <div className="icon-success">
+            <FaCheck />
+          </div>
+          <h1>New Password 🎉</h1>
+          <p>Create a new password for your account</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="input-group">
+            <label htmlFor="password">New Password</label>
+            <div className="input-field">
               <FaLock className="input-icon" />
               <input
                 type="password"
+                id="password"
                 name="password"
-                placeholder="New Password"
                 value={formData.password}
                 onChange={handleChange}
-                className={errors.password ? 'form-control error' : 'form-control'}
+                placeholder="••••••••"
               />
             </div>
-            {errors.password && <span className="error-message">{errors.password}</span>}
+            {errors.password && (
+              <span className="error-message">
+                <FaExclamationCircle /> {errors.password}
+              </span>
+            )}
           </div>
 
-          <div className="form-group">
-            <div className="input-icon-wrapper">
+          <div className="input-group">
+            <label htmlFor="confirmPassword">Confirm Password</label>
+            <div className="input-field">
               <FaLock className="input-icon" />
               <input
                 type="password"
+                id="confirmPassword"
                 name="confirmPassword"
-                placeholder="Confirm New Password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className={errors.confirmPassword ? 'form-control error' : 'form-control'}
+                placeholder="••••••••"
               />
             </div>
             {errors.confirmPassword && (
-              <span className="error-message">{errors.confirmPassword}</span>
+              <span className="error-message">
+                <FaExclamationCircle /> {errors.confirmPassword}
+              </span>
             )}
           </div>
 
           <button type="submit" className="auth-button">
-            Reset Password
+            Reset Password <FaArrowRight className="arrow-icon" />
           </button>
         </form>
       </div>

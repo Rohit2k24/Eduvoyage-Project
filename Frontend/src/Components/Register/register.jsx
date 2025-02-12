@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaUserGraduate, FaUniversity, FaEnvelope, FaLock, FaUser, FaPassport, FaCalendar, FaBuilding, FaGlobe, FaSearch, FaPlus } from 'react-icons/fa';
+import { FaUserGraduate, FaUniversity, FaEnvelope, FaLock, FaUser, FaPassport, FaCalendar, FaBuilding, FaGlobe, FaSearch, FaPlus, FaExclamationCircle, FaArrowRight } from 'react-icons/fa';
 import { getCountries, getUniversitiesByCountry, countryNames } from '../../utils/universityData';
 import './Register.css';
 import Swal from 'sweetalert2';
@@ -317,77 +317,92 @@ const Register = ({ userType }) => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-box">
-        <div className="auth-header">
-          {userType === 'student' ? (
-            <FaUserGraduate className="auth-icon" />
-          ) : (
-            <FaUniversity className="auth-icon" />
-          )}
-          <h2>{verificationStep === 'form' ? 'Register' : 'Verify Email'}</h2>
+    <div className="registration-container">
+      <div className="registration-glass">
+        <div className="registration-header">
+          <div className="registration-icon">
+            {userType === 'student' ? <FaUserGraduate /> : <FaUniversity />}
+          </div>
+          <h1>{userType === 'student' ? 'Student Registration' : 'University Registration'}</h1>
+          <p>Create your {userType} account in minutes</p>
+        </div>
+
+        <div className="registration-progress">
+          <div className={`progress-step ${verificationStep === 'form' ? 'active' : ''}`}>
+            <span>1</span>
+            <p>Basic Information</p>
+          </div>
+          <div className={`progress-step ${verificationStep === 'code' ? 'active' : ''}`}>
+            <span>2</span>
+            <p>Email Verification</p>
+          </div>
         </div>
 
         {verificationStep === 'form' ? (
           <form onSubmit={(e) => {
             e.preventDefault();
             handleSendVerification();
-          }}>
-            <div className="form-group">
-              <div className="input-icon-wrapper">
-                <FaUser className="input-icon" />
+          }} className="registration-form">
+            <div className="form-grid">
+              <div className="input-group">
+                <label htmlFor="name">
+                  <FaUser className="input-icon" />
+                  {userType === 'student' ? 'Full Name' : 'Institution Name'}
+                </label>
                 <input
                   type="text"
+                  id="name"
                   name="name"
-                  placeholder={userType === 'student' ? "Student Name" : "Institution Name"}
                   value={formData.name}
                   onChange={handleChange}
-                  className={errors.name ? 'form-control error' : 'form-control'}
+                  placeholder="John Doe"
                 />
+                {errors.name && <span className="error-message"><FaExclamationCircle /> {errors.name}</span>}
               </div>
-              {errors.name && <span className="error-message">{errors.name}</span>}
-            </div>
 
-            <div className="form-group">
-              <div className="input-icon-wrapper">
-                <FaEnvelope className="input-icon" />
+              <div className="input-group">
+                <label htmlFor="email">
+                  <FaEnvelope className="input-icon" />
+                  Email Address
+                </label>
                 <input
                   type="email"
+                  id="email"
                   name="email"
-                  placeholder="Email Address"
                   value={formData.email}
                   onChange={handleChange}
-                  className={errors.email ? 'form-control error' : 'form-control'}
+                  placeholder="john@example.com"
                 />
+                {errors.email && <span className="error-message"><FaExclamationCircle /> {errors.email}</span>}
               </div>
-              {errors.email && <span className="error-message">{errors.email}</span>}
-            </div>
 
-            {userType === 'student' ? (
-              <>
-                <div className="form-group">
-                  <div className="input-icon-wrapper">
-                    <FaCalendar className="input-icon" />
+              {userType === 'student' ? (
+                <>
+                  <div className="input-group">
+                    <label htmlFor="dateOfBirth">
+                      <FaCalendar className="input-icon" />
+                      Date of Birth
+                    </label>
                     <input
                       type="date"
+                      id="dateOfBirth"
                       name="dateOfBirth"
-                      placeholder="Date of Birth"
                       value={formData.dateOfBirth}
                       onChange={handleChange}
-                      className={errors.dateOfBirth ? 'form-control error' : 'form-control'}
                     />
+                    {errors.dateOfBirth && <span className="error-message"><FaExclamationCircle /> {errors.dateOfBirth}</span>}
                   </div>
-                  {errors.dateOfBirth && <span className="error-message">{errors.dateOfBirth}</span>}
-                </div>
 
-                <div className="form-group">
-                  <div className="input-icon-wrapper">
-                    <FaGlobe className="input-icon" />
+                  <div className="input-group">
+                    <label htmlFor="country">
+                      <FaGlobe className="input-icon" />
+                      Nationality
+                    </label>
                     <select
+                      id="country"
                       name="country"
                       value={formData.country}
                       onChange={handleChange}
-                      className={errors.country ? 'form-control error' : 'form-control'}
                     >
                       <option value="">Select Country</option>
                       {countries.map(code => (
@@ -396,20 +411,21 @@ const Register = ({ userType }) => {
                         </option>
                       ))}
                     </select>
+                    {errors.country && <span className="error-message"><FaExclamationCircle /> {errors.country}</span>}
                   </div>
-                  {errors.country && <span className="error-message">{errors.country}</span>}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="form-group">
-                  <div className="input-icon-wrapper">
-                    <FaGlobe className="input-icon" />
+                </>
+              ) : (
+                <>
+                  <div className="input-group">
+                    <label htmlFor="country">
+                      <FaGlobe className="input-icon" />
+                      Institution Country
+                    </label>
                     <select
+                      id="country"
                       name="country"
                       value={formData.country}
                       onChange={handleChange}
-                      className={errors.country ? 'form-control error' : 'form-control'}
                     >
                       <option value="">Select Country</option>
                       {countries.map(code => (
@@ -418,168 +434,103 @@ const Register = ({ userType }) => {
                         </option>
                       ))}
                     </select>
+                    {errors.country && <span className="error-message"><FaExclamationCircle /> {errors.country}</span>}
                   </div>
-                  {errors.country && <span className="error-message">{errors.country}</span>}
-                </div>
 
-                <div className="form-group">
-                  <div className="input-icon-wrapper">
-                    <FaUniversity className="input-icon" />
+                  <div className="input-group">
+                    <label htmlFor="university">
+                      <FaUniversity className="input-icon" />
+                      Institution Name
+                    </label>
                     <select
+                      id="university"
                       name="university"
                       value={formData.university}
                       onChange={handleChange}
-                      className={errors.university ? 'form-control error' : 'form-control'}
                       disabled={!formData.country}
                     >
-                      <option value="">Select University</option>
+                      <option value="">Select Institution</option>
                       {universities.map((uni, index) => (
                         <option key={`${uni.name}-${index}`} value={uni.name}>
                           {uni.name}
                         </option>
                       ))}
-                      <option value="other">Other (Add Manually)</option>
+                      <option value="other">Other Institution</option>
                     </select>
+                    {errors.university && <span className="error-message"><FaExclamationCircle /> {errors.university}</span>}
                   </div>
-                  {errors.university && <span className="error-message">{errors.university}</span>}
-                </div>
+                </>
+              )}
 
-                {showCustomUniversity && (
-                  <div className="form-group">
-                    <div className="input-icon-wrapper">
-                      <FaPlus className="input-icon" />
-                      <input
-                        type="text"
-                        name="customUniversity"
-                        placeholder="Enter University Name"
-                        value={formData.customUniversity}
-                        onChange={handleChange}
-                        className={errors.customUniversity ? 'form-control error' : 'form-control'}
-                      />
-                    </div>
-                    {errors.customUniversity && <span className="error-message">{errors.customUniversity}</span>}
-                  </div>
-                )}
-
-                <div className="form-group">
-                  <div className="input-icon-wrapper">
-                    <FaBuilding className="input-icon" />
-                    <select
-                      name="accreditation"
-                      value={formData.accreditation}
-                      onChange={handleChange}
-                      className={errors.accreditation ? 'form-control error' : 'form-control'}
-                    >
-                      <option value="">Select Accreditation</option>
-                      {ACCREDITATIONS.map(accr => (
-                        <option key={accr} value={accr}>
-                          {accr}
-                        </option>
-                      ))}
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                  {errors.accreditation && <span className="error-message">{errors.accreditation}</span>}
-                </div>
-
-                {showCustomAccreditation && (
-                  <div className="form-group">
-                    <div className="input-icon-wrapper">
-                      <FaPlus className="input-icon" />
-                      <input
-                        type="text"
-                        name="customAccreditation"
-                        placeholder="Enter Accreditation"
-                        value={formData.customAccreditation}
-                        onChange={handleChange}
-                        className={errors.customAccreditation ? 'form-control error' : 'form-control'}
-                      />
-                    </div>
-                    {errors.customAccreditation && (
-                      <span className="error-message">{errors.customAccreditation}</span>
-                    )}
-                  </div>
-                )}
-
-                <div className="form-group">
-                  <div className="input-icon-wrapper">
-                    <FaCalendar className="input-icon" />
-                    <input
-                      type="number"
-                      name="establishmentYear"
-                      placeholder="Establishment Year"
-                      value={formData.establishmentYear}
-                      onChange={handleChange}
-                      className={errors.establishmentYear ? 'form-control error' : 'form-control'}
-                    />
-                  </div>
-                  {errors.establishmentYear && <span className="error-message">{errors.establishmentYear}</span>}
-                </div>
-              </>
-            )}
-
-            <div className="form-group">
-              <div className="input-icon-wrapper">
-                <FaLock className="input-icon" />
+              <div className="input-group">
+                <label htmlFor="password">
+                  <FaLock className="input-icon" />
+                  Password
+                </label>
                 <input
                   type="password"
+                  id="password"
                   name="password"
-                  placeholder="Password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={errors.password ? 'form-control error' : 'form-control'}
+                  placeholder="••••••••"
                 />
+                {errors.password && <span className="error-message"><FaExclamationCircle /> {errors.password}</span>}
               </div>
-              {errors.password && <span className="error-message">{errors.password}</span>}
-            </div>
 
-            <div className="form-group">
-              <div className="input-icon-wrapper">
-                <FaLock className="input-icon" />
+              <div className="input-group">
+                <label htmlFor="confirmPassword">
+                  <FaLock className="input-icon" />
+                  Confirm Password
+                </label>
                 <input
                   type="password"
+                  id="confirmPassword"
                   name="confirmPassword"
-                  placeholder="Confirm Password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={errors.confirmPassword ? 'form-control error' : 'form-control'}
+                  placeholder="••••••••"
                 />
+                {errors.confirmPassword && <span className="error-message"><FaExclamationCircle /> {errors.confirmPassword}</span>}
               </div>
-              {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
             </div>
 
-            <button type="submit" className="auth-button">
-              Continue
+            <button type="submit" className="registration-button">
+              Continue <FaArrowRight />
             </button>
           </form>
         ) : (
           <div className="verification-container">
-            <p>Please enter the verification code sent to {formData.email}</p>
-            <div className="form-group">
+            <div className="verification-icon">
+              <FaEnvelope />
+            </div>
+            <h2>Verify Your Email</h2>
+            <p>We've sent a 6-digit code to <strong>{formData.email}</strong></p>
+            
+            <div className="code-input">
               <input
                 type="text"
-                placeholder="Enter 6-digit code"
+                placeholder="• • • • • •"
                 value={verificationCode}
                 onChange={(e) => setVerificationCode(e.target.value)}
                 maxLength="6"
-                className="form-control"
               />
             </div>
-            <button onClick={handleVerifyAndRegister} className="auth-button">
-              Verify & Register
-            </button>
-            <button
-              onClick={() => handleSendVerification()}
-              className="auth-button secondary"
-            >
-              Resend Code
-            </button>
+
+            <div className="verification-actions">
+              <button onClick={handleVerifyAndRegister} className="verify-button">
+                Verify & Continue
+              </button>
+              <button onClick={() => handleSendVerification()} className="resend-button">
+                Resend Code
+              </button>
+            </div>
           </div>
         )}
 
-        <div className="auth-links">
-          <Link to="/login">Already have an account? Login</Link>
-        </div>
+        <p className="login-link">
+          Already have an account? <Link to="/login">Login here</Link>
+        </p>
       </div>
     </div>
   );

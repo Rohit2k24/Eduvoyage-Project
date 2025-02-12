@@ -17,8 +17,10 @@ exports.submitApplication = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse('Course ID is required', 400));
     }
 
-    // Check if course exists
-    const course = await Course.findById(courseId);
+    // Check if course exists and populate all necessary fields
+    const course = await Course.findById(courseId)
+      .populate('college', 'name');
+
     if (!course) {
       return next(new ErrorResponse('Course not found', 404));
     }
@@ -30,17 +32,37 @@ exports.submitApplication = asyncHandler(async (req, res, next) => {
     });
 
     if (existingApplication) {
-      return next(new ErrorResponse('You have already applied for this course', 400));
+      return res.status(400).json({
+        success: false,
+        message: 'You have already applied for this course',
+        application: existingApplication
+      });
     }
 
-    // Create application
+    // Check if seats are available
+    if (course.seats.available <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No seats available for this course'
+      });
+    }
+
+    // Create application first
     const application = await Application.create({
       student: req.user.id,
       course: courseId,
       status: 'pending'
     });
 
-    // Populate course details
+    // Update course seats in a separate operation
+    await Course.findByIdAndUpdate(courseId, {
+      $inc: { 'seats.available': -1 }
+    }, { 
+      new: true,
+      runValidators: true
+    });
+
+    // Populate application details for response
     await application.populate({
       path: 'course',
       select: 'name college',
@@ -57,6 +79,16 @@ exports.submitApplication = asyncHandler(async (req, res, next) => {
     });
   } catch (error) {
     console.error('Submit application error:', error);
+    
+    // If it's a validation error, send a more specific message
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid course data',
+        errors: Object.values(error.errors).map(err => err.message)
+      });
+    }
+
     return next(new ErrorResponse('Error submitting application', 500));
   }
 });
@@ -64,24 +96,31 @@ exports.submitApplication = asyncHandler(async (req, res, next) => {
 // @desc    Get all applications for a student
 // @route   GET /api/student/applications
 // @access  Private (Student only)
-exports.getApplications = asyncHandler(async (req, res, next) => {
-  const applications = await Application.find({ student: req.user.id })
-    .populate({
-      path: 'course',
-      select: 'name college',
-      populate: {
-        path: 'college',
-        select: 'name'
-      }
-    })
-    .sort('-createdAt');
+exports.getApplications = async (req, res) => {
+  try {
+    const applications = await Application.find({ student: req.user.id })
+      .populate({
+        path: 'course',
+        select: 'name college',
+        populate: {
+          path: 'college',
+          select: 'name'
+        }
+      })
+      .sort('-createdAt');
 
-  res.status(200).json({
-    success: true,
-    count: applications.length,
-    data: applications
-  });
-});
+    res.status(200).json({
+      success: true,
+      data: applications // Make sure this is an array, even if empty
+    });
+  } catch (error) {
+    console.error('Get applications error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching applications'
+    });
+  }
+};
 
 // @desc    Get single application
 // @route   GET /api/student/applications/:id

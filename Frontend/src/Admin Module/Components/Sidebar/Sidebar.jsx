@@ -26,7 +26,10 @@ const Sidebar = () => {
           <span>College Management</span>
         </Link>
 
-        <Link to="/admin/students" className={`nav-item ${isActive('/admin/students') ? 'active' : ''}`}>
+        <Link 
+          to="/admin/students" 
+          className={`nav-item ${isActive('/admin/students') ? 'active' : ''}`}
+        >
           <FaUserGraduate className="nav-icon" />
           <span>Student Management</span>
         </Link>

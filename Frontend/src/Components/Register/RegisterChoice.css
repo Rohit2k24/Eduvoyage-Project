@@ -1,75 +1,147 @@
-.register-choice-container {
+:root {
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --glass-bg: rgba(255, 255, 255, 0.95);
+  --text: #1e293b;
+  --text-light: #64748b;
+}
+
+.register-container {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-  padding: 20px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  padding: 2rem;
 }
 
-.register-choice-box {
-  background: rgba(255, 255, 255, 0.95);
-  padding: 40px;
-  border-radius: 15px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+.register-glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  border-radius: 1.5rem;
+  padding: 3rem;
   width: 100%;
-  max-width: 800px;
+  max-width: 1200px;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.register-choice-box h2 {
-  color: #1e3c72;
+.register-header {
   text-align: center;
-  margin-bottom: 30px;
-  font-size: 28px;
+  margin-bottom: 3rem;
 }
 
-.choice-cards {
+.register-header h1 {
+  font-size: 2.5rem;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.register-header p {
+  color: var(--text-light);
+  font-size: 1.1rem;
+}
+
+.choice-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-  margin-top: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin: 2rem 0;
 }
 
 .choice-card {
   background: white;
-  padding: 30px;
-  border-radius: 10px;
-  text-align: center;
-  text-decoration: none;
-  color: #2c3e50;
-  border: 2px solid #e1e5ea;
-  transition: all 0.3s ease;
+  border-radius: 1rem;
+  padding: 2rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.choice-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--primary);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.choice-card:hover::after {
+  transform: scaleX(1);
 }
 
 .choice-card:hover {
   transform: translateY(-5px);
-  border-color: #1e3c72;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.card-content {
+  text-align: center;
+}
+
+.icon-wrapper {
+  width: 80px;
+  height: 80px;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
 }
 
 .choice-icon {
-  font-size: 48px;
-  color: #1e3c72;
-  margin-bottom: 15px;
+  font-size: 2.5rem;
+  color: var(--primary);
 }
 
-.choice-card h3 {
-  font-size: 20px;
-  margin-bottom: 10px;
+.choice-card h2 {
+  font-size: 1.5rem;
+  color: var(--text);
+  margin-bottom: 1rem;
 }
 
 .choice-card p {
-  color: #666;
-  font-size: 14px;
-  line-height: 1.5;
+  color: var(--text-light);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
 }
 
-@media (max-width: 600px) {
-  .register-choice-box {
-    padding: 20px;
+.cta-text {
+  color: var(--primary);
+  font-weight: 600;
+  display: block;
+  transition: color 0.3s ease;
+}
+
+.choice-card:hover .cta-text {
+  color: var(--primary-hover);
+}
+
+.existing-account {
+  text-align: center;
+  color: var(--text-light);
+  margin-top: 2rem;
+}
+
+.existing-account a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .register-glass-panel {
+    padding: 2rem;
   }
   
-  .choice-cards {
+  .choice-grid {
     grid-template-columns: 1fr;
   }
 } 

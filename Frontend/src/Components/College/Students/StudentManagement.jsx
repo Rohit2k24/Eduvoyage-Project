@@ -16,7 +16,7 @@ const StudentManagement = () => {
 
   const fetchStudents = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/college/students', {
+      const response = await fetch('http://localhost:3000/api/admin/students', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

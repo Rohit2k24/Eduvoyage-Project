@@ -28,11 +28,19 @@ const CourseSchema = new mongoose.Schema({
   seats: {
     total: {
       type: Number,
-      required: [true, 'Please specify total seats']
+      required: [true, 'Please specify total seats'],
+      min: [0, 'Total seats cannot be negative']
     },
     available: {
       type: Number,
-      required: true
+      required: true,
+      min: [0, 'Available seats cannot be negative'],
+      validate: {
+        validator: function(value) {
+          return value <= this.seats.total;
+        },
+        message: 'Available seats cannot exceed total seats'
+      }
     }
   },
   eligibility: {
@@ -68,9 +76,31 @@ CourseSchema.index({ name: 'text', description: 'text' });
 
 // Middleware to update available seats
 CourseSchema.pre('save', function(next) {
-  if (!this.isNew && !this.seats.available) {
+  // Set available seats to total seats if it's a new course
+  if (this.isNew && !this.seats.available) {
     this.seats.available = this.seats.total;
   }
+  
+  // Ensure available seats stays within bounds
+  if (this.seats.available < 0) {
+    this.seats.available = 0;
+  }
+  if (this.seats.available > this.seats.total) {
+    this.seats.available = this.seats.total;
+  }
+  
+  next();
+});
+
+// Add middleware for updates
+CourseSchema.pre('findOneAndUpdate', function(next) {
+  const update = this.getUpdate();
+  
+  // If we're updating seats, ensure the values are valid
+  if (update.$inc && update.$inc['seats.available']) {
+    this.options.runValidators = true;
+  }
+  
   next();
 });
 

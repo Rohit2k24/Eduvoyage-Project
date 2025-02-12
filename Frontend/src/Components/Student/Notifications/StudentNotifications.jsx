@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { FaBell, FaCheck, FaTrash } from 'react-icons/fa';
-import StudentSidebar from '../Dashboard/StudentSidebar';
+import { FaBell, FaSpinner, FaCheck } from 'react-icons/fa';
+import StudentSidebar from '../Sidebar/StudentSidebar';
 import Swal from 'sweetalert2';
 import './StudentNotifications.css';
 
@@ -25,19 +25,17 @@ const StudentNotifications = () => {
       }
 
       const data = await response.json();
-      if (data.success) {
-        setNotifications(data.notifications);
-      }
+      setNotifications(data.notifications);
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching notifications:', error);
+      setLoading(false);
       Swal.fire({
         icon: 'error',
         title: 'Error',
         text: 'Failed to load notifications',
         confirmButtonColor: '#3498db'
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -50,92 +48,44 @@ const StudentNotifications = () => {
         }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to mark notification as read');
+      if (response.ok) {
+        setNotifications(notifications.map(notification => 
+          notification._id === notificationId 
+            ? { ...notification, read: true }
+            : notification
+        ));
       }
-
-      setNotifications(notifications.map(notification => 
-        notification._id === notificationId 
-          ? { ...notification, read: true }
-          : notification
-      ));
     } catch (error) {
       console.error('Error marking notification as read:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to mark notification as read',
-        confirmButtonColor: '#3498db'
-      });
     }
   };
 
-  const deleteNotification = async (notificationId) => {
-    try {
-      const result = await Swal.fire({
-        title: 'Are you sure?',
-        text: "You won't be able to revert this!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3498db',
-        cancelButtonColor: '#e74c3c',
-        confirmButtonText: 'Yes, delete it!'
-      });
-
-      if (result.isConfirmed) {
-        const response = await fetch(`http://localhost:3000/api/student/notifications/${notificationId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to delete notification');
-        }
-
-        setNotifications(notifications.filter(notification => notification._id !== notificationId));
-
-        Swal.fire({
-          icon: 'success',
-          title: 'Deleted!',
-          text: 'Notification has been deleted.',
-          confirmButtonColor: '#3498db',
-          timer: 1500,
-          showConfirmButton: false
-        });
-      }
-    } catch (error) {
-      console.error('Error deleting notification:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to delete notification',
-        confirmButtonColor: '#3498db'
-      });
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'application':
+        return <FaCheck className="notification-icon application" />;
+      case 'system':
+        return <FaBell className="notification-icon system" />;
+      default:
+        return <FaBell className="notification-icon" />;
     }
   };
 
   return (
-    <div className="student-notifications-layout">
+    <div className="notifications-layout">
       <StudentSidebar />
       
       <div className="notifications-main">
-        <div className="notifications-header">
-          <h1>Notifications</h1>
-          {notifications.length > 0 && (
-            <p>{notifications.filter(n => !n.read).length} unread notifications</p>
-          )}
-        </div>
+        <h1>Notifications</h1>
 
         {loading ? (
-          <div className="loading-spinner">
-            <div className="spinner"></div>
+          <div className="loading">
+            <FaSpinner className="spinner" />
             <p>Loading notifications...</p>
           </div>
         ) : notifications.length === 0 ? (
           <div className="no-notifications">
-            <FaBell />
+            <FaBell className="icon" />
             <h2>No Notifications</h2>
             <p>You're all caught up!</p>
           </div>
@@ -144,34 +94,15 @@ const StudentNotifications = () => {
             {notifications.map(notification => (
               <div 
                 key={notification._id} 
-                className={`notification-card ${!notification.read ? 'unread' : ''}`}
+                className={`notification-item ${!notification.read ? 'unread' : ''}`}
+                onClick={() => !notification.read && markAsRead(notification._id)}
               >
-                <div className="notification-icon">
-                  <FaBell />
-                </div>
+                {getNotificationIcon(notification.type)}
                 <div className="notification-content">
-                  <p>{notification.message}</p>
+                  <p className="notification-message">{notification.message}</p>
                   <span className="notification-time">
-                    {new Date(notification.createdAt).toLocaleString()}
+                    {new Date(notification.createdAt).toLocaleDateString()}
                   </span>
-                </div>
-                <div className="notification-actions">
-                  {!notification.read && (
-                    <button 
-                      onClick={() => markAsRead(notification._id)}
-                      className="mark-read-btn"
-                      title="Mark as read"
-                    >
-                      <FaCheck />
-                    </button>
-                  )}
-                  <button 
-                    onClick={() => deleteNotification(notification._id)}
-                    className="delete-btn"
-                    title="Delete notification"
-                  >
-                    <FaTrash />
-                  </button>
                 </div>
               </div>
             ))}

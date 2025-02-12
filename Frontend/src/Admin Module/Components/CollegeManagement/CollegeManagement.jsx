@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaCheck, FaTimes, FaEye } from 'react-icons/fa';
+import { FaCheck, FaTimes, FaEye, FaSearch, FaSort } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import './CollegeManagement.css';
 
@@ -105,62 +105,68 @@ const CollegeManagement = () => {
 
   return (
     <div className="college-management">
-      <h2>College Management</h2>
-      
-      <div className="college-list">
-        {loading ? (
-          <div className="loading">Loading colleges...</div>
-        ) : (
-          <table className="college-table">
-            <thead>
-              <tr>
-                <th>College Name</th>
-                <th>University</th>
-                <th>Location</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {colleges.map(college => (
-                <tr key={college._id}>
-                  <td>{college.name}</td>
-                  <td>{college.university}</td>
-                  <td>{college.address}</td>
-                  <td>
-                    <span className={`status-badge ${college.verificationStatus}`}>
-                      {college.verificationStatus}
-                    </span>
-                  </td>
-                  <td className="actions">
-                    <button 
-                      className="action-btn view"
-                      onClick={() => handleViewDetails(college)}
-                    >
-                      <FaEye />
-                    </button>
-                    {college.verificationStatus === 'pending' && (
-                      <>
-                        <button 
-                          className="action-btn approve"
-                          onClick={() => handleApprove(college._id)}
-                        >
-                          <FaCheck />
-                        </button>
-                        <button 
-                          className="action-btn reject"
-                          onClick={() => handleReject(college._id)}
-                        >
-                          <FaTimes />
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      <header className="management-header">
+        <h1>College Management</h1>
+        <div className="controls">
+          <div className="search-bar">
+            <FaSearch className="search-icon" />
+            <input type="text" placeholder="Search colleges..." />
+          </div>
+          <div className="filter-controls">
+            <button className="filter-btn">
+              <FaSort /> Sort By
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="college-grid">
+        {colleges.map(college => (
+          <div className="college-card" key={college._id}>
+            <div className="card-header">
+              <h3>{college.name}</h3>
+              <span className={`status ${college.verificationStatus}`}>
+                {college.verificationStatus}
+              </span>
+            </div>
+            
+            <div className="card-body">
+              <div className="info-row">
+                <label>University:</label>
+                <p>{college.university}</p>
+              </div>
+              <div className="info-row">
+                <label>Location:</label>
+                <p>{college.address}</p>
+              </div>
+            </div>
+
+            <div className="card-actions">
+              <button 
+                className="action-btn view"
+                onClick={() => handleViewDetails(college)}
+              >
+                <FaEye /> Details
+              </button>
+              {college.verificationStatus === 'pending' && (
+                <div className="approval-buttons">
+                  <button 
+                    className="action-btn approve"
+                    onClick={() => handleApprove(college._id)}
+                  >
+                    <FaCheck /> Approve
+                  </button>
+                  <button 
+                    className="action-btn reject"
+                    onClick={() => handleReject(college._id)}
+                  >
+                    <FaTimes /> Reject
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
       {selectedCollege && (

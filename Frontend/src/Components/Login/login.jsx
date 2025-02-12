@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { FcGoogle } from 'react-icons/fc';
+import { FaGithub, FaArrowRight, FaExclamationCircle } from 'react-icons/fa';
 import './Login.css';
 
 const Login = () => {
@@ -136,41 +138,72 @@ const Login = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-box">
-        <h2>Login to EduVoyage</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <input
-              type="email"
-              name="email"
-              placeholder="Email"
-              value={formData.email}
-              onChange={handleChange}
-              className={errors.email ? 'form-control error' : 'form-control'}
-            />
-            {errors.email && <span className="error-message">{errors.email}</span>}
+    <div className="login-container">
+      <div className="login-glass-card">
+        <div className="login-header">
+          <h1>Welcome Back! 👋</h1>
+          <p className="login-subtitle">Continue your journey with EduVoyage</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="login-form">
+          <div className="input-group">
+            <label htmlFor="email">Email Address</label>
+            <div className="input-field">
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="name@example.com"
+              />
+              {errors.email && <span className="error-message"><FaExclamationCircle /> {errors.email}</span>}
+            </div>
           </div>
 
-          <div className="form-group">
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              value={formData.password}
-              onChange={handleChange}
-              className={errors.password ? 'form-control error' : 'form-control'}
-            />
-            {errors.password && <span className="error-message">{errors.password}</span>}
+          <div className="input-group">
+            <label htmlFor="password">Password</label>
+            <div className="input-field">
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="••••••••"
+              />
+              {errors.password && <span className="error-message"><FaExclamationCircle /> {errors.password}</span>}
+            </div>
           </div>
 
-          <button type="submit" className="auth-button">Login</button>
+          <div className="login-options">
+            <div className="remember-me">
+              <input type="checkbox" id="remember" />
+              <label htmlFor="remember">Remember me</label>
+            </div>
+            <Link to="/forgot-password" className="forgot-password">Forgot Password?</Link>
+          </div>
+
+          <button type="submit" className="login-button">
+            Sign In <FaArrowRight className="arrow-icon" />
+          </button>
         </form>
 
-        <div className="auth-links">
-          <Link to="/forgot-password">Forgot Password?</Link>
-          <Link to="/register-redirect">Don't have an account? Register</Link>
+        <div className="social-login">
+          <p className="divider">Or continue with</p>
+          <div className="social-buttons">
+            <button type="button" className="social-button google">
+              <FcGoogle className="social-icon" /> Google
+            </button>
+            <button type="button" className="social-button github">
+              <FaGithub className="social-icon" /> GitHub
+            </button>
+          </div>
         </div>
+
+        <p className="register-link">
+          Don't have an account? <Link to="/register-redirect">Create account</Link>
+        </p>
       </div>
     </div>
   );

@@ -7,7 +7,14 @@ const {
   markNotificationAsRead,
   deleteNotification,
   getApplications,
-  downloadReceipt
+  downloadReceipt,
+  verifyPassport,
+  initiateDigilocker,
+  handleDigilockerCallback,
+  getProfile,
+  updateProfile,
+  getSettings,
+  updateSettings
 } = require('../controllers/studentController');
 
 const {
@@ -15,6 +22,12 @@ const {
   getApplication,
   cancelApplication
 } = require('../controllers/applicationController');
+
+const { 
+  getCoursesForStudent,
+  getCourseDetailsForStudent,
+  getAllCoursesForStudent
+} = require('../controllers/courseController');
 
 console.log('Initializing student routes');
 
@@ -41,6 +54,23 @@ router.get('/notifications', protect, getNotifications);
 router.put('/notifications/:id/read', protect, markNotificationAsRead);
 router.delete('/notifications/:id', protect, deleteNotification);
 router.get('/applications/:id/receipt', protect, downloadReceipt);
+
+// Passport routes
+router.post('/verify-passport', protect, verifyPassport);
+router.get('/digilocker/init', protect, initiateDigilocker);
+router.get('/digilocker/callback', protect, handleDigilockerCallback);
+
+// Profile routes
+router.get('/profile', protect, getProfile);
+router.put('/profile', protect, updateProfile);
+
+// Settings routes
+router.get('/settings', protect, getSettings);
+router.put('/settings', protect, updateSettings);
+
+// Course routes for students
+router.get('/courses', protect, getAllCoursesForStudent);
+router.get('/courses/:id', protect, getCourseDetailsForStudent);
 
 // Log registered routes
 console.log('Student Routes:');

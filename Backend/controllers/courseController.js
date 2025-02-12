@@ -246,4 +246,129 @@ exports.getCourse = async (req, res) => {
       message: error.message || 'Error fetching course'
     });
   }
+};
+
+exports.getCoursesForStudent = async (req, res) => {
+  try {
+    const courses = await Course.find()
+      .populate({
+        path: 'college',
+        select: 'name location'
+      })
+      .select('name description duration fees image college startDate applicationDeadline seats');
+
+    // Add additional filtering logic here if needed
+    const processedCourses = courses.map(course => ({
+      _id: course._id,
+      name: course.name,
+      description: course.description,
+      duration: course.duration,
+      fees: course.fees,
+      image: course.image || '/default-course.jpg',
+      college: {
+        name: course.college?.name || 'Unknown College',
+        location: course.college?.location || 'Location not specified'
+      },
+      startDate: course.startDate,
+      applicationDeadline: course.applicationDeadline,
+      availableSeats: course.seats.available
+    }));
+
+    res.status(200).json({
+      success: true,
+      courses: processedCourses
+    });
+  } catch (error) {
+    console.error('Error fetching courses for student:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching courses'
+    });
+  }
+};
+
+exports.getCourseDetailsForStudent = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id)
+      .populate({
+        path: 'college',
+        select: 'name location description facilities'
+      });
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      course: {
+        _id: course._id,
+        name: course.name,
+        description: course.description,
+        duration: course.duration,
+        fees: course.fees,
+        image: course.image,
+        eligibility: course.eligibility,
+        startDate: course.startDate,
+        applicationDeadline: course.applicationDeadline,
+        seats: course.seats,
+        college: {
+          name: course.college.name,
+          location: course.college.location,
+          description: course.college.description,
+          facilities: course.college.facilities
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching course details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching course details'
+    });
+  }
+};
+
+exports.getAllCoursesForStudent = async (req, res) => {
+  try {
+    console.log('Fetching all courses for student');
+    const courses = await Course.find({ })
+      .populate({
+        path: 'college',
+        select: 'name location'
+      })
+      .select('name description duration fees image college startDate applicationDeadline seats');
+
+    console.log(`Found ${courses.length} courses`);
+
+    const processedCourses = courses.map(course => ({
+      _id: course._id,
+      name: course.name,
+      description: course.description,
+      duration: course.duration,
+      fees: course.fees,
+      image: course.image || '/default-course.jpg',
+      college: {
+        name: course.college?.name || 'Unknown College',
+        location: course.college?.location || 'Location not specified'
+      },
+      startDate: course.startDate,
+      applicationDeadline: course.applicationDeadline,
+      availableSeats: course.seats.available
+    }));
+
+    res.status(200).json({
+      success: true,
+      courses: processedCourses
+    });
+  } catch (error) {
+    console.error('Error fetching courses:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching courses'
+    });
+  }
 }; 
