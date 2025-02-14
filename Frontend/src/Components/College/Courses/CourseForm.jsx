@@ -14,9 +14,13 @@ const CourseForm = () => {
     description: '',
     duration: '',
     fees: '',
-    availableSeats: '',
-    startDate: '',
+    seats: {
+      total: '',
+      available: ''
+    },
     eligibility: '',
+    startDate: '',
+    applicationDeadline: '',
     image: null
   });
 
@@ -44,10 +48,21 @@ const CourseForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    if (name.startsWith('seats.')) {
+      const [, field] = name.split('.');
+      setFormData(prev => ({
+        ...prev,
+        seats: {
+          ...prev.seats,
+          [field]: value
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleImageChange = (e) => {
@@ -62,63 +77,78 @@ const CourseForm = () => {
     setLoading(true);
 
     try {
-      const formDataToSend = new FormData();
-      
-      // Append all text fields
-      Object.keys(formData).forEach(key => {
-        if (key !== 'image') {
-          formDataToSend.append(key, formData[key]);
-        }
-      });
+      // Validate required fields
+      if (!formData.name || !formData.description || !formData.duration || 
+          !formData.fees || !formData.seats.total || !formData.eligibility || 
+          !formData.startDate || !formData.applicationDeadline) {
+        throw new Error('Please fill in all required fields');
+      }
 
-      // Append image if exists
+      // Validate numerical fields
+      const duration = Number(formData.duration);
+      const fees = Number(formData.fees);
+      const totalSeats = Number(formData.seats.total);
+
+      // Validate numerical values
+      if (!Number.isInteger(duration) || duration <= 0) {
+        throw new Error('Duration must be a positive whole number');
+      }
+      if (!Number.isFinite(fees) || fees < 0) {
+        throw new Error('Fees must be a non-negative number');
+      }
+      if (!Number.isInteger(totalSeats) || totalSeats <= 0) {
+        throw new Error('Total seats must be a positive whole number');
+      }
+
+      const formDataToSend = new FormData();
+
+      // Append basic fields with validated numbers
+      formDataToSend.append('name', formData.name.trim());
+      formDataToSend.append('description', formData.description.trim());
+      formDataToSend.append('duration', String(duration));
+      formDataToSend.append('fees', String(fees));
+      formDataToSend.append('seats[total]', String(totalSeats));
+      formDataToSend.append('eligibility', formData.eligibility.trim());
+      formDataToSend.append('startDate', formData.startDate);
+      formDataToSend.append('applicationDeadline', formData.applicationDeadline);
+
+      // Handle image
       if (formData.image instanceof File) {
         formDataToSend.append('image', formData.image);
+      }
+
+      // Log the FormData contents for debugging
+      for (let pair of formDataToSend.entries()) {
+        console.log('Form data entry:', pair[0], ':', pair[1]);
       }
 
       const url = id 
         ? `http://localhost:3000/api/college/courses/${id}`
         : 'http://localhost:3000/api/college/courses';
       
-      const method = id ? 'PUT' : 'POST';
-
-      console.log('Sending request to:', url);
-      console.log('Method:', method);
-      console.log('Token:', localStorage.getItem('token'));
-
       const response = await fetch(url, {
-        method,
+        method: id ? 'PUT' : 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: formDataToSend
       });
 
-      console.log('Response status:', response.status);
-      const responseText = await response.text();
-      console.log('Response text:', responseText);
-
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (error) {
-        console.error('Error parsing response:', error);
-        throw new Error('Invalid server response');
-      }
+      const data = await response.json();
+      console.log('Server response:', data);
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to submit course');
       }
 
-      if (data.success) {
-        Swal.fire({
-          icon: 'success',
-          title: `Course ${id ? 'Updated' : 'Added'} Successfully!`,
-          confirmButtonColor: '#3498db'
-        }).then(() => {
-          navigate('/college/courses');
-        });
-      }
+      Swal.fire({
+        icon: 'success',
+        title: `Course ${id ? 'Updated' : 'Added'} Successfully!`,
+        confirmButtonColor: '#3498db'
+      }).then(() => {
+        navigate('/college/courses');
+      });
+
     } catch (error) {
       console.error('Error submitting course:', error);
       Swal.fire({
@@ -163,13 +193,12 @@ const CourseForm = () => {
 
           <div className="form-row">
             <div className="form-group">
-              <label>Duration</label>
+              <label>Duration (in years)</label>
               <input
-                type="text"
+                type="number"
                 name="duration"
                 value={formData.duration}
                 onChange={handleInputChange}
-                placeholder="e.g., 4 years"
                 required
               />
             </div>
@@ -188,26 +217,27 @@ const CourseForm = () => {
 
           <div className="form-row">
             <div className="form-group">
-              <label>Available Seats</label>
+              <label>Total Seats</label>
               <input
                 type="number"
-                name="availableSeats"
-                value={formData.availableSeats}
+                name="seats.total"
+                value={formData.seats.total}
                 onChange={handleInputChange}
                 required
               />
             </div>
-
-            <div className="form-group">
-              <label>Start Date</label>
-              <input
-                type="date"
-                name="startDate"
-                value={formData.startDate}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
+            {id && (
+              <div className="form-group">
+                <label>Available Seats</label>
+                <input
+                  type="number"
+                  name="seats.available"
+                  value={formData.seats.available}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+            )}
           </div>
 
           <div className="form-group">
@@ -218,6 +248,30 @@ const CourseForm = () => {
               onChange={handleInputChange}
               required
             />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Start Date</label>
+              <input
+                type="date"
+                name="startDate"
+                value={formData.startDate}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Application Deadline</label>
+              <input
+                type="date"
+                name="applicationDeadline"
+                value={formData.applicationDeadline}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
           </div>
 
           <div className="form-group">
@@ -235,10 +289,18 @@ const CourseForm = () => {
           </div>
 
           <div className="form-actions">
-            <button type="button" onClick={() => navigate('/college/courses')} className="cancel-btn">
+            <button 
+              type="button" 
+              onClick={() => navigate('/college/courses')} 
+              className="cancel-btn"
+            >
               Cancel
             </button>
-            <button type="submit" className="submit-btn" disabled={loading}>
+            <button 
+              type="submit" 
+              className="submit-btn" 
+              disabled={loading}
+            >
               {loading ? 'Saving...' : (id ? 'Update Course' : 'Add Course')}
             </button>
           </div>

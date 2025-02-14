@@ -3,13 +3,14 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const fs = require('fs');
 
 // Import routes
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const collegeRoutes = require('./routes/college');
-const courseRoutes = require('./routes/course');
 const studentRoutes = require('./routes/student');
+const courseRoutes = require('./routes/course');
 
 // Load env vars
 dotenv.config();
@@ -29,6 +30,12 @@ app.use(express.urlencoded({ extended: true }));
 // Static folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+
 // Debug middleware - log all requests
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
@@ -44,9 +51,9 @@ app.get('/test', (req, res) => {
 // Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/college', collegeRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/college/courses', courseRoutes);
-app.use('/api/college', collegeRoutes);
 
 // Print all registered routes
 console.log('Registered Routes:');

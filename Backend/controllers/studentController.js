@@ -160,6 +160,8 @@ exports.deleteNotification = asyncHandler(async (req, res, next) => {
 // @route   GET /api/student/applications
 // @access  Private
 exports.getApplications = asyncHandler(async (req, res, next) => {
+  console.log('getApplications called');
+  console.log("student id:",req.user.id)
   const applications = await Application.find({ student: req.user.id })
     .sort('-createdAt')
     .populate({

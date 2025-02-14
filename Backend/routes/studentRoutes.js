@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const {
   getProfile,
-  updateProfile
+  updateProfile,
+  submitApplication
 } = require('../controllers/studentController');
 const multer = require('multer');
 const auth = require('../middleware/auth');
@@ -14,5 +15,6 @@ const upload = multer({
 
 router.get('/profile', auth, getProfile);
 router.put('/profile', auth, upload.single('profilePic'), updateProfile);
+router.post('/applications', auth, submitApplication);
 
 module.exports = router; 

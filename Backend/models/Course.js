@@ -29,7 +29,11 @@ const CourseSchema = new mongoose.Schema({
     total: {
       type: Number,
       required: [true, 'Please specify total seats'],
-      min: [0, 'Total seats cannot be negative']
+      min: [1, 'Total seats must be at least 1'],
+      validate: {
+        validator: Number.isInteger,
+        message: 'Total seats must be a whole number'
+      }
     },
     available: {
       type: Number,
@@ -37,9 +41,9 @@ const CourseSchema = new mongoose.Schema({
       min: [0, 'Available seats cannot be negative'],
       validate: {
         validator: function(value) {
-          return value <= this.seats.total;
+          return Number.isInteger(value) && value <= this.seats.total;
         },
-        message: 'Available seats cannot exceed total seats'
+        message: 'Available seats must be a whole number and cannot exceed total seats'
       }
     }
   },
@@ -68,39 +72,29 @@ const CourseSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
+}, {
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
 // Add indexes for better query performance
 CourseSchema.index({ college: 1, status: 1 });
 CourseSchema.index({ name: 'text', description: 'text' });
 
-// Middleware to update available seats
-CourseSchema.pre('save', function(next) {
-  // Set available seats to total seats if it's a new course
-  if (this.isNew && !this.seats.available) {
-    this.seats.available = this.seats.total;
-  }
-  
-  // Ensure available seats stays within bounds
-  if (this.seats.available < 0) {
-    this.seats.available = 0;
-  }
-  if (this.seats.available > this.seats.total) {
-    this.seats.available = this.seats.total;
-  }
-  
-  next();
+// Add virtual for occupied seats
+CourseSchema.virtual('seats.occupied').get(function() {
+  return this.seats.total - this.seats.available;
 });
 
-// Add middleware for updates
-CourseSchema.pre('findOneAndUpdate', function(next) {
-  const update = this.getUpdate();
-  
-  // If we're updating seats, ensure the values are valid
-  if (update.$inc && update.$inc['seats.available']) {
-    this.options.runValidators = true;
+// Pre-save middleware to handle seats
+CourseSchema.pre('save', function(next) {
+  if (this.isNew) {
+    // For new courses, set available seats equal to total seats
+    this.seats.available = this.seats.total;
+  } else if (this.seats.available > this.seats.total) {
+    // Ensure available seats never exceed total seats
+    this.seats.available = this.seats.total;
   }
-  
   next();
 });
 
