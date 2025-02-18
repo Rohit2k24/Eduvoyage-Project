@@ -161,23 +161,33 @@ exports.deleteNotification = asyncHandler(async (req, res, next) => {
 // @route   GET /api/student/applications
 // @access  Private
 exports.getApplications = asyncHandler(async (req, res, next) => {
-  console.log('getApplications called');
-  console.log("student id:",req.user.id)
-  const applications = await Application.find({ student: req.user.id })
-    .sort('-createdAt')
+  try {
+    console.log('Fetching applications for student:', req.user._id);
+
+    const applications = await Application.find({ 
+      student: req.user._id 
+    })
     .populate({
       path: 'course',
-      select: 'name college image',
+      select: 'name description fees duration college',
       populate: {
         path: 'college',
-        select: 'name'
+        select: 'name location'
       }
-    });
+    })
+    .sort('-createdAt');
 
-  res.status(200).json({
-    success: true,
-    applications
-  });
+    console.log('Found applications:', applications);
+
+    res.status(200).json({
+      success: true,
+      count: applications.length,
+      data: applications
+    });
+  } catch (error) {
+    console.error('Error fetching applications:', error);
+    next(new ErrorResponse('Error fetching applications', 500));
+  }
 });
 
 // @desc    Download application receipt
