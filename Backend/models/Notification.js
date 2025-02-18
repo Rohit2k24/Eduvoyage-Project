@@ -6,14 +6,27 @@ const NotificationSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  type: {
+  title: {
     type: String,
-    enum: ['application', 'system', 'course'],
     required: true
   },
   message: {
     type: String,
     required: true
+  },
+  type: {
+    type: String,
+    enum: [
+      'application_submitted',
+      'application_approved',
+      'application_rejected',
+      'application_cancelled',
+      'course_update',
+      'payment_received',
+      'document_required',
+      'general'
+    ],
+    default: 'general'
   },
   read: {
     type: Boolean,
@@ -31,6 +44,8 @@ const NotificationSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
+}, {
+  timestamps: true
 });
 
 module.exports = mongoose.model('Notification', NotificationSchema); 

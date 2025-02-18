@@ -18,7 +18,6 @@ const ApplicationSchema = new mongoose.Schema({
   },
   applicationNumber: {
     type: String,
-    required: true,
     unique: true
   },
   documents: [{
@@ -31,11 +30,30 @@ const ApplicationSchema = new mongoose.Schema({
 
 // Pre-save middleware to generate application number
 ApplicationSchema.pre('save', async function(next) {
-  if (!this.applicationNumber) {
-    const count = await this.constructor.countDocuments();
-    this.applicationNumber = `APP${new Date().getFullYear()}${(count + 1).toString().padStart(4, '0')}`;
+  try {
+    if (!this.applicationNumber) {
+      // Get the current year
+      const year = new Date().getFullYear();
+      
+      // Find the latest application number for the current year
+      const latestApp = await this.constructor.findOne({
+        applicationNumber: new RegExp(`^APP${year}`)
+      }).sort({ applicationNumber: -1 });
+
+      let nextNumber = 1;
+      if (latestApp && latestApp.applicationNumber) {
+        // Extract the number from the latest application number and increment it
+        const currentNumber = parseInt(latestApp.applicationNumber.replace(`APP${year}`, ''));
+        nextNumber = currentNumber + 1;
+      }
+
+      // Generate the new application number
+      this.applicationNumber = `APP${year}${nextNumber.toString().padStart(4, '0')}`;
+    }
+    next();
+  } catch (error) {
+    next(error);
   }
-  next();
 });
 
 // Add index for better query performance

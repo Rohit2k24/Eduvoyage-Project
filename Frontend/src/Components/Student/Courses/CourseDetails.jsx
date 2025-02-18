@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaUniversity, FaClock, FaRupeeSign, FaUsers } from 'react-icons/fa';
+import { FaArrowLeft, FaUniversity, FaClock, FaRupeeSign, FaUsers, FaSpinner } from 'react-icons/fa';
 import StudentSidebar from '../Sidebar/StudentSidebar';
 import Swal from 'sweetalert2';
 import './CourseDetails.css';
@@ -10,6 +10,7 @@ const CourseDetails = () => {
   const [loading, setLoading] = useState(true);
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchCourseDetails();
@@ -62,7 +63,21 @@ const CourseDetails = () => {
   };
 
   const handleApply = async () => {
+    if (isSubmitting) return;
+    
     try {
+      setIsSubmitting(true);
+      // Show loading state
+      Swal.fire({
+        title: 'Submitting Application',
+        text: 'Please wait...',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
       const response = await fetch('http://localhost:3000/api/student/applications', {
         method: 'POST',
         headers: {
@@ -73,24 +88,39 @@ const CourseDetails = () => {
       });
 
       const data = await response.json();
+      console.log('Application response:', data);
 
-      if (response.ok) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Application Submitted',
-          text: 'Your application has been submitted successfully!',
-          confirmButtonColor: '#3498db'
-        });
-      } else {
+      // Close loading dialog
+      Swal.close();
+
+      if (!response.ok || !data.success) {
         throw new Error(data.message || 'Failed to submit application');
       }
+
+      // Show success message
+      await Swal.fire({
+        icon: 'success',
+        title: 'Application Submitted',
+        html: `
+          Your application has been submitted successfully!<br>
+          Application Number: <strong>${data.data.applicationNumber}</strong>
+        `,
+        confirmButtonColor: '#3498db',
+        confirmButtonText: 'View Applications'
+      });
+
+      // Redirect to applications page
+      navigate('/student/applications');
     } catch (error) {
+      console.error('Application error:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: error.message,
+        text: error.message || 'Failed to submit application',
         confirmButtonColor: '#3498db'
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -258,8 +288,19 @@ const CourseDetails = () => {
               </div>
             </div>
 
-            <button onClick={handleApply} className="apply-button">
-              Apply Now
+            <button 
+              onClick={handleApply} 
+              className="apply-button"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <FaSpinner className="spinner" />
+                  Submitting...
+                </>
+              ) : (
+                'Apply Now'
+              )}
             </button>
           </div>
         )}

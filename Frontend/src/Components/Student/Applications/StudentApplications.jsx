@@ -9,6 +9,7 @@ const StudentApplications = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [cancellingIds, setCancellingIds] = useState(new Set());
 
   useEffect(() => {
     fetchApplications();
@@ -49,35 +50,47 @@ const StudentApplications = () => {
     try {
       const result = await Swal.fire({
         title: 'Cancel Application?',
-        text: 'Are you sure you want to cancel this application?',
+        text: 'Are you sure you want to cancel this application? This action cannot be undone.',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#3498db',
         cancelButtonColor: '#e74c3c',
-        confirmButtonText: 'Yes, cancel it!'
+        confirmButtonText: 'Yes, cancel it!',
+        cancelButtonText: 'No, keep it'
       });
 
       if (result.isConfirmed) {
+        setCancellingIds(prev => new Set([...prev, applicationId]));
+        setLoading(true);
+        console.log('Cancelling application:', applicationId);
+
         const response = await fetch(`http://localhost:3000/api/student/applications/${applicationId}`, {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
           }
         });
 
+        const data = await response.json();
+        console.log('Cancel response:', data);
+
         if (!response.ok) {
-          const data = await response.json();
           throw new Error(data.message || 'Failed to cancel application');
         }
 
-        Swal.fire({
+        // Show success message
+        await Swal.fire({
           icon: 'success',
           title: 'Application Cancelled',
-          text: 'Your application has been cancelled successfully',
+          text: data.message || 'Your application has been cancelled successfully',
           confirmButtonColor: '#3498db'
         });
-        
-        fetchApplications(); // Refresh the list
+
+        // Remove the cancelled application from state
+        setApplications(prevApplications => 
+          prevApplications.filter(app => app._id !== applicationId)
+        );
       }
     } catch (error) {
       console.error('Error cancelling application:', error);
@@ -87,6 +100,13 @@ const StudentApplications = () => {
         text: error.message || 'Failed to cancel application',
         confirmButtonColor: '#3498db'
       });
+    } finally {
+      setCancellingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(applicationId);
+        return newSet;
+      });
+      setLoading(false);
     }
   };
 
@@ -144,8 +164,16 @@ const StudentApplications = () => {
           <button 
             onClick={() => handleCancelApplication(application._id)}
             className="cancel-btn"
+            disabled={cancellingIds.has(application._id)}
           >
-            Cancel Application
+            {cancellingIds.has(application._id) ? (
+              <>
+                <FaSpinner className="spinner" />
+                Cancelling...
+              </>
+            ) : (
+              'Cancel Application'
+            )}
           </button>
         )}
         
@@ -153,6 +181,7 @@ const StudentApplications = () => {
           <button 
             onClick={() => handleDownloadReceipt(application._id)}
             className="download-btn"
+            disabled={loading}
           >
             <FaDownload /> Download Receipt
           </button>

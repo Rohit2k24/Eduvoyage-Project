@@ -2,6 +2,7 @@ const Application = require('../models/Application');
 const Course = require('../models/Course');
 const asyncHandler = require('../middleware/async');
 const ErrorResponse = require('../utils/errorResponse');
+const Notification = require('../models/Notification');
 
 // @desc    Submit new application
 // @route   POST /api/student/applications
@@ -9,15 +10,13 @@ const ErrorResponse = require('../utils/errorResponse');
 exports.submitApplication = asyncHandler(async (req, res, next) => {
   try {
     console.log('Submitting application - Request body:', req.body);
-    console.log('User:', req.user);
-    
     const { courseId } = req.body;
 
     if (!courseId) {
       return next(new ErrorResponse('Course ID is required', 400));
     }
 
-    // Check if course exists and populate all necessary fields
+    // Check if course exists and has available seats
     const course = await Course.findById(courseId)
       .populate('college', 'name');
 
@@ -27,15 +26,14 @@ exports.submitApplication = asyncHandler(async (req, res, next) => {
 
     // Check if student has already applied
     const existingApplication = await Application.findOne({
-      student: req.user.id,
+      student: req.user._id,
       course: courseId
     });
 
     if (existingApplication) {
       return res.status(400).json({
         success: false,
-        message: 'You have already applied for this course',
-        application: existingApplication
+        message: 'You have already applied for this course'
       });
     }
 
@@ -47,14 +45,17 @@ exports.submitApplication = asyncHandler(async (req, res, next) => {
       });
     }
 
-    // Create application first
-    const application = await Application.create({
-      student: req.user.id,
+    // Create application
+    const application = new Application({
+      student: req.user._id,
       course: courseId,
       status: 'pending'
     });
 
-    // Update course seats in a separate operation
+    // Save the application
+    await application.save();
+
+    // Update course seats
     await Course.findByIdAndUpdate(courseId, {
       $inc: { 'seats.available': -1 }
     }, { 
@@ -62,34 +63,68 @@ exports.submitApplication = asyncHandler(async (req, res, next) => {
       runValidators: true
     });
 
-    // Populate application details for response
-    await application.populate({
-      path: 'course',
-      select: 'name college',
-      populate: {
-        path: 'college',
-        select: 'name'
-      }
-    });
+    // Try to create notification, but don't fail if it errors
+    try {
+      await Notification.create({
+        user: req.user._id,
+        title: 'Application Submitted',
+        message: `Your application for ${course.name} has been submitted successfully. Application number: ${application.applicationNumber}`,
+        type: 'application_submitted'
+      });
+    } catch (notificationError) {
+      console.error('Error creating notification:', notificationError);
+      // Continue execution even if notification creation fails
+    }
 
+    // Return success response
     res.status(201).json({
       success: true,
       message: 'Application submitted successfully',
-      data: application
+      data: {
+        applicationId: application._id,
+        applicationNumber: application.applicationNumber,
+        courseName: course.name,
+        collegeName: course.college.name,
+        status: application.status
+      }
     });
   } catch (error) {
     console.error('Submit application error:', error);
     
-    // If it's a validation error, send a more specific message
-    if (error.name === 'ValidationError') {
+    // Check if application was created despite the error
+    if (error.code === 11000) { // Duplicate key error
       return res.status(400).json({
         success: false,
-        message: 'Invalid course data',
-        errors: Object.values(error.errors).map(err => err.message)
+        message: 'You have already applied for this course'
       });
     }
 
-    return next(new ErrorResponse('Error submitting application', 500));
+    // If application was created but there was an error in subsequent operations
+    try {
+      const application = await Application.findOne({
+        student: req.user._id,
+        course: req.body.courseId
+      });
+
+      if (application) {
+        // Return success even if notification creation failed
+        return res.status(201).json({
+          success: true,
+          message: 'Application submitted successfully',
+          data: {
+            applicationId: application._id,
+            applicationNumber: application.applicationNumber,
+            courseName: course.name,
+            collegeName: course.college.name,
+            status: application.status
+          }
+        });
+      }
+    } catch (findError) {
+      console.error('Error finding application:', findError);
+    }
+
+    next(new ErrorResponse('Error submitting application', 500));
   }
 });
 
@@ -150,25 +185,65 @@ exports.getApplication = asyncHandler(async (req, res, next) => {
 
 // @desc    Cancel application
 // @route   DELETE /api/student/applications/:id
-// @access  Private (Student only)
+// @access  Private
 exports.cancelApplication = asyncHandler(async (req, res, next) => {
-  const application = await Application.findOne({
-    _id: req.params.id,
-    student: req.user.id
-  });
+  try {
+    console.log('Cancelling application:', req.params.id);
+    console.log('Student ID:', req.user._id);
 
-  if (!application) {
-    return next(new ErrorResponse('Application not found', 404));
+    // Find application with both ID and student ID to ensure ownership
+    const application = await Application.findOne({
+      _id: req.params.id,
+      student: req.user._id
+    }).populate('course', 'name seats');
+
+    console.log('Found application:', application);
+
+    if (!application) {
+      return next(new ErrorResponse('Application not found or not authorized', 404));
+    }
+
+    // Check if application is already processed
+    if (application.status !== 'pending') {
+      return next(new ErrorResponse('Cannot cancel a processed application', 400));
+    }
+
+    // Get course details before deleting application
+    const courseName = application.course.name;
+
+    // Use deleteOne instead of remove
+    const deleteResult = await Application.deleteOne({ 
+      _id: application._id,
+      student: req.user._id 
+    });
+
+    console.log('Delete result:', deleteResult);
+
+    if (deleteResult.deletedCount === 0) {
+      return next(new ErrorResponse('Failed to delete application', 500));
+    }
+
+    // Update course available seats
+    await Course.findByIdAndUpdate(
+      application.course._id,
+      { $inc: { 'seats.available': 1 } },
+      { new: true }
+    );
+
+    // Create notification for cancellation
+    await Notification.create({
+      user: req.user._id,
+      title: 'Application Cancelled',
+      message: `Your application for ${courseName} has been cancelled.`,
+      type: 'application_cancelled'
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Application cancelled successfully'
+    });
+  } catch (error) {
+    console.error('Error cancelling application:', error);
+    next(new ErrorResponse(error.message || 'Error cancelling application', 500));
   }
-
-  if (application.status !== 'pending') {
-    return next(new ErrorResponse('Cannot cancel processed application', 400));
-  }
-
-  await application.remove();
-
-  res.status(200).json({
-    success: true,
-    message: 'Application cancelled successfully'
-  });
 }); 
