@@ -50,70 +50,44 @@ const uploadToCloudinary = async (file) => {
 
 exports.createCourse = asyncHandler(async (req, res) => {
   try {
-    console.log('Creating course - Request body:', req.body);
+    const college = await College.findOne({ user: req.user._id });
+    console.log('Found college:', college); // Debug log
     
-    // Parse seats data - ensure we're getting numbers
-    const seatsTotal = Number(req.body.seats.total);
-    console.log('req.body', req.body.seats.total)
-    console.log('Parsed seats total:', seatsTotal, typeof seatsTotal);
-
-    // Validate seats
-    if (!Number.isInteger(seatsTotal) || seatsTotal <= 0) {
-      return res.status(400).json({
+    if (!college) {
+      return res.status(404).json({
         success: false,
-        message: 'Total seats must be a positive whole number'
+        message: 'College not found'
       });
     }
 
-    // Create course data object with validated data
+    // Prepare course data
     const courseData = {
-      name: req.body.name.trim(),
-      description: req.body.description.trim(),
-      college: req.user.id,
-      duration: Number(req.body.duration),
-      fees: Number(req.body.fees),
+      ...req.body,
+      college: college._id,
       seats: {
-        total: seatsTotal,
-        available: seatsTotal // For new course, available = total
-      },
-      eligibility: req.body.eligibility.trim(),
-      startDate: req.body.startDate,
-      applicationDeadline: req.body.applicationDeadline
-    };
-
-    // Validate other numerical fields
-    if (!Number.isInteger(courseData.duration) || courseData.duration <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Duration must be a positive whole number'
-      });
-    }
-
-    if (!Number.isFinite(courseData.fees) || courseData.fees < 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Fees must be a non-negative number'
-      });
-    }
-
-    // Log the validated data
-    console.log('Validated course data:', courseData);
-
-    // Handle image upload
-    if (req.file) {
-      try {
-        console.log('Uploading file:', req.file);
-        const imageUrl = await uploadToCloudinary(req.file);
-        courseData.image = imageUrl;
-      } catch (uploadError) {
-        console.error('Image upload failed:', uploadError);
-        courseData.image = '/default-course.jpg';
+        total: parseInt(req.body.seats.total),
+        available: parseInt(req.body.seats.total)
       }
-    } else {
-      courseData.image = '/default-course.jpg';
+    };
+    console.log('Course data before creation:', courseData); // Debug log
+
+    // Handle image upload if present
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'eduvoyage/courses'
+      });
+      courseData.image = result.secure_url;
     }
 
     const course = await Course.create(courseData);
+    console.log('Created course:', course); // Debug log
+
+    // Populate college details before sending response
+    await course.populate({
+      path: 'college',
+      select: 'name location'
+    });
+    console.log('Populated course:', course); // Debug log
 
     res.status(201).json({
       success: true,
@@ -121,7 +95,7 @@ exports.createCourse = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error('Create course error:', error);
-    res.status(400).json({
+    res.status(500).json({
       success: false,
       message: error.message || 'Error creating course'
     });
@@ -370,8 +344,8 @@ exports.getCourseDetailsForStudent = asyncHandler(async (req, res) => {
 // Get all courses for a specific college
 exports.getCollegeCourses = asyncHandler(async (req, res) => {
   try {
-    // Find the college associated with the logged-in user
     const college = await College.findOne({ user: req.user._id });
+    console.log('Found college in get courses:', college); // Debug log
     
     if (!college) {
       return res.status(404).json({
@@ -379,33 +353,39 @@ exports.getCollegeCourses = asyncHandler(async (req, res) => {
         message: 'College not found'
       });
     }
-    console.log('college', college)
-    // Get all courses for this college with seats information
-    const courses = await Course.find({ college: college.user })
-      .select('name description duration fees image seats status')
-      .lean();
-    console.log('courses', courses)
-    // Process courses to include default values and format data
-    const processedCourses = courses.map(course => ({
-      _id: course._id,
-      name: course.name,
-      description: course.description || 'No description available',
-      duration: course.duration || 'Not specified',
-      fees: course.fees || 0,
-      image: course.image || '/default-course.jpg',
-      seats: {
-        total: course.seats?.total || 0,
-        available: course.seats?.available || 0,
-        occupied: (course.seats?.total || 0) - (course.seats?.available || 0)
-      },
-      college: {
-        name: college.name || 'Unknown College',
-        location: college.location || 'Location not specified'
-      },
-      status: course.status || 'inactive'
-    }));
 
-    console.log('Processed courses:', processedCourses);
+    const courses = await Course.find({ college: college._id })
+      .populate({
+        path: 'college',
+        select: 'name location'
+      })
+      .lean();
+    
+    console.log('Raw courses from DB:', courses); // Debug log
+
+    const processedCourses = courses.map(course => {
+      console.log('Processing course:', course); // Debug log for each course
+      return {
+        _id: course._id,
+        name: course.name,
+        description: course.description || 'No description available',
+        duration: course.duration || 'Not specified',
+        fees: course.fees || 0,
+        image: course.image || '/default-course.jpg',
+        seats: {
+          total: course.seats?.total || 0,
+          available: course.seats?.available || 0,
+          occupied: (course.seats?.total || 0) - (course.seats?.available || 0)
+        },
+        college: {
+          name: course.college?.name || 'Unknown College',
+          location: course.college?.location || 'Location not specified'
+        },
+        status: course.status || 'inactive'
+      };
+    });
+
+    console.log('Processed courses:', processedCourses); // Debug log
 
     res.status(200).json({
       success: true,
@@ -413,7 +393,7 @@ exports.getCollegeCourses = asyncHandler(async (req, res) => {
       courses: processedCourses
     });
   } catch (error) {
-    console.error('Error fetching college courses:', error);
+    console.error('Error fetching courses:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching courses'

@@ -12,6 +12,7 @@ const path = require('path');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const streamifier = require('streamifier');
 const User = require('../models/User');
+const College = require('../models/College');
 
 // @desc    Get student dashboard statistics
 // @route   GET /api/student/dashboard
@@ -467,5 +468,118 @@ exports.updateSettings = async (req, res) => {
       success: false,
       message: 'Error updating settings'
     });
+  }
+};
+
+// Update the getCourseDetails function
+exports.getCourseDetails = asyncHandler(async (req, res, next) => {
+  try {
+    console.log('Fetching course with ID:', req.params.id);
+    
+    // First check if the course exists
+    const course = await Course.findById(req.params.id);
+    if (!course) {
+      return next(new ErrorResponse('Course not found', 404));
+    }
+
+    // If course has no college reference, try to assign one
+    if (!course.college) {
+      console.log('No college reference found, attempting to assign one');
+      const college = await College.findOne();
+      if (college) {
+        course.college = college._id;
+        await course.save();
+      }
+    }
+
+    // Populate the college data
+    await course.populate({
+      path: 'college',
+      select: 'name description facilities location address university contactEmail phoneNumber accreditation establishmentYear'
+    });
+
+    console.log('Raw course data:', course);
+    console.log('College reference:', course.college);
+
+    // Create a clean object with all required fields
+    const formattedCourse = {
+      _id: course._id,
+      name: course.name,
+      description: course.description,
+      duration: course.duration,
+      fees: course.fees,
+      seats: course.seats,
+      image: course.image,
+      status: course.status,
+      eligibility: course.eligibility,
+      curriculum: course.curriculum || [],
+      startDate: course.startDate,
+      applicationDeadline: course.applicationDeadline,
+      college: course.college ? {
+        _id: course.college._id,
+        name: course.college.name,
+        description: course.college.description,
+        facilities: course.college.facilities,
+        university: course.college.university,
+        address: course.college.address,
+        contactEmail: course.college.contactEmail,
+        phoneNumber: course.college.phoneNumber,
+        accreditation: course.college.accreditation,
+        establishmentYear: course.college.establishmentYear
+      } : {
+        name: 'College information not available',
+        description: 'Description not available',
+        facilities: 'Facilities information not available',
+        location: 'Location not specified',
+        address: 'Address not specified',
+        contactEmail: 'Email not available',
+        phoneNumber: 'Phone number not available',
+        accreditation: 'Accreditation information not available',
+        establishmentYear: 'Establishment year not specified'
+      }
+    };
+
+    console.log('Formatted course data:', formattedCourse);
+
+    res.status(200).json({
+      success: true,
+      course: formattedCourse
+    });
+  } catch (error) {
+    console.error('Error in getCourseDetails:', error);
+    if (error.name === 'CastError') {
+      return next(new ErrorResponse('Invalid course ID', 400));
+    }
+    next(new ErrorResponse('Error fetching course details', 500));
+  }
+});
+
+const checkAndFixCourseData = async (courseId) => {
+  try {
+    const course = await Course.findById(courseId);
+    if (!course) {
+      throw new Error('Course not found');
+    }
+
+    let needsSave = false;
+
+    // Check and fix college reference
+    if (!course.college) {
+      const college = await College.findOne();
+      if (college) {
+        course.college = college._id;
+        needsSave = true;
+      }
+    }
+
+    // Save if needed
+    if (needsSave) {
+      await course.save();
+    }
+
+    return course;
+  } catch (error) {
+    console.error('Error in checkAndFixCourseData:', error);
+    throw error;
   }
 }; 

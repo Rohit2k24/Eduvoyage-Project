@@ -9,18 +9,37 @@ const collegeSchema = new mongoose.Schema({
   },
   name: {
     type: String,
-    required: true
+    required: [true, 'Please add a college name']
+  },
+  description: {
+    type: String,
+    required: [true, 'Please add a description']
+  },
+  location: {
+    type: String,
+    required: [true, 'Please specify location']
   },
   registrationNumber: {
     type: String,
     sparse: true, // This allows multiple null values
     unique: true  // But ensures uniqueness when value exists
   },
-  description: String,
-  address: String,
-  contactEmail: String,
-  phoneNumber: String,
-  facilities: String,
+  address: {
+    type: String,
+    required: [true, 'Please provide complete address']
+  },
+  contactEmail: {
+    type: String,
+    required: [true, 'Please provide contact email']
+  },
+  phoneNumber: {
+    type: String,
+    required: [true, 'Please provide phone number']
+  },
+  facilities: {
+    type: String,
+    required: [true, 'Please list available facilities']
+  },
   courses: String,
   country: {
     type: String,

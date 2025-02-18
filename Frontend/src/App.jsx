@@ -22,6 +22,7 @@ import StudentProfile from './Components/Student/Profile/StudentProfile'
 import StudentSettings from './Components/Student/Settings/StudentSettings'
 import AdminStudentManagement from './Admin Module/Components/StudentManagement/StudentManagement'
 // import StudentSupport from './Components/Student/Support/StudentSupport'
+import CourseDetails from './Components/Student/Courses/CourseDetails'
 import './App.css'
 
 function App() {
@@ -131,6 +132,12 @@ function App() {
         <Route path="/admin/students" element={
           <ProtectedRoute allowedRoles={['admin']}>
             <AdminStudentManagement />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/student/courses/:courseId" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <CourseDetails />
           </ProtectedRoute>
         } />
       </Routes>

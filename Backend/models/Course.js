@@ -4,75 +4,54 @@ const CourseSchema = new mongoose.Schema({
   name: {
     type: String,
     required: [true, 'Please add a course name'],
-    trim: true,
-    maxlength: [100, 'Course name cannot be more than 100 characters']
+    trim: true
   },
   description: {
     type: String,
-    required: [true, 'Please add a description'],
-    maxlength: [500, 'Description cannot be more than 500 characters']
+    required: [true, 'Please add a description']
+  },
+  duration: {
+    type: Number,
+    required: [true, 'Please specify duration']
+  },
+  fees: {
+    type: Number,
+    required: [true, 'Please specify fees']
   },
   college: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'College',
     required: true
   },
-  duration: {
-    type: Number,
-    required: [true, 'Please add course duration in years']
-  },
-  fees: {
-    type: Number,
-    required: [true, 'Please add course fees']
-  },
   seats: {
     total: {
       type: Number,
       required: [true, 'Please specify total seats'],
-      min: [1, 'Total seats must be at least 1'],
-      validate: {
-        validator: Number.isInteger,
-        message: 'Total seats must be a whole number'
-      }
+      min: 1
     },
     available: {
       type: Number,
       required: true,
-      min: [0, 'Available seats cannot be negative'],
-      validate: {
-        validator: function(value) {
-          return Number.isInteger(value) && value <= this.seats.total;
-        },
-        message: 'Available seats must be a whole number and cannot exceed total seats'
-      }
+      min: 0
     }
   },
-  eligibility: {
-    type: String,
-    required: [true, 'Please specify eligibility criteria']
-  },
-  startDate: {
-    type: Date,
-    required: [true, 'Please add course start date']
-  },
-  applicationDeadline: {
-    type: Date,
-    required: [true, 'Please add application deadline']
-  },
+  image: String,
   status: {
     type: String,
     enum: ['active', 'inactive'],
     default: 'active'
   },
-  image: {
+  eligibility: {
     type: String,
-    default: '/default-course.jpg'
+    required: [true, 'Please specify eligibility criteria']
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
+  curriculum: [{
+    type: String
+  }],
+  startDate: Date,
+  applicationDeadline: Date
 }, {
+  timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
@@ -95,6 +74,16 @@ CourseSchema.pre('save', function(next) {
     // Ensure available seats never exceed total seats
     this.seats.available = this.seats.total;
   }
+  next();
+});
+
+// Pre-find middleware to populate college with all necessary fields
+CourseSchema.pre(/^find/, function(next) {
+  this.populate({
+    path: 'college',
+    model: 'College',
+    select: 'name description facilities location address contactEmail phoneNumber accreditation establishmentYear'
+  });
   next();
 });
 

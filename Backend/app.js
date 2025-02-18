@@ -13,9 +13,9 @@ const courseRoutes = require('./routes/course');
 const studentRoutes = require('./routes/student');
 
 // Import models
+require('./models/Course');
 require('./models/Application');
 require('./models/Notification');
-require('./models/Course');
 
 dotenv.config();
 const app = express();

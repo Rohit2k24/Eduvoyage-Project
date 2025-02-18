@@ -120,6 +120,10 @@ const CourseList = () => {
     }
   };
 
+  const handleViewDetails = (courseId) => {
+    navigate(`/student/courses/${courseId}`);
+  };
+
   const filteredCourses = courses.filter(course => {
     return (
       course.name.toLowerCase().includes(filters.search.toLowerCase()) &&
@@ -210,13 +214,13 @@ const CourseList = () => {
             {filteredCourses.map(course => (
               <div key={course._id} className="course-card">
                 <div className="course-image">
-                  <img src={course.image} alt={course.name} />
+                  <img src={course.image || '/default-course.jpg'} alt={course.name} />
                 </div>
                 <div className="course-info">
                   <h3>{course.name}</h3>
                   <p className="college-name">
                     <FaUniversity className="icon" />
-                    {course.college.name}
+                    {course.college?.name || 'College name not available'}
                   </p>
                   <div className="course-details">
                     <span>
@@ -230,7 +234,7 @@ const CourseList = () => {
                   </div>
                   <div className="course-actions">
                     <button 
-                      onClick={() => navigate(`/student/courses/${course._id}`)}
+                      onClick={() => handleViewDetails(course._id)}
                       className="view-details-btn"
                     >
                       View Details

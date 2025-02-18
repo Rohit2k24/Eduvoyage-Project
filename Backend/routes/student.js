@@ -14,7 +14,8 @@ const {
   getProfile,
   updateProfile,
   getSettings,
-  updateSettings
+  updateSettings,
+  getCourseDetails
 } = require('../controllers/studentController');
 
 const {
@@ -25,9 +26,11 @@ const {
 
 const { 
   getCoursesForStudent,
-  getCourseDetailsForStudent,
   getAllCoursesForStudent
 } = require('../controllers/courseController');
+
+const College = require('../models/College');
+const Course = require('../models/Course');
 
 console.log('Initializing student routes');
 
@@ -70,7 +73,99 @@ router.put('/settings', protect, updateSettings);
 
 // Course routes for students
 router.get('/courses', protect, getAllCoursesForStudent);
-router.get('/courses/:id', protect, getCourseDetailsForStudent);
+router.get('/courses/:id', protect, getCourseDetails);
+
+// Add this debug route temporarily
+router.get('/debug/college/:id', protect, async (req, res) => {
+  try {
+    const college = await College.findById(req.params.id);
+    res.json({ success: true, college });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Debug route to check course and college data
+router.get('/debug/course-details/:id', protect, async (req, res) => {
+  try {
+    // Check if course exists
+    const courseExists = await Course.exists({ _id: req.params.id });
+    if (!courseExists) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Course not found' 
+      });
+    }
+
+    // Fetch course with college
+    const course = await Course.findById(req.params.id);
+    
+    // Check if college exists
+    const collegeExists = await College.exists({ _id: course.college });
+    
+    // Get college details
+    const college = await College.findById(course.college);
+
+    res.json({
+      success: true,
+      debug: {
+        courseId: req.params.id,
+        courseExists,
+        course,
+        collegeId: course.college,
+        collegeExists,
+        college
+      }
+    });
+  } catch (error) {
+    console.error('Debug route error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      stack: error.stack 
+    });
+  }
+});
+
+// Debug route to fix course college reference
+router.post('/debug/fix-course/:courseId', protect, async (req, res) => {
+  try {
+    // Get the first available college
+    const college = await College.findOne();
+    if (!college) {
+      return res.status(404).json({
+        success: false,
+        message: 'No colleges found in the database'
+      });
+    }
+
+    // Update the course with the college reference
+    const course = await Course.findByIdAndUpdate(
+      req.params.courseId,
+      { college: college._id },
+      { new: true }
+    ).populate('college');
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Course updated with college reference',
+      course
+    });
+  } catch (error) {
+    console.error('Fix course error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 // Log registered routes
 console.log('Student Routes:');
