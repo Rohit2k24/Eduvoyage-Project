@@ -592,4 +592,47 @@ const checkAndFixCourseData = async (courseId) => {
     console.error('Error in checkAndFixCourseData:', error);
     throw error;
   }
-}; 
+};
+
+// Get all colleges
+exports.getColleges = asyncHandler(async (req, res) => {
+  const colleges = await College.find({ verificationStatus: 'approved' })
+    .select('name location university documents totalCourses')
+    .lean();
+
+  // Add total courses count for each college
+  const collegesWithCounts = await Promise.all(colleges.map(async (college) => {
+    const totalCourses = await Course.countDocuments({ 
+      college: college._id,
+      status: 'active'
+    });
+    return { ...college, totalCourses };
+  }));
+
+  res.status(200).json({
+    success: true,
+    colleges: collegesWithCounts
+  });
+});
+
+// Get college details with courses
+exports.getCollegeDetails = asyncHandler(async (req, res) => {
+  const college = await College.findById(req.params.id)
+    .select('-user -__v')
+    .lean();
+
+  if (!college) {
+    return next(new ErrorResponse('College not found', 404));
+  }
+
+  const courses = await Course.find({
+    college: college._id,
+    status: 'active'
+  }).select('-__v').lean();
+
+  res.status(200).json({
+    success: true,
+    college,
+    courses
+  });
+}); 

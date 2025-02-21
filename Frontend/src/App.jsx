@@ -23,6 +23,9 @@ import StudentSettings from './Components/Student/Settings/StudentSettings'
 import AdminStudentManagement from './Admin Module/Components/StudentManagement/StudentManagement'
 // import StudentSupport from './Components/Student/Support/StudentSupport'
 import CourseDetails from './Components/Student/Courses/CourseDetails'
+import CollegeApplications from './Components/College/Applications/CollegeApplications'
+import CollegeList from './Components/Student/Colleges/CollegeList'
+import CollegeCourses from './Components/Student/Colleges/CollegeCourses'
 import './App.css'
 
 function App() {
@@ -138,6 +141,27 @@ function App() {
         <Route path="/student/courses/:courseId" element={
           <ProtectedRoute allowedRoles={['student']}>
             <CourseDetails />
+          </ProtectedRoute>
+        } />
+        
+        <Route 
+          path="/college/applications" 
+          element={
+            <ProtectedRoute allowedRoles={['college']}>
+              <CollegeApplications />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route path="/student/colleges" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <CollegeList />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/student/colleges/:collegeId/courses" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <CollegeCourses />
           </ProtectedRoute>
         } />
       </Routes>

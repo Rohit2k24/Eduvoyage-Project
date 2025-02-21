@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaUniversity, FaClock, FaRupeeSign, FaUsers, FaSpinner } from 'react-icons/fa';
+import { FaArrowLeft, FaClock, FaRupeeSign, FaUsers, FaSpinner, FaCalendarAlt } from 'react-icons/fa';
 import StudentSidebar from '../Sidebar/StudentSidebar';
 import Swal from 'sweetalert2';
 import './CourseDetails.css';
@@ -19,17 +19,6 @@ const CourseDetails = () => {
   const fetchCourseDetails = async () => {
     try {
       setLoading(true);
-      console.log('Fetching course details for ID:', courseId);
-
-      // Try to fix the course data first
-      await fetch(`http://localhost:3000/api/student/debug/fix-course/${courseId}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      // Then fetch the course details
       const response = await fetch(`http://localhost:3000/api/student/courses/${courseId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -37,17 +26,11 @@ const CourseDetails = () => {
       });
 
       const data = await response.json();
-      console.log('API Response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch course details');
       }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to fetch course details');
-      }
-
-      console.log('Setting course data:', data.course);
       setCourse(data.course);
     } catch (error) {
       console.error('Error fetching course details:', error);
@@ -67,7 +50,6 @@ const CourseDetails = () => {
     
     try {
       setIsSubmitting(true);
-      // Show loading state
       Swal.fire({
         title: 'Submitting Application',
         text: 'Please wait...',
@@ -88,16 +70,13 @@ const CourseDetails = () => {
       });
 
       const data = await response.json();
-      console.log('Application response:', data);
 
-      // Close loading dialog
       Swal.close();
 
       if (!response.ok || !data.success) {
         throw new Error(data.message || 'Failed to submit application');
       }
 
-      // Show success message
       await Swal.fire({
         icon: 'success',
         title: 'Application Submitted',
@@ -109,7 +88,6 @@ const CourseDetails = () => {
         confirmButtonText: 'View Applications'
       });
 
-      // Redirect to applications page
       navigate('/student/applications');
     } catch (error) {
       console.error('Application error:', error);
@@ -122,72 +100,6 @@ const CourseDetails = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const renderCollegeInfo = (college) => {
-    if (!college) {
-      console.log('No college data available');
-      return null;
-    }
-
-    console.log('Rendering college info:', college);
-
-    const collegeDetails = [
-      { 
-        title: 'Description', 
-        value: college.description,
-        fallback: 'Description not available'
-      },
-      { 
-        title: 'Facilities', 
-        value: college.facilities,
-        fallback: 'Facilities information not available'
-      },
-      { 
-        title: 'University', 
-        value: college.university,
-        fallback: 'University not specified'
-      },
-      { 
-        title: 'Address', 
-        value: college.address,
-        fallback: 'Address not specified'
-      },
-      { 
-        title: 'Contact Information', 
-        value: (
-          <>
-            <p>Email: {college.contactEmail || 'Email not available'}</p>
-            <p>Phone: {college.phoneNumber || 'Phone number not available'}</p>
-          </>
-        )
-      },
-      { 
-        title: 'Accreditation', 
-        value: college.accreditation,
-        fallback: 'Accreditation information not available'
-      },
-      { 
-        title: 'Established', 
-        value: college.establishmentYear,
-        fallback: 'Establishment year not specified'
-      }
-    ];
-
-    return (
-      <div className="college-details-grid">
-        {collegeDetails.map((detail, index) => (
-          <div key={index} className="college-detail">
-            <h3>{detail.title}</h3>
-            {typeof detail.value === 'object' ? (
-              detail.value
-            ) : (
-              <p>{detail.value || detail.fallback}</p>
-            )}
-          </div>
-        ))}
-      </div>
-    );
   };
 
   if (loading) {
@@ -208,35 +120,28 @@ const CourseDetails = () => {
     <div className="course-details-layout">
       <StudentSidebar />
       <div className="course-details-main">
-        <button onClick={() => navigate('/student/courses')} className="back-button">
-          <FaArrowLeft /> Back to Courses
+        <button onClick={() => navigate(-1)} className="back-button">
+          <FaArrowLeft /> Back
         </button>
 
         {course && (
           <div className="course-details-content">
             <div className="course-header">
-              <img src={course.image || '/default-course.jpg'} alt={course.name} className="course-image" />
-              <div className="course-header-info">
-                <h1>{course.name}</h1>
-                <p className="college-name">
-                  <FaUniversity className="icon" />
-                  {course.college?.name}
-                </p>
-                <p className="course-status">
-                  Status: <span className={`status-${course.status}`}>{course.status}</span>
-                </p>
-              </div>
+              <h1>{course.name}</h1>
+              <p className="course-status">
+                Status: <span className={`status-${course.status}`}>{course.status}</span>
+              </p>
             </div>
 
             <div className="course-info-grid">
               <div className="info-card">
                 <FaClock className="icon" />
                 <h3>Duration</h3>
-                <p>{course.duration} years</p>
+                <p>{course.duration} Years</p>
               </div>
               <div className="info-card">
                 <FaRupeeSign className="icon" />
-                <h3>Fees</h3>
+                <h3>Course Fee</h3>
                 <p>₹{course.fees.toLocaleString()}</p>
               </div>
               <div className="info-card">
@@ -244,64 +149,62 @@ const CourseDetails = () => {
                 <h3>Available Seats</h3>
                 <p>{course.seats.available} / {course.seats.total}</p>
               </div>
-            </div>
-
-            <div className="course-description">
-              <h2>Course Description</h2>
-              <p>{course.description}</p>
-              
-              <h3>Eligibility Criteria</h3>
-              <p>{course.eligibility}</p>
-
-              {course.curriculum && course.curriculum.length > 0 && (
-                <>
-                  <h3>Curriculum Highlights</h3>
-                  <ul className="curriculum-list">
-                    {course.curriculum.map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </div>
-
-            <div className="college-info">
-              <h2>About the College</h2>
-              {renderCollegeInfo(course.college)}
-            </div>
-
-            <div className="important-dates">
-              <h2>Important Dates</h2>
-              <div className="dates-grid">
-                {course.startDate && (
-                  <div className="date-item">
-                    <h3>Course Start Date</h3>
-                    <p>{new Date(course.startDate).toLocaleDateString()}</p>
-                  </div>
-                )}
-                {course.applicationDeadline && (
-                  <div className="date-item">
-                    <h3>Application Deadline</h3>
-                    <p>{new Date(course.applicationDeadline).toLocaleDateString()}</p>
-                  </div>
-                )}
+              <div className="info-card">
+                <FaCalendarAlt className="icon" />
+                <h3>Start Date</h3>
+                <p>{new Date(course.startDate).toLocaleDateString()}</p>
               </div>
             </div>
 
-            <button 
-              onClick={handleApply} 
-              className="apply-button"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <FaSpinner className="spinner" />
-                  Submitting...
-                </>
-              ) : (
-                'Apply Now'
-              )}
-            </button>
+            <div className="course-section">
+              <h2>Course Description</h2>
+              <p>{course.description}</p>
+            </div>
+
+            <div className="course-section">
+              <h2>Eligibility Criteria</h2>
+              <p>{course.eligibility}</p>
+            </div>
+
+            {course.curriculum && course.curriculum.length > 0 && (
+              <div className="course-section">
+                <h2>Curriculum Highlights</h2>
+                <ul className="curriculum-list">
+                  {course.curriculum.map((item, index) => (
+                    <li key={index}>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="application-section">
+              <div className="deadline-info">
+                <FaCalendarAlt className="icon" />
+                <div>
+                  <h3>Application Deadline</h3>
+                  <p>{new Date(course.applicationDeadline).toLocaleDateString()}</p>
+                </div>
+              </div>
+
+              <button 
+                onClick={handleApply} 
+                className="apply-button"
+                disabled={isSubmitting || course.seats.available === 0}
+              >
+                {isSubmitting ? (
+                  <>
+                    <FaSpinner className="spinner" />
+                    Submitting...
+                  </>
+                ) : course.seats.available === 0 ? (
+                  'No Seats Available'
+                ) : (
+                  'Apply Now'
+                )}
+              </button>
+            </div>
           </div>
         )}
       </div>

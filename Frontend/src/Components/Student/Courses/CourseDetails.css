@@ -1,156 +1,263 @@
 .course-details-layout {
   display: flex;
   min-height: 100vh;
-  background: #f8f9fa;
+  background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
 }
 
 .course-details-main {
   flex: 1;
   margin-left: 250px;
-  padding: 30px;
+  padding: 2rem;
 }
 
 .back-button {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: #e9ecef;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  background: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
+  color: #3b82f6;
+  font-weight: 500;
   cursor: pointer;
-  margin-bottom: 20px;
   transition: all 0.3s ease;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .back-button:hover {
-  background: #dee2e6;
   transform: translateX(-5px);
+  background: #f8fafc;
 }
 
 .course-details-content {
-  background: white;
-  border-radius: 12px;
-  padding: 30px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
 .course-header {
-  display: flex;
-  gap: 30px;
-  margin-bottom: 30px;
+  background: white;
+  padding: 2rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
-.course-image {
-  width: 300px;
-  height: 200px;
-  object-fit: cover;
-  border-radius: 12px;
+.course-header h1 {
+  font-size: 2.5rem;
+  color: #1e293b;
+  margin-bottom: 1rem;
+  background: linear-gradient(45deg, #1e293b, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.course-header-info {
-  flex: 1;
-}
-
-.course-header-info h1 {
-  margin: 0 0 10px 0;
-  color: #2c3e50;
-}
-
-.college-name {
-  display: flex;
+.course-status {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  color: #6c757d;
-  font-size: 1.1rem;
+  padding: 0.5rem 1rem;
+  background: #f8fafc;
+  border-radius: 20px;
+  font-size: 0.9rem;
+}
+
+.status-active {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.status-inactive {
+  color: #ef4444;
+  font-weight: 600;
 }
 
 .course-info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
 }
 
 .info-card {
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 10px;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 16px;
   text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.info-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
 }
 
 .info-card .icon {
-  font-size: 24px;
-  color: #3498db;
-  margin-bottom: 10px;
+  font-size: 1.75rem;
+  color: #3b82f6;
+  margin-bottom: 1rem;
 }
 
 .info-card h3 {
-  margin: 0 0 5px 0;
-  color: #6c757d;
+  color: #64748b;
   font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .info-card p {
-  margin: 0;
-  color: #2c3e50;
-  font-size: 1.2rem;
+  color: #1e293b;
+  font-size: 1.25rem;
   font-weight: 600;
 }
 
-.course-description,
-.college-info {
-  margin-bottom: 30px;
+.course-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
-.course-description h2,
-.college-info h2 {
-  color: #2c3e50;
-  margin-bottom: 15px;
+.course-section h2 {
+  color: #1e293b;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e2e8f0;
 }
 
-.course-description p,
-.college-info p {
-  color: #6c757d;
-  line-height: 1.6;
-}
-
-.college-info h3 {
-  color: #2c3e50;
-  margin: 20px 0 10px 0;
-}
-
-.apply-button {
-  display: block;
-  width: 100%;
-  padding: 15px;
-  background: #3498db;
-  color: white;
-  border: none;
-  border-radius: 8px;
+.course-section p {
+  color: #475569;
+  line-height: 1.8;
   font-size: 1.1rem;
-  cursor: pointer;
+}
+
+.curriculum-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.curriculum-list li {
+  background: #f8fafc;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  color: #475569;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   transition: all 0.3s ease;
 }
 
-.apply-button:hover {
-  background: #2980b9;
+.curriculum-list li::before {
+  content: '•';
+  color: #3b82f6;
+  font-size: 1.5rem;
+}
+
+.curriculum-list li:hover {
+  transform: translateX(5px);
+  background: #f1f5f9;
+}
+
+.application-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+}
+
+.deadline-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  flex: 1;
+}
+
+.deadline-info .icon {
+  font-size: 1.5rem;
+  color: #3b82f6;
+}
+
+.deadline-info h3 {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.deadline-info p {
+  color: #1e293b;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.apply-button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  background: linear-gradient(45deg, #3b82f6, #60a5fa);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 200px;
+  justify-content: center;
+}
+
+.apply-button:not(:disabled):hover {
+  background: linear-gradient(45deg, #2563eb, #3b82f6);
   transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
+}
+
+.apply-button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.apply-button .spinner {
+  animation: spin 1s linear infinite;
 }
 
 .loading {
-  text-align: center;
-  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 1rem;
 }
 
-.spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-left-color: #3498db;
+.loading .spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #3b82f6;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
   animation: spin 1s linear infinite;
-  margin: 0 auto 20px;
+}
+
+.loading p {
+  color: #64748b;
+  font-size: 1.1rem;
 }
 
 @keyframes spin {
@@ -159,109 +266,22 @@
   }
 }
 
-.college-details-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-top: 20px;
-}
+@media (max-width: 768px) {
+  .course-details-main {
+    margin-left: 0;
+    padding: 1rem;
+  }
 
-.college-detail {
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 10px;
-  transition: all 0.3s ease;
-}
+  .course-header h1 {
+    font-size: 2rem;
+  }
 
-.college-detail:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
+  .application-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
-.college-detail h3 {
-  color: #2c3e50;
-  margin-bottom: 10px;
-  font-size: 1.1rem;
-  border-bottom: 2px solid #e9ecef;
-  padding-bottom: 5px;
-}
-
-.college-detail p {
-  color: #6c757d;
-  margin-bottom: 5px;
-  line-height: 1.6;
-}
-
-.college-info {
-  background: white;
-  padding: 25px;
-  border-radius: 12px;
-  margin-top: 30px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.college-info h2 {
-  color: #2c3e50;
-  margin-bottom: 20px;
-  font-size: 1.5rem;
-  border-bottom: 2px solid #e9ecef;
-  padding-bottom: 10px;
-}
-
-.curriculum-list {
-  list-style-type: none;
-  padding: 0;
-  margin: 15px 0;
-}
-
-.curriculum-list li {
-  padding: 10px;
-  background: #f8f9fa;
-  margin-bottom: 5px;
-  border-radius: 5px;
-  color: #6c757d;
-}
-
-.dates-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-top: 20px;
-}
-
-.date-item {
-  background: #f8f9fa;
-  padding: 15px;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.date-item h3 {
-  color: #2c3e50;
-  margin-bottom: 5px;
-  font-size: 1rem;
-}
-
-.date-item p {
-  color: #6c757d;
-  font-weight: 600;
-}
-
-.status-active {
-  color: #2ecc71;
-  font-weight: 600;
-}
-
-.status-inactive {
-  color: #e74c3c;
-  font-weight: 600;
-}
-
-.important-dates {
-  margin: 30px 0;
-}
-
-.important-dates h2 {
-  color: #2c3e50;
-  margin-bottom: 15px;
+  .apply-button {
+    width: 100%;
+  }
 } 

@@ -1,96 +1,128 @@
 import { useState, useEffect } from 'react';
-import { FaUser, FaEnvelope, FaPhone, FaGraduationCap, FaPassport, FaSpinner, FaFileUpload, FaCamera, FaSave } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaPhone, FaGraduationCap, FaPassport, FaSpinner, FaFileUpload, FaCamera, FaSave, FaPlus, FaTrash, FaMapMarkerAlt, FaCheckCircle, FaEdit, FaCalendarAlt, FaExternalLinkAlt } from 'react-icons/fa';
 import StudentSidebar from '../Sidebar/StudentSidebar';
 import Swal from 'sweetalert2';
 import axios from 'axios';
 import './StudentProfile.css';
 
+// Configure axios
+const axiosInstance = axios.create({
+  baseURL: 'http://localhost:3000/api',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Add auth token to requests
+axiosInstance.interceptors.request.use(
+  config => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  error => Promise.reject(error)
+);
+
 const StudentProfile = () => {
   const [profile, setProfile] = useState({
-    name: 'Loading...',
-    email: 'Loading...',
-    phone: '',
-    education: {},
-    passport: {},
-    address: '',
-    profilePic: ''
-  });
-  const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     education: {
-      highestQualification: '',
-      institute: '',
-      yearOfCompletion: '',
-      percentage: ''
+      qualifications: [{
+        level: '',
+        qualification: '',
+        institute: '',
+        board: '',
+        yearOfCompletion: '',
+        percentage: ''
+      }],
+      highestQualification: ''
     },
     passport: {
       number: '',
-      document: null,
-      expiryDate: ''
+      expiryDate: '',
+      document: null
     },
     address: '',
     profilePic: ''
   });
+
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [formData, setFormData] = useState({ ...profile });
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState('');
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get('/student/profile');
+      
+      if (response.data.success) {
+        const profileData = response.data.profile;
+        setProfile({
+          ...profileData,
+          email: profileData.user.email || profileData.email
+        });
+        setFormData({
+          ...formData,
+          name: profileData.name || '',
+          email: profileData.user.email || profileData.email || '',
+          phone: profileData.phone || '',
+          education: profileData.education || {
+            qualifications: [{
+              level: '',
+              qualification: '',
+              institute: '',
+              board: '',
+              yearOfCompletion: '',
+              percentage: ''
+            }],
+            highestQualification: ''
+          },
+          passport: profileData.passport || {
+            number: '',
+            expiryDate: '',
+            document: null
+          },
+          address: profileData.address || '',
+          profilePic: profileData.profilePic || ''
+        });
+
+        if (profileData.profilePic) {
+          setPreview(profileData.profilePic);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.response?.data?.message || 'Failed to load profile'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchProfile();
   }, []);
 
-  const fetchProfile = async () => {
-    try {
-      const response = await axios.get('/api/student/profile', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      setProfile(response.data.profile);
-      setFormData({
-        name: response.data.profile.name,
-        email: response.data.profile.email,
-        phone: response.data.profile.phone || '',
-        education: response.data.profile.education || {
-          highestQualification: '',
-          institute: '',
-          yearOfCompletion: '',
-          percentage: ''
-        },
-        passport: response.data.profile.passport || {
-          number: '',
-          document: null,
-          expiryDate: ''
-        },
-        address: response.data.profile.address || '',
-        profilePic: response.data.profile.profilePic || ''
-      });
-      if (response.data.profile.profilePic) setPreview(response.data.profile.profilePic);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      setLoading(false);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to load profile',
-        confirmButtonColor: '#3498db'
-      });
-    }
-  };
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name.startsWith('education.')) {
-      const field = name.split('.')[1];
+    
+    // Handle nested fields
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
       setFormData(prev => ({
         ...prev,
-        education: {
-          ...prev.education,
-          [field]: value
+        [parent]: {
+          ...prev[parent],
+          [child]: value
         }
       }));
     } else {
@@ -101,11 +133,48 @@ const StudentProfile = () => {
     }
   };
 
-  const handleFileChange = (e) => {
+  // Add separate handler for passport fields
+  const handlePassportChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      passport: {
+        ...prev.passport,
+        [field]: value
+      }
+    }));
+  };
+
+  const handleProfilePicChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Invalid file type',
+          text: 'Please select an image file'
+        });
+        return;
+      }
+
+      // Validate file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        Swal.fire({
+          icon: 'error',
+          title: 'File too large',
+          text: 'Please select an image under 5MB'
+        });
+        return;
+      }
+
       setSelectedFile(file);
-      setPreview(URL.createObjectURL(file));
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -116,69 +185,171 @@ const StudentProfile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-
     try {
+      setLoading(true);
       const formDataToSend = new FormData();
-      formDataToSend.append('name', formData.name);
-      formDataToSend.append('email', formData.email);
-      formDataToSend.append('phone', formData.phone);
-      formDataToSend.append('education', JSON.stringify(formData.education));
-      formDataToSend.append('passportNumber', formData.passport.number);
-      formDataToSend.append('passportExpiryDate', formData.passport.expiryDate);
-      if (formData.passport.document) {
-        formDataToSend.append('passportDocument', formData.passport.document);
-      }
-      if (selectedFile) formDataToSend.append('profilePic', selectedFile);
-      formDataToSend.append('address', formData.address);
 
-      const response = await axios.put('/api/student/profile', formDataToSend, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+      // Append basic fields
+      ['name', 'email', 'phone', 'address'].forEach(field => {
+        formDataToSend.append(field, formData[field] || '');
+      });
+
+      // Append profile picture if selected
+      if (selectedFile) {
+        formDataToSend.append('profilePic', selectedFile);
+      }
+
+      // Handle education documents
+      const educationData = {
+        ...formData.education,
+        qualifications: formData.education.qualifications.map(qual => ({
+          level: qual.level,
+          qualification: qual.qualification,
+          institute: qual.institute,
+          board: qual.board,
+          yearOfCompletion: qual.yearOfCompletion,
+          percentage: qual.percentage,
+          documents: qual.documents instanceof File ? '' : qual.documents // Keep existing URL if not a new file
+        }))
+      };
+
+      // Append education data
+      formDataToSend.append('education', JSON.stringify(educationData));
+
+      // Append education documents separately
+      formData.education.qualifications.forEach((qual, index) => {
+        if (qual.documents instanceof File) {
+          formDataToSend.append('educationDocuments', qual.documents);
         }
       });
 
-      setProfile(response.data.profile);
-      setFormData({
-        name: response.data.profile.name,
-        email: response.data.profile.email,
-        phone: response.data.profile.phone || '',
-        education: response.data.profile.education || {
-          highestQualification: '',
-          institute: '',
-          yearOfCompletion: '',
-          percentage: ''
-        },
-        passport: response.data.profile.passport || {
-          number: '',
-          document: null,
-          expiryDate: ''
-        },
-        address: response.data.profile.address || '',
-        profilePic: response.data.profile.profilePic || ''
+      // Append passport data
+      const passportData = {
+        number: formData.passport.number || '',
+        expiryDate: formData.passport.expiryDate || '',
+        document: formData.passport.document instanceof File ? '' : formData.passport.document
+      };
+      formDataToSend.append('passport', JSON.stringify(passportData));
+
+      // Append files
+      if (formData.passport.document instanceof File) {
+        formDataToSend.append('passportDocument', formData.passport.document);
+      }
+
+      const response = await axiosInstance.put('/student/profile', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
-      setSelectedFile(null);
-      setPreview('');
-      Swal.fire({
-        icon: 'success',
-        title: 'Success',
-        text: 'Profile updated successfully',
-        confirmButtonColor: '#3498db'
-      });
-      setEditing(false);
-      fetchProfile();
+
+      if (response.data.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Success',
+          text: 'Profile updated successfully'
+        });
+        setEditing(false);
+        setSelectedFile(null);
+        fetchProfile();
+      }
     } catch (error) {
-      console.error('Update profile error:', error);
+      console.error('Error updating profile:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: error.response?.data?.message || 'Failed to update profile',
-        confirmButtonColor: '#3498db'
+        text: error.response?.data?.message || 'Failed to update profile'
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  // Update the passport document input handler
+  const handlePassportDocumentChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Check file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        Swal.fire({
+          icon: 'error',
+          title: 'File too large',
+          text: 'Please select a document under 5MB'
+        });
+        return;
+      }
+
+      // Check file type
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+      if (!allowedTypes.includes(file.type)) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Invalid file type',
+          text: 'Please select a PDF or image file'
+        });
+        return;
+      }
+
+      handlePassportChange('document', file);
+    }
+  };
+
+  const addQualification = () => {
+    setFormData(prev => ({
+      ...prev,
+      education: {
+        ...prev.education,
+        qualifications: [
+          ...(prev.education?.qualifications || []),
+          {
+            level: '',
+            qualification: '',
+            institute: '',
+            board: '',
+            yearOfCompletion: '',
+            percentage: '',
+            documents: null
+          }
+        ]
+      }
+    }));
+  };
+
+  const removeQualification = (index) => {
+    if (formData.education?.qualifications?.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        education: {
+          ...prev.education,
+          qualifications: prev.education.qualifications.filter((_, i) => i !== index)
+        }
+      }));
+    }
+  };
+
+  const handleEducationChange = (index, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      education: {
+        ...prev.education,
+        qualifications: (prev.education?.qualifications || []).map((qual, i) => {
+          if (i === index) {
+            return { ...qual, [field]: value };
+          }
+          return qual;
+        })
+      }
+    }));
+  };
+
+  const handleEducationDocumentChange = (index, file) => {
+    handleEducationChange(index, 'documents', file);
+  };
+
+  const isPassportValid = (expiryDate) => {
+    if (!expiryDate) return false;
+    const today = new Date();
+    const expiry = new Date(expiryDate);
+    return expiry > today;
   };
 
   return (
@@ -195,6 +366,41 @@ const StudentProfile = () => {
           </div>
         ) : (
           <div className="profile-content">
+            <div className="avatar-upload-section">
+              <div className="avatar-preview">
+                <img 
+                  src={preview || profile.profilePic || '/default-avatar.png'} 
+                  alt="Profile" 
+                />
+                {editing && (
+                  <label className="upload-overlay" title="Change profile picture">
+                    <FaCamera />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfilePicChange}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                )}
+              </div>
+              {editing && selectedFile && (
+                <div className="file-info">
+                  <span>{selectedFile.name}</span>
+                  <button 
+                    type="button" 
+                    className="remove-file"
+                    onClick={() => {
+                      setSelectedFile(null);
+                      setPreview(profile.profilePic || '/default-avatar.png');
+                    }}
+                  >
+                    <FaTrash />
+                  </button>
+                </div>
+              )}
+            </div>
+
             {editing ? (
               <form onSubmit={handleSubmit} className="profile-form">
                 <div className="form-group">
@@ -230,45 +436,129 @@ const StudentProfile = () => {
                 </div>
 
                 <div className="education-section">
-                  <h3><FaGraduationCap /> Education Details</h3>
-                  <div className="form-group">
-                    <label>Highest Qualification</label>
-                    <input
-                      type="text"
-                      name="education.highestQualification"
-                      value={formData.education.highestQualification}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Institute</label>
-                    <input
-                      type="text"
-                      name="education.institute"
-                      value={formData.education.institute}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Year of Completion</label>
-                      <input
-                        type="number"
-                        name="education.yearOfCompletion"
-                        value={formData.education.yearOfCompletion}
-                        onChange={handleInputChange}
-                      />
+                  <h3>
+                    <FaGraduationCap /> Education Details
+                    <button 
+                      type="button" 
+                      onClick={addQualification}
+                      className="add-qualification-btn"
+                    >
+                      <FaPlus /> Add Qualification
+                    </button>
+                  </h3>
+
+                  {formData.education?.qualifications?.map((qualification, index) => (
+                    <div key={index} className="qualification-card">
+                      <div className="qualification-header">
+                        <h4>Qualification {index + 1}</h4>
+                        {index > 0 && (
+                          <button 
+                            type="button" 
+                            onClick={() => removeQualification(index)}
+                            className="remove-qualification-btn"
+                          >
+                            <FaTrash />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Level</label>
+                          <select
+                            value={qualification.level}
+                            onChange={(e) => handleEducationChange(index, 'level', e.target.value)}
+                            required
+                          >
+                            <option value="">Select Level</option>
+                            <option value="10th">10th</option>
+                            <option value="12th">12th</option>
+                            <option value="diploma">Diploma</option>
+                            <option value="bachelor">Bachelor's Degree</option>
+                            <option value="master">Master's Degree</option>
+                          </select>
+                        </div>
+
+                        <div className="form-group">
+                          <label>Qualification Name</label>
+                          <input
+                            type="text"
+                            value={qualification.qualification}
+                            onChange={(e) => handleEducationChange(index, 'qualification', e.target.value)}
+                            placeholder="e.g., SSLC, HSC, B.Tech"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label>Institute Name</label>
+                        <input
+                          type="text"
+                          value={qualification.institute}
+                          onChange={(e) => handleEducationChange(index, 'institute', e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>Board/University</label>
+                        <input
+                          type="text"
+                          value={qualification.board}
+                          onChange={(e) => handleEducationChange(index, 'board', e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Year of Completion</label>
+                          <input
+                            type="number"
+                            value={qualification.yearOfCompletion}
+                            onChange={(e) => handleEducationChange(index, 'yearOfCompletion', e.target.value)}
+                            min="1900"
+                            max={new Date().getFullYear()}
+                            required
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label>Percentage/CGPA</label>
+                          <input
+                            type="text"
+                            value={qualification.percentage}
+                            onChange={(e) => handleEducationChange(index, 'percentage', e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label>Documents</label>
+                        <div className="document-upload">
+                          <label className="file-upload-label">
+                            <FaFileUpload className="icon" />
+                            Upload Certificate
+                            <input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              onChange={(e) => handleEducationDocumentChange(index, e.target.files[0])}
+                              style={{ display: 'none' }}
+                            />
+                          </label>
+                          {qualification.documents && (
+                            <span className="file-name">
+                              {qualification.documents instanceof File 
+                                ? qualification.documents.name 
+                                : 'Document uploaded'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="form-group">
-                      <label>Percentage/CGPA</label>
-                      <input
-                        type="text"
-                        name="education.percentage"
-                        value={formData.education.percentage}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
+                  ))}
                 </div>
 
                 <section className="profile-section">
@@ -277,43 +567,33 @@ const StudentProfile = () => {
                     <label>Passport Number</label>
                     <input
                       type="text"
-                      value={formData.passport.number}
-                      onChange={(e) => {
-                        const value = e.target.value.toUpperCase();
-                        if (value === '' || /^[A-Z][0-9]*$/.test(value)) {
-                          setFormData({
-                            ...formData,
-                            passport: {
-                              ...formData.passport,
-                              number: value
-                            }
-                          });
-                        }
-                      }}
-                      placeholder="Format: A1234567"
-                      maxLength={8}
+                      value={formData.passport.number || ''}
+                      onChange={(e) => handlePassportChange('number', e.target.value)}
+                      pattern="[A-Z][0-9]{7}"
+                      title="Please enter a valid passport number (e.g., A1234567)"
                     />
-                    {formData.passport.number && !validatePassportNumber(formData.passport.number) && (
-                      <span className="validation-error">
-                        Invalid passport number format. Should be 1 letter followed by 7 digits.
+                    {formData.passport.verified && (
+                      <span className="verification-badge">
+                        <FaCheckCircle /> Verified
                       </span>
                     )}
                   </div>
 
                   <div className="form-group">
                     <label>Passport Expiry Date</label>
-                    <input
-                      type="date"
-                      value={formData.passport.expiryDate}
-                      min={new Date().toISOString().split('T')[0]}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        passport: {
-                          ...formData.passport,
-                          expiryDate: e.target.value
-                        }
-                      })}
-                    />
+                    <div className="date-input-container">
+                      <input
+                        type="date"
+                        value={formData.passport.expiryDate || ''}
+                        min={new Date().toISOString().split('T')[0]}
+                        onChange={(e) => handlePassportChange('expiryDate', e.target.value)}
+                      />
+                      {formData.passport.expiryDate && (
+                        <span className={`passport-status ${isPassportValid(formData.passport.expiryDate) ? 'valid' : 'expired'}`}>
+                          {isPassportValid(formData.passport.expiryDate) ? 'Valid' : 'Expired'}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="document-upload">
@@ -323,23 +603,28 @@ const StudentProfile = () => {
                       <input
                         type="file"
                         accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (file) {
-                            setFormData({
-                              ...formData,
-                              passport: {
-                                ...formData.passport,
-                                document: file
-                              }
-                            });
-                          }
-                        }}
+                        onChange={handlePassportDocumentChange}
                         style={{ display: 'none' }}
                       />
                     </label>
                     {formData.passport.document && (
-                      <span className="file-name">{formData.passport.document.name}</span>
+                      <div className="document-info">
+                        <span className="file-name">
+                          {formData.passport.document instanceof File 
+                            ? formData.passport.document.name 
+                            : 'Document uploaded'}
+                        </span>
+                        {!(formData.passport.document instanceof File) && (
+                          <a 
+                            href={formData.passport.document}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="document-link"
+                          >
+                            View Current Document <FaExternalLinkAlt />
+                          </a>
+                        )}
+                      </div>
                     )}
                   </div>
                 </section>
@@ -352,35 +637,9 @@ const StudentProfile = () => {
                   />
                 </div>
 
-                <div className="avatar-upload-section">
-                  <div className="avatar-preview">
-                    {preview ? (
-                      <img src={preview} alt="Profile preview" />
-                    ) : (
-                      <FaUser className="default-avatar" />
-                    )}
-                    <label className="upload-overlay">
-                      <FaCamera />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        hidden
-                      />
-                    </label>
-                  </div>
-                  {selectedFile && (
-                    <p className="file-info">Selected file: {selectedFile.name}</p>
-                  )}
-                </div>
-
                 <div className="form-actions">
                   <button type="submit" className="save-btn" disabled={loading}>
-                    {loading ? 'Saving...' : (
-                      <>
-                        <FaSave /> Save Changes
-                      </>
-                    )}
+                    {loading ? 'Saving...' : <><FaSave /> Save Changes</>}
                   </button>
                   <button type="button" className="cancel-btn" onClick={() => setEditing(false)}>
                     Cancel
@@ -416,74 +675,96 @@ const StudentProfile = () => {
 
                 <div className="profile-section">
                   <h3>Education Details</h3>
-                  {profile?.education ? (
-                    <>
-                      <div className="info-item">
-                        <FaGraduationCap className="icon" />
-                        <div>
-                          <label>Highest Qualification</label>
-                          <p>{profile.education.highestQualification}</p>
-                        </div>
-                      </div>
-                      <div className="info-item">
-                        <div>
-                          <label>Institute</label>
-                          <p>{profile.education.institute}</p>
-                        </div>
-                      </div>
-                      <div className="info-row">
-                        <div className="info-item">
-                          <div>
-                            <label>Year of Completion</label>
-                            <p>{profile.education.yearOfCompletion}</p>
+                  {profile?.education?.qualifications?.length > 0 ? (
+                    profile.education.qualifications.map((qual, index) => (
+                      <div key={index} className="qualification-display">
+                        <h4>{qual.level} - {qual.qualification}</h4>
+                        <div className="qualification-details">
+                          <div className="info-item">
+                            <label>Institute</label>
+                            <p>{qual.institute}</p>
                           </div>
-                        </div>
-                        <div className="info-item">
-                          <div>
-                            <label>Percentage/CGPA</label>
-                            <p>{profile.education.percentage}</p>
+                          <div className="info-item">
+                            <label>Board/University</label>
+                            <p>{qual.board}</p>
                           </div>
+                          <div className="info-row">
+                            <div className="info-item">
+                              <label>Year of Completion</label>
+                              <p>{qual.yearOfCompletion}</p>
+                            </div>
+                            <div className="info-item">
+                              <label>Percentage/CGPA</label>
+                              <p>{qual.percentage}</p>
+                            </div>
+                          </div>
+                          {qual.documents && (
+                            <div className="info-item">
+                              <label>Documents</label>
+                              <a href={qual.documents} target="_blank" rel="noopener noreferrer">
+                                View Certificate
+                              </a>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </>
+                    ))
                   ) : (
                     <p className="no-data">No education details provided</p>
                   )}
                 </div>
 
-                <section className="profile-section">
+                <div className="profile-section">
                   <h3><FaPassport /> Passport Details</h3>
-                  <div className="info-row">
+                  <div className="info-item">
+                    <FaPassport className="icon" />
+                    <div>
+                      <label>Passport Number</label>
+                      <p>{profile?.passport?.number || 'Not provided'}</p>
+                      {profile?.passport?.verified && (
+                        <span className="verification-badge">
+                          <FaCheckCircle /> Verified
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="info-item">
+                    <FaCalendarAlt className="icon" />
+                    <div>
+                      <label>Expiry Date</label>
+                      <p>
+                        {profile?.passport?.expiryDate ? (
+                          <>
+                            {new Date(profile.passport.expiryDate).toLocaleDateString()}
+                            <span className={`passport-status ${isPassportValid(profile.passport.expiryDate) ? 'valid' : 'expired'}`}>
+                              {isPassportValid(profile.passport.expiryDate) ? 'Valid' : 'Expired'}
+                            </span>
+                          </>
+                        ) : (
+                          'Not provided'
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {profile?.passport?.document && (
                     <div className="info-item">
-                      <FaPassport className="icon" />
+                      <FaFileUpload className="icon" />
                       <div>
-                        <label>Passport Number</label>
-                        <p>{profile?.passport?.number || 'Not provided'}</p>
+                        <label>Passport Document</label>
+                        <a 
+                          href={profile.passport.document}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="document-link"
+                        >
+                          View Document <FaExternalLinkAlt />
+                        </a>
                       </div>
                     </div>
-                    {profile?.passport?.document && (
-                      <div className="info-item">
-                        <FaFileUpload className="icon" />
-                        <div>
-                          <label>Passport Document</label>
-                          <a 
-                            href={profile.passport.document}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="document-link"
-                          >
-                            View Document
-                          </a>
-                        </div>
-                      </div>
-                    )}
-                    {profile?.passport?.digilockerVerified && (
-                      <div className="verification-badge">
-                        <span className="verified">Verified via DigiLocker</span>
-                      </div>
-                    )}
-                  </div>
-                </section>
+                  )}
+                </div>
 
                 <button className="edit-btn" onClick={() => setEditing(true)}>
                   Edit Profile

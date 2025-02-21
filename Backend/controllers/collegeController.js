@@ -409,41 +409,163 @@ exports.getDashboardStats = async (req, res) => {
   }
 };
 
-// @desc    Get college applications
+// @desc    Get all applications for college
 // @route   GET /api/college/applications
-exports.getCollegeApplications = asyncHandler(async (req, res) => {
-  const college = await College.findOne({ user: req.user._id });
-  
-  const applications = await Application.find({ 'course.college': college._id })
+// @access  Private (College only)
+exports.getApplications = asyncHandler(async (req, res, next) => {
+  try {
+    // First find the college ID from the user
+    const college = await College.findOne({ user: req.user._id });
+    
+    if (!college) {
+      return next(new ErrorResponse('College not found', 404));
+    }
+
+    console.log('Found college:', college._id); // Debug log
+
+    // Find all courses belonging to this college
+    const courses = await Course.find({ college: college._id });
+    
+    console.log('Found courses:', courses.map(c => c._id)); // Debug log
+
+    if (!courses.length) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        applications: []
+      });
+    }
+
+    // Get all applications for these courses and populate student data
+    const applications = await Application.find({
+      course: { $in: courses.map(c => c._id) }
+    })
     .populate({
       path: 'student',
-      select: 'name email'
+      select: 'name phone user',
+      populate: {
+        path: 'user',
+        select: 'email'
+      }
     })
-    .populate('course', 'name');
+    .populate({
+      path: 'course',
+      select: 'name college',
+      populate: {
+        path: 'college',
+        select: '_id name'
+      }
+    })
+    .sort({ createdAt: -1 });
 
-  res.status(200).json({ success: true, data: applications });
+    console.log('Found applications:', applications.length); // Debug log
+
+    res.status(200).json({
+      success: true,
+      count: applications.length,
+      applications: applications.map(app => ({
+        _id: app._id,
+        applicationNumber: app.applicationNumber,
+        status: app.status,
+        createdAt: app.createdAt,
+        course: {
+          _id: app.course?._id,
+          name: app.course?.name,
+          college: app.course?.college?._id
+        },
+        student: {
+          _id: app.student?._id,
+          name: app.student?.name,
+          phone: app.student?.phone,
+          email: app.student?.user?.email
+        }
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error fetching applications:', error);
+    return next(new ErrorResponse('Error fetching applications', 500));
+  }
 });
 
 // @desc    Update application status
-// @route   PUT /api/college/applications/:id
+// @route   PUT /api/college/applications/:id/status
+// @access  Private (College only)
 exports.updateApplicationStatus = asyncHandler(async (req, res, next) => {
-  const { status } = req.body;
-  const application = await Application.findByIdAndUpdate(
-    req.params.id,
-    { status },
-    { new: true, runValidators: true }
-  );
+  try {
+    const { status, remarks } = req.body;
+    
+    // First find the college associated with the logged-in user
+    const college = await College.findOne({ user: req.user._id });
+    if (!college) {
+      return next(new ErrorResponse('College not found', 404));
+    }
 
-  if (!application) {
-    return next(new ErrorResponse('Application not found', 404));
+    // Find the application with populated course and college
+    const application = await Application.findById(req.params.id)
+      .populate({
+        path: 'course',
+        populate: {
+          path: 'college'
+        }
+      });
+
+    if (!application) {
+      return next(new ErrorResponse('Application not found', 404));
+    }
+
+    // Debug logs
+    console.log('College ID from user:', college._id);
+    console.log('Application course college:', application.course?.college?._id);
+    console.log('Application:', {
+      id: application._id,
+      courseId: application.course?._id,
+      collegeId: application.course?.college?._id
+    });
+
+    // Verify that the application belongs to a course in this college
+    if (!application.course?.college?._id || 
+        application.course.college._id.toString() !== college._id.toString()) {
+      return next(new ErrorResponse('Not authorized to update this application', 403));
+    }
+
+    // Don't allow status update if application is already paid
+    if (application.status === 'paid') {
+      return next(new ErrorResponse('Cannot update status of paid application', 400));
+    }
+
+    // Update application status
+    application.status = status;
+    if (remarks) {
+      application.remarks = remarks;
+    }
+
+    await application.save();
+
+    // Create notification for student
+    await Notification.create({
+      user: application.student,
+      title: `Application ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+      message: `Your application for ${application.course.name} has been ${status}.${remarks ? ` Remarks: ${remarks}` : ''}`,
+      type: `application_${status}`,
+      relatedId: application._id,
+      onModel: 'Application'
+    });
+
+    // Send response
+    res.status(200).json({
+      success: true,
+      data: {
+        _id: application._id,
+        status: application.status,
+        applicationNumber: application.applicationNumber,
+        remarks: application.remarks,
+        updatedAt: application.updatedAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Update application error:', error);
+    return next(new ErrorResponse('Error updating application status', 500));
   }
-
-  // Create notification
-  await Notification.create({
-    user: application.student,
-    type: 'application',
-    message: `Your application for ${application.course.name} has been ${status}`
-  });
-
-  res.status(200).json({ success: true, data: application });
 }); 

@@ -9,7 +9,9 @@ const collegeSchema = new mongoose.Schema({
   },
   name: {
     type: String,
-    required: [true, 'Please add a college name']
+    required: [true, 'Please add a name'],
+    trim: true,
+    maxlength: [50, 'Name can not be more than 50 characters']
   },
   description: {
     type: String,
@@ -17,7 +19,7 @@ const collegeSchema = new mongoose.Schema({
   },
   location: {
     type: String,
-    required: [true, 'Please specify location']
+    required: [true, 'Please add a location']
   },
   registrationNumber: {
     type: String,
@@ -26,20 +28,19 @@ const collegeSchema = new mongoose.Schema({
   },
   address: {
     type: String,
-    required: [true, 'Please provide complete address']
+    required: [true, 'Please add an address']
   },
   contactEmail: {
     type: String,
-    required: [true, 'Please provide contact email']
+    required: [true, 'Please add a contact email']
   },
   phoneNumber: {
     type: String,
-    required: [true, 'Please provide phone number']
+    required: [true, 'Please add a phone number']
   },
-  facilities: {
-    type: String,
-    required: [true, 'Please list available facilities']
-  },
+  facilities: [{
+    type: String
+  }],
   courses: String,
   country: {
     type: String,
@@ -47,15 +48,13 @@ const collegeSchema = new mongoose.Schema({
   },
   university: {
     type: String,
-    required: true
+    required: [true, 'Please add a university name']
   },
   accreditation: {
-    type: String,
-    required: true
+    type: String
   },
   establishmentYear: {
-    type: Number,
-    required: true
+    type: Number
   },
   verificationStatus: {
     type: String,
@@ -63,10 +62,7 @@ const collegeSchema = new mongoose.Schema({
     default: 'pending'
   },
   documents: {
-    registrationCertificate: String,
-    accreditationCertificate: String,
-    collegeLogo: String,
-    collegeImages: [String]
+    type: Object
   },
   paymentStatus: {
     type: String,

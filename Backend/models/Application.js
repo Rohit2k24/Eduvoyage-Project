@@ -13,8 +13,18 @@ const ApplicationSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
+    enum: ['pending', 'approved', 'rejected', 'paid'],
     default: 'pending'
+  },
+  payment: {
+    paid: {
+      type: Boolean,
+      default: false
+    },
+    paidAt: Date,
+    amount: Number,
+    transactionId: String,
+    orderId: String
   },
   applicationNumber: {
     type: String,
@@ -25,7 +35,9 @@ const ApplicationSchema = new mongoose.Schema({
   }],
   remarks: String,
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
 // Pre-save middleware to generate application number
@@ -56,9 +68,9 @@ ApplicationSchema.pre('save', async function(next) {
   }
 });
 
-// Add index for better query performance
-ApplicationSchema.index({ student: 1, course: 1 }, { unique: true });
+// Add indexes for better performance
+ApplicationSchema.index({ student: 1 });
+ApplicationSchema.index({ course: 1 });
 ApplicationSchema.index({ status: 1 });
-ApplicationSchema.index({ applicationNumber: 1 });
 
 module.exports = mongoose.model('Application', ApplicationSchema); 

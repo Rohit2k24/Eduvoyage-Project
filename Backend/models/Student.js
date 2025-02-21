@@ -10,53 +10,46 @@ const StudentSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please add a name']
   },
+  email: {
+    type: String,
+    required: [true, 'Please add an email'],
+    match: [
+      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+      'Please add a valid email'
+    ]
+  },
+  phone: {
+    type: String
+  },
   dateOfBirth: {
-    type: Date,
-    required: true
+    type: Date
   },
   country: {
-    type: String,
-    required: true
+    type: String
   },
-  phone: String,
   education: {
-    highestQualification: String,
-    institute: String,
-    yearOfCompletion: Number,
-    percentage: String
+    qualifications: [{
+      level: String,
+      qualification: String,
+      institute: String,
+      board: String,
+      yearOfCompletion: Number,
+      percentage: String,
+      documents: String
+    }],
+    highestQualification: String
   },
   passport: {
-    number: {
-      type: String,
-      unique: true,
-      sparse: true,
-      validate: {
-        validator: function(v) {
-          // Passport number format: A1234567 (1 letter followed by 7 digits)
-          return /^[A-Z][0-9]{7}$/.test(v);
-        },
-        message: props => `${props.value} is not a valid passport number! Format should be: A1234567`
-      }
-    },
-    document: String, // URL to passport document
+    number: String,
+    document: String,
+    expiryDate: Date,
     verified: {
       type: Boolean,
       default: false
-    },
-    digilockerVerified: {
-      type: Boolean,
-      default: false
-    },
-    expiryDate: {
-      type: Date,
-      validate: {
-        validator: function(v) {
-          return v > new Date();
-        },
-        message: 'Passport must not be expired'
-      }
     }
   },
+  address: String,
+  profilePic: String,
   profileImage: String,
   status: {
     type: String,
@@ -89,6 +82,20 @@ const StudentSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true
+});
+
+// Add a pre-save middleware to sync email with User model
+StudentSchema.pre('save', async function(next) {
+  if (this.isModified('email')) {
+    try {
+      await mongoose.model('User').findByIdAndUpdate(this.user, {
+        email: this.email
+      });
+    } catch (error) {
+      console.error('Error syncing email:', error);
+    }
+  }
+  next();
 });
 
 module.exports = mongoose.model('Student', StudentSchema); 

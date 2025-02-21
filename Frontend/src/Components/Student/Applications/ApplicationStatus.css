@@ -1,16 +1,68 @@
 .application-status {
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.status-badge {
+  display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  border-radius: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .status-icon {
+  font-size: 1.1rem;
+}
+
+.status-icon.approved {
+  color: #28a745;
+}
+
+.status-icon.rejected {
+  color: #dc3545;
+}
+
+.status-icon.pending {
+  color: #ffc107;
+}
+
+.payment-btn,
+.receipt-btn {
   display: flex;
   align-items: center;
-  font-size: 1.1rem;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.payment-btn {
+  background: #28a745;
+  color: white;
+}
+
+.receipt-btn {
+  background: #17a2b8;
+  color: white;
+}
+
+.payment-btn:hover,
+.receipt-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.payment-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .status-info {

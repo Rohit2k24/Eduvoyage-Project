@@ -1,40 +1,53 @@
-import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaBook, FaUsers, FaCog } from 'react-icons/fa';
+import { NavLink } from 'react-router-dom';
+import { 
+  FaChartBar, 
+  FaBook, 
+  FaUserGraduate, 
+  FaBell, 
+  FaCog, 
+  FaClipboardList,
+  FaUniversity 
+} from 'react-icons/fa';
 import './CollegeSidebar.css';
 
 const CollegeSidebar = () => {
-  const location = useLocation();
-
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
-
   return (
     <div className="college-sidebar">
       <div className="sidebar-header">
+        <FaUniversity className="college-icon" />
         <h2>College Portal</h2>
       </div>
-      
+
       <nav className="sidebar-nav">
-        <Link to="/college/dashboard" className={`nav-item ${isActive('/college/dashboard') ? 'active' : ''}`}>
-          <FaHome className="nav-icon" />
+        <NavLink to="/college/dashboard" className="nav-link">
+          <FaChartBar className="nav-icon" />
           <span>Dashboard</span>
-        </Link>
+        </NavLink>
 
-        <Link to="/college/courses" className={`nav-item ${isActive('/college/courses') ? 'active' : ''}`}>
+        <NavLink to="/college/courses" className="nav-link">
           <FaBook className="nav-icon" />
-          <span>Manage Courses</span>
-        </Link>
+          <span>Courses</span>
+        </NavLink>
 
-        <Link to="/college/students" className={`nav-item ${isActive('/college/students') ? 'active' : ''}`}>
-          <FaUsers className="nav-icon" />
-          <span>Manage Students</span>
-        </Link>
+        <NavLink to="/college/applications" className="nav-link">
+          <FaClipboardList className="nav-icon" />
+          <span>Applications</span>
+        </NavLink>
 
-        <Link to="/college/settings" className={`nav-item ${isActive('/college/settings') ? 'active' : ''}`}>
+        <NavLink to="/college/students" className="nav-link">
+          <FaUserGraduate className="nav-icon" />
+          <span>Students</span>
+        </NavLink>
+
+        <NavLink to="/college/notifications" className="nav-link">
+          <FaBell className="nav-icon" />
+          <span>Notifications</span>
+        </NavLink>
+
+        <NavLink to="/college/settings" className="nav-link">
           <FaCog className="nav-icon" />
           <span>Settings</span>
-        </Link>
+        </NavLink>
       </nav>
     </div>
   );

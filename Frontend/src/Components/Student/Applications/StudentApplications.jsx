@@ -141,11 +141,18 @@ const StudentApplications = () => {
     }
   };
 
+  const handlePaymentComplete = async (applicationId) => {
+    await fetchApplications(); // Refresh all applications after payment
+  };
+
   const renderApplicationCard = (application) => (
     <div key={application._id} className="application-card">
       <div className="application-header">
         <h3>{application.course?.name}</h3>
-        <ApplicationStatus status={application.status} />
+        <ApplicationStatus 
+          application={application} 
+          onPaymentComplete={() => handlePaymentComplete(application._id)} 
+        />
       </div>
 
       <div className="application-details">

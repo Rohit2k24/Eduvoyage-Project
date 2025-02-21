@@ -15,7 +15,9 @@ const {
   updateProfile,
   getSettings,
   updateSettings,
-  getCourseDetails
+  getCourseDetails,
+  getColleges,
+  getCollegeDetails
 } = require('../controllers/studentController');
 
 const {
@@ -31,12 +33,39 @@ const {
 
 const College = require('../models/College');
 const Course = require('../models/Course');
+const Student = require('../models/Student');
+const User = require('../models/User');
+const cloudinary = require('../config/cloudinary');
+
+const { 
+  createPayment, 
+  verifyPayment, 
+  generateReceipt 
+} = require('../controllers/paymentController');
+
+const upload = require('../middleware/upload');
+const fs = require('fs');
 
 console.log('Initializing student routes');
 
+// Add this at the top of the file to see all incoming requests
+router.use((req, res, next) => {
+  console.log('Student route accessed:', req.method, req.url);
+  next();
+});
+
+// Add debugging middleware for student routes
+router.use((req, res, next) => {
+  console.log('Student route accessed:', {
+    method: req.method,
+    path: req.url,
+    user: req.user?._id
+  });
+  next();
+});
+
 // Test route (no auth required)
 router.get('/test', (req, res) => {
-  console.log('Student test route hit');
   res.json({ message: 'Student routes are working' });
 });
 
@@ -64,8 +93,170 @@ router.get('/digilocker/init', protect, initiateDigilocker);
 router.get('/digilocker/callback', protect, handleDigilockerCallback);
 
 // Profile routes
-router.get('/profile', protect, getProfile);
-router.put('/profile', protect, updateProfile);
+router.get('/profile', protect, async (req, res) => {
+  try {
+    console.log('Fetching profile for user:', req.user._id);
+    
+    let student = await Student.findOne({ user: req.user._id })
+      .populate('user', 'email name phone');
+
+    if (!student) {
+      // Create new student profile if it doesn't exist
+      const user = await User.findById(req.user._id);
+      student = await Student.create({
+        user: req.user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || '',
+        dateOfBirth: new Date(),
+        country: 'Not specified',
+        education: {
+          qualifications: [],
+          highestQualification: ''
+        },
+        passport: {},
+        profilePic: user.profilePic || ''
+      });
+    }
+
+    // Ensure email is synced between User and Student
+    if (student.email !== student.user.email) {
+      student.email = student.user.email;
+      await student.save();
+    }
+
+    console.log('Sending profile:', student);
+    res.status(200).json({
+      success: true,
+      profile: {
+        ...student.toObject(),
+        email: student.user.email
+      }
+    });
+  } catch (error) {
+    console.error('Profile fetch error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching profile'
+    });
+  }
+});
+
+router.put('/profile', protect, upload.fields([
+  { name: 'profilePic', maxCount: 1 },
+  { name: 'passportDocument', maxCount: 1 },
+  { name: 'educationDocuments', maxCount: 10 } // Allow multiple education documents
+]), async (req, res) => {
+  try {
+    const updateData = { ...req.body };
+    
+    // Handle profile picture upload
+    if (req.files?.profilePic) {
+      const result = await cloudinary.uploader.upload(req.files.profilePic[0].path, {
+        folder: 'eduvoyage/profiles',
+        transformation: [
+          { width: 400, height: 400, crop: "fill" },
+          { quality: "auto" }
+        ]
+      });
+      updateData.profilePic = result.secure_url;
+    }
+
+    // Handle passport document upload
+    if (req.files?.passportDocument) {
+      const result = await cloudinary.uploader.upload(req.files.passportDocument[0].path, {
+        folder: 'eduvoyage/passports',
+        resource_type: 'auto'
+      });
+      
+      let passportData = {};
+      if (updateData.passport) {
+        try {
+          passportData = JSON.parse(updateData.passport);
+        } catch (e) {
+          console.error('Error parsing passport data:', e);
+        }
+      }
+      updateData.passport = JSON.stringify({
+        ...passportData,
+        document: result.secure_url
+      });
+    }
+
+    // Handle education documents upload
+    if (req.files?.educationDocuments) {
+      const uploadPromises = req.files.educationDocuments.map(file => 
+        cloudinary.uploader.upload(file.path, {
+          folder: 'eduvoyage/education',
+          resource_type: 'auto'
+        })
+      );
+
+      const uploadResults = await Promise.all(uploadPromises);
+      
+      let educationData = {};
+      if (updateData.education) {
+        try {
+          educationData = JSON.parse(updateData.education);
+          // Map each document URL to its corresponding qualification
+          educationData.qualifications = educationData.qualifications.map((qual, index) => ({
+            ...qual,
+            documents: uploadResults[index]?.secure_url || qual.documents
+          }));
+        } catch (e) {
+          console.error('Error parsing education data:', e);
+        }
+      }
+      updateData.education = educationData;
+    } else if (updateData.education) {
+      updateData.education = JSON.parse(updateData.education);
+    }
+
+    // Update both User and Student models
+    const [user, student] = await Promise.all([
+      User.findByIdAndUpdate(
+        req.user._id,
+        {
+          name: updateData.name,
+          phone: updateData.phone,
+          email: updateData.email
+        },
+        { new: true }
+      ),
+      Student.findOneAndUpdate(
+        { user: req.user._id },
+        {
+          ...updateData,
+          passport: JSON.parse(updateData.passport || '{}')
+        },
+        { new: true, runValidators: true }
+      ).populate('user', 'email name phone')
+    ]);
+
+    // Clean up uploaded files
+    if (req.files) {
+      Object.values(req.files).flat().forEach(file => {
+        fs.unlink(file.path, err => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      profile: {
+        ...student.toObject(),
+        email: user.email
+      }
+    });
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error updating profile'
+    });
+  }
+});
 
 // Settings routes
 router.get('/settings', protect, getSettings);
@@ -163,6 +354,44 @@ router.post('/debug/fix-course/:courseId', protect, async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message
+    });
+  }
+});
+
+// Payment routes
+router.post('/create-payment', protect, createPayment);
+router.post('/verify-payment', protect, verifyPayment);
+router.get('/payment-receipt/:id', protect, generateReceipt);
+
+// Add these new routes
+router.get('/colleges', protect, getColleges);
+router.get('/colleges/:id', protect, async (req, res) => {
+  try {
+    const college = await College.findById(req.params.id)
+      .select('name location university description facilities address phoneNumber contactEmail accreditation establishmentYear documents');
+
+    if (!college) {
+      return res.status(404).json({
+        success: false,
+        message: 'College not found'
+      });
+    }
+
+    const courses = await Course.find({
+      college: college._id,
+      status: 'active'
+    }).select('name duration seats fees');
+
+    res.status(200).json({
+      success: true,
+      college,
+      courses
+    });
+  } catch (error) {
+    console.error('Error fetching college details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching college details'
     });
   }
 });

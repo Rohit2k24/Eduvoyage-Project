@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const {
   getCollegeCourses,
@@ -9,7 +9,7 @@ const {
   deleteCourse,
   getCourse
 } = require('../controllers/courseController');
-const { submitVerification, getVerificationStatus, initiatePayment, verifyPayment, getDashboardStats } = require('../controllers/collegeController');
+const { submitVerification, getVerificationStatus, initiatePayment, verifyPayment, getDashboardStats, getApplications, updateApplicationStatus } = require('../controllers/collegeController');
 
 // Configure multer for verification uploads
 const verificationFields = [
@@ -37,5 +37,14 @@ router.post('/courses', protect, upload.single('image'), createCourse);
 router.get('/courses/:id', protect, getCourse);
 router.put('/courses/:id', protect, upload.single('image'), updateCourse);
 router.delete('/courses/:id', protect, deleteCourse);
+
+router.use(protect);
+router.use(authorize('college'));
+
+router.route('/applications')
+  .get(getApplications);
+
+router.route('/applications/:id/status')
+  .put(updateApplicationStatus);
 
 module.exports = router; 

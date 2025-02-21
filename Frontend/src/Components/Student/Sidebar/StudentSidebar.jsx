@@ -1,5 +1,14 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaGraduationCap, FaClipboardList, FaBell, FaUser, FaCog, FaBook, FaSignOutAlt } from 'react-icons/fa';
+import { 
+  FaHome, 
+  FaUniversity, 
+  FaClipboardList, 
+  FaBell, 
+  FaUser, 
+  FaCog, 
+  FaSignOutAlt 
+} from 'react-icons/fa';
+import Swal from 'sweetalert2';
 import './StudentSidebar.css';
 
 const StudentSidebar = () => {
@@ -11,11 +20,21 @@ const StudentSidebar = () => {
   };
 
   const handleLogout = () => {
-    // Clear authentication tokens
-    localStorage.removeItem('token');
-    localStorage.removeItem('userRole');
-    // Redirect to login page
-    navigate('/login');
+    Swal.fire({
+      title: 'Logout',
+      text: 'Are you sure you want to logout?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, logout'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('userRole');
+        navigate('/login');
+      }
+    });
   };
 
   return (
@@ -30,9 +49,9 @@ const StudentSidebar = () => {
           <span>Dashboard</span>
         </Link>
 
-        <Link to="/student/courses" className={`nav-item ${isActive('/student/courses') ? 'active' : ''}`}>
-          <FaGraduationCap className="nav-icon" />
-          <span>Browse Courses</span>
+        <Link to="/student/colleges" className={`nav-item ${isActive('/student/colleges') ? 'active' : ''}`}>
+          <FaUniversity className="nav-icon" />
+          <span>Explore Colleges</span>
         </Link>
 
         <Link to="/student/applications" className={`nav-item ${isActive('/student/applications') ? 'active' : ''}`}>
@@ -55,11 +74,10 @@ const StudentSidebar = () => {
           <span>Settings</span>
         </Link>
 
-        {/* Logout Button */}
-        <div className="nav-item logout-button" onClick={handleLogout}>
+        <button className="nav-item logout-button" onClick={handleLogout}>
           <FaSignOutAlt className="nav-icon" />
           <span>Logout</span>
-        </div>
+        </button>
       </nav>
     </div>
   );

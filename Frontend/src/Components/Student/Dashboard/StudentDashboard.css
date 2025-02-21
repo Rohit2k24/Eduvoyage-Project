@@ -1,8 +1,8 @@
 :root {
   --primary: #6366f1;
   --primary-hover: #4f46e5;
-  --text-primary: #000000;
-  --text-secondary: #333333;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
   --glass-bg: rgba(255, 255, 255, 0.95);
   --shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
   --gradient-blue: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
@@ -13,7 +13,7 @@
 .student-dashboard-container {
   display: flex;
   min-height: 100vh;
-  background: #f8fafc;
+  background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
 }
 
 .dashboard-main {
@@ -22,26 +22,83 @@
   margin-left: 280px;
 }
 
-.dashboard-header {
+.welcome-section {
   margin-bottom: 2rem;
 }
 
-.dashboard-header h1 {
+.welcome-section h1 {
   font-size: 2.25rem;
   color: var(--text-primary);
   margin-bottom: 0.5rem;
+  background: var(--gradient-blue);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .dashboard-subtitle {
   color: var(--text-secondary);
-  font-size: 1rem;
+  font-size: 1.1rem;
 }
 
-.stats-grid {
+.quick-actions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
   margin-bottom: 2rem;
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: none;
+  border-radius: 16px;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.action-button .arrow-icon {
+  margin-left: auto;
+  font-size: 1.25rem;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
+}
+
+.action-button:hover .arrow-icon {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+
+.stats-section {
+  grid-column: 1 / -1;
+}
+
+.stats-section h2 {
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
 }
 
 .stat-card {
@@ -50,40 +107,23 @@
   color: white;
   display: flex;
   align-items: center;
+  gap: 1.5rem;
   transition: transform 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1));
-  transform: rotate(45deg);
 }
 
 .stat-card:hover {
   transform: translateY(-5px);
 }
 
-.gradient-blue { background: var(--gradient-blue); }
-.gradient-green { background: var(--gradient-green); }
-.gradient-purple { background: var(--gradient-purple); }
-
 .stat-icon {
-  width: 50px;
-  height: 50px;
+  width: 48px;
+  height: 48px;
   border-radius: 12px;
+  background: rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 1.5rem;
-  background: rgba(255,255,255,0.15);
-  font-size: 1.25rem;
+  font-size: 1.5rem;
 }
 
 .stat-content h3 {
@@ -91,176 +131,143 @@
   margin-bottom: 0.25rem;
 }
 
-.stat-content p {
-  font-size: 0.9rem;
-  opacity: 0.9;
-}
-
-.stat-trend {
-  display: block;
-  font-size: 0.75rem;
-  opacity: 0.8;
-  margin-top: 0.5rem;
-}
-
 .glass-card {
   background: var(--glass-bg);
   backdrop-filter: blur(16px);
-  border-radius: 16px;
+  border-radius: 20px;
   padding: 1.5rem;
   box-shadow: var(--shadow);
-  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.content-grid {
-  display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 2rem;
-  margin-bottom: 2rem;
-}
-
-.chart-header {
+.section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
 }
 
-.chart-legend {
-  display: flex;
-  gap: 1rem;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-}
-
-.legend-item span {
-  width: 12px;
-  height: 12px;
-  border-radius: 4px;
-}
-
-.applied span { background: #4f46e5; }
-.accepted span { background: #10b981; }
-
-.deadlines-card .card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
+.section-header h2 {
+  color: var(--text-primary);
+  font-size: 1.25rem;
 }
 
 .view-all {
+  color: var(--primary);
   background: none;
   border: none;
-  color: var(--primary);
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .view-all:hover {
+  color: var(--primary-hover);
   transform: translateX(3px);
 }
 
-.deadline-item {
+.deadline-card {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 1rem;
   padding: 1rem;
-  background: rgba(241, 245, 249, 0.5);
+  background: #f8fafc;
   border-radius: 12px;
   margin-bottom: 1rem;
   transition: all 0.3s ease;
 }
 
-.deadline-item:hover {
-  background: rgba(241, 245, 249, 0.8);
+.deadline-card:hover {
+  transform: translateX(5px);
+  background: #f1f5f9;
 }
 
-.university-badge {
+.deadline-icon {
   width: 40px;
   height: 40px;
-  border-radius: 8px;
-  background: var(--primary);
+  border-radius: 10px;
+  background: var(--gradient-blue);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
 }
 
-.days-remaining {
+.deadline-info h3 {
+  color: var(--text-primary);
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.deadline-info p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.days-left {
+  margin-left: auto;
+  padding: 0.5rem 1rem;
   background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
-  padding: 0.25rem 0.75rem;
   border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.recommendations-section {
-  margin-top: 2rem;
+  font-size: 0.875rem;
 }
 
 .recommendations-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
 }
 
-.university-card {
-  background: white;
+.college-card {
+  background: #f8fafc;
   border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  padding: 1.25rem;
   transition: all 0.3s ease;
 }
 
-.university-card:hover {
+.college-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  background: #f1f5f9;
 }
 
-.uni-avatar {
+.college-icon {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: rgba(99, 102, 241, 0.1);
+  background: var(--gradient-purple);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary);
-  font-size: 1.25rem;
+  margin-bottom: 1rem;
 }
 
-.card-actions {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 1rem;
+.college-info h3 {
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
 }
 
-.primary-action {
-  background: var(--primary);
+.college-info p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.view-details {
+  background: var(--gradient-blue);
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1rem;
   border-radius: 8px;
+  width: 100%;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.secondary-action {
-  background: rgba(99, 102, 241, 0.1);
-  color: var(--primary);
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.view-details:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(99, 102, 241, 0.2);
 }
 
 @media (max-width: 1200px) {
@@ -269,52 +276,21 @@
     padding: 1.5rem;
   }
   
-  .content-grid {
+  .dashboard-grid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 768px) {
-  .stats-grid {
+  .quick-actions {
     grid-template-columns: 1fr;
   }
   
-  .dashboard-header h1 {
+  .stats-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .welcome-section h1 {
     font-size: 1.75rem;
   }
-}
-
-/* Update all text elements */
-.dashboard-header h1,
-.dashboard-subtitle,
-.chart-card h2,
-.deadlines-card h2,
-.recommendations-section h2,
-.stat-content p,
-.university-card h3,
-.detail-item span {
-  color: var(--text-primary);
-}
-
-/* Update secondary text */
-.dashboard-subtitle,
-.deadline-date,
-.detail-item p,
-.uni-location {
-  color: var(--text-secondary);
-}
-
-/* Update chart colors */
-.chart-container .recharts-text {
-  fill: var(--text-primary);
-}
-
-/* Update tooltip text */
-.recharts-tooltip {
-  color: var(--text-primary) !important;
-}
-
-/* Update card borders */
-.glass-card {
-  border: 1px solid rgba(0, 0, 0, 0.1);
 } 
