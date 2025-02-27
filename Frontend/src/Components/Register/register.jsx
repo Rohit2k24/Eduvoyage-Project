@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaUserGraduate, FaUniversity, FaEnvelope, FaLock, FaUser, FaPassport, FaCalendar, FaBuilding, FaGlobe, FaSearch, FaPlus, FaExclamationCircle, FaArrowRight } from 'react-icons/fa';
+import { FaUserGraduate, FaUniversity, FaEnvelope, FaLock, FaUser, FaPassport, FaCalendar, FaBuilding, FaGlobe, FaSearch, FaPlus, FaExclamationCircle, FaArrowRight, FaFile, FaFileUpload, FaImage } from 'react-icons/fa';
 import { getCountries, getUniversitiesByCountry, countryNames } from '../../utils/universityData';
 import './Register.css';
 import Swal from 'sweetalert2';
+import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:3000';
 
@@ -32,6 +33,14 @@ const ACCREDITATIONS = [
   'QS 5 Stars'
 ];
 
+const axiosInstance = axios.create({
+  baseURL: 'http://localhost:3000/api',
+  timeout: 30000, // 30 seconds
+  headers: {
+    'Content-Type': 'multipart/form-data'
+  }
+});
+
 const Register = ({ userType }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -53,7 +62,16 @@ const Register = ({ userType }) => {
       contactPerson: '',
       phoneNumber: ''
     }),
-    customAccreditation: ''
+    customAccreditation: '',
+    phone: '',
+    role: userType,
+    description: '',
+    facilities: [],
+    documents: {
+      registrationCertificate: null,
+      accreditationCertificate: null,
+      collegeLogo: null
+    }
   });
   const [errors, setErrors] = useState({});
   const [countries, setCountries] = useState([]);
@@ -63,6 +81,8 @@ const Register = ({ userType }) => {
   const [verificationStep, setVerificationStep] = useState('form'); // 'form', 'verification'
   const [verificationCode, setVerificationCode] = useState('');
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [currentFacility, setCurrentFacility] = useState('');
 
   useEffect(() => {
     setCountries(getCountries());
@@ -92,6 +112,43 @@ const Register = ({ userType }) => {
     } else if (name === 'accreditation') {
       setShowCustomAccreditation(false);
     }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleFileChange = (e) => {
+    const { name, files } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      documents: {
+        ...prev.documents,
+        [name]: files[0]
+      }
+    }));
+  };
+
+  const handleAddFacility = (e) => {
+    e.preventDefault();
+    if (currentFacility.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        facilities: [...prev.facilities, currentFacility.trim()]
+      }));
+      setCurrentFacility('');
+    }
+  };
+
+  const handleRemoveFacility = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      facilities: prev.facilities.filter((_, i) => i !== index)
+    }));
   };
 
   const validateForm = () => {
@@ -316,6 +373,82 @@ const Register = ({ userType }) => {
     }
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      setLoading(true);
+      
+      // Create FormData object
+      const formDataToSend = new FormData();
+      
+      // Append basic fields
+      Object.keys(formData).forEach(key => {
+        if (key !== 'documents' && key !== 'confirmPassword') {
+          if (key === 'facilities') {
+            formDataToSend.append(key, JSON.stringify(formData[key]));
+          } else {
+            formDataToSend.append(key, formData[key]);
+          }
+        }
+      });
+
+      // Append files if they exist
+      if (formData.documents.registrationCertificate) {
+        formDataToSend.append('registrationCertificate', formData.documents.registrationCertificate);
+      }
+      if (formData.documents.accreditationCertificate) {
+        formDataToSend.append('accreditationCertificate', formData.documents.accreditationCertificate);
+      }
+      if (formData.documents.collegeLogo) {
+        formDataToSend.append('collegeLogo', formData.documents.collegeLogo);
+      }
+
+      // Show loading state
+      Swal.fire({
+        title: 'Registering...',
+        text: 'Please wait while we process your registration',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      const response = await axiosInstance.post('/auth/register', formDataToSend);
+
+      if (response.data.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Registration Successful',
+          text: 'You can now login with your credentials',
+          confirmButtonColor: '#3498db'
+        }).then(() => {
+          navigate('/login');
+        });
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      let errorMessage = 'Something went wrong';
+      
+      if (error.response) {
+        // Server responded with error
+        errorMessage = error.response.data.message || 'Registration failed';
+      } else if (error.request) {
+        // No response received
+        errorMessage = 'Unable to connect to server. Please check your internet connection.';
+      }
+
+      Swal.fire({
+        icon: 'error',
+        title: 'Registration Failed',
+        text: errorMessage,
+        confirmButtonColor: '#3498db'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="registration-container">
       <div className="registration-glass">
@@ -339,10 +472,7 @@ const Register = ({ userType }) => {
         </div>
 
         {verificationStep === 'form' ? (
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            handleSendVerification();
-          }} className="registration-form">
+          <form onSubmit={handleSubmit} className="registration-form">
             <div className="form-grid">
               <div className="input-group">
                 <label htmlFor="name">
@@ -354,7 +484,7 @@ const Register = ({ userType }) => {
                   id="name"
                   name="name"
                   value={formData.name}
-                  onChange={handleChange}
+                  onChange={handleInputChange}
                   placeholder="John Doe"
                 />
                 {errors.name && <span className="error-message"><FaExclamationCircle /> {errors.name}</span>}
@@ -370,7 +500,7 @@ const Register = ({ userType }) => {
                   id="email"
                   name="email"
                   value={formData.email}
-                  onChange={handleChange}
+                  onChange={handleInputChange}
                   placeholder="john@example.com"
                 />
                 {errors.email && <span className="error-message"><FaExclamationCircle /> {errors.email}</span>}
@@ -388,7 +518,7 @@ const Register = ({ userType }) => {
                       id="dateOfBirth"
                       name="dateOfBirth"
                       value={formData.dateOfBirth}
-                      onChange={handleChange}
+                      onChange={handleInputChange}
                     />
                     {errors.dateOfBirth && <span className="error-message"><FaExclamationCircle /> {errors.dateOfBirth}</span>}
                   </div>
@@ -402,7 +532,7 @@ const Register = ({ userType }) => {
                       id="country"
                       name="country"
                       value={formData.country}
-                      onChange={handleChange}
+                      onChange={handleInputChange}
                     >
                       <option value="">Select Country</option>
                       {countries.map(code => (
@@ -425,7 +555,7 @@ const Register = ({ userType }) => {
                       id="country"
                       name="country"
                       value={formData.country}
-                      onChange={handleChange}
+                      onChange={handleInputChange}
                     >
                       <option value="">Select Country</option>
                       {countries.map(code => (
@@ -446,7 +576,7 @@ const Register = ({ userType }) => {
                       id="university"
                       name="university"
                       value={formData.university}
-                      onChange={handleChange}
+                      onChange={handleInputChange}
                       disabled={!formData.country}
                     >
                       <option value="">Select Institution</option>
@@ -472,7 +602,7 @@ const Register = ({ userType }) => {
                   id="password"
                   name="password"
                   value={formData.password}
-                  onChange={handleChange}
+                  onChange={handleInputChange}
                   placeholder="••••••••"
                 />
                 {errors.password && <span className="error-message"><FaExclamationCircle /> {errors.password}</span>}
@@ -488,15 +618,145 @@ const Register = ({ userType }) => {
                   id="confirmPassword"
                   name="confirmPassword"
                   value={formData.confirmPassword}
-                  onChange={handleChange}
+                  onChange={handleInputChange}
                   placeholder="••••••••"
                 />
                 {errors.confirmPassword && <span className="error-message"><FaExclamationCircle /> {errors.confirmPassword}</span>}
               </div>
+
+              <div className="input-group">
+                <label htmlFor="phone">
+                  <FaUser className="input-icon" />
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  placeholder="+1 (555) 555-5555"
+                />
+                {errors.phone && <span className="error-message"><FaExclamationCircle /> {errors.phone}</span>}
+              </div>
+
+              {userType === 'college' && (
+                <>
+                  <div className="input-group">
+                    <label htmlFor="description">
+                      <FaBuilding className="input-icon" />
+                      Description
+                    </label>
+                    <textarea
+                      id="description"
+                      name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      required
+                    />
+                    {errors.description && <span className="error-message"><FaExclamationCircle /> {errors.description}</span>}
+                  </div>
+
+                  <div className="input-group">
+                    <label htmlFor="facilities">
+                      <FaBuilding className="input-icon" />
+                      Facilities
+                    </label>
+                    <div className="facilities-input-container">
+                      <div className="facility-add-section">
+                        <input
+                          type="text"
+                          id="facilities"
+                          value={currentFacility}
+                          onChange={(e) => setCurrentFacility(e.target.value)}
+                          placeholder="Enter a facility"
+                        />
+                        <button 
+                          onClick={handleAddFacility}
+                          className="add-facility-btn"
+                          type="button"
+                        >
+                          <FaPlus /> Add
+                        </button>
+                      </div>
+                      {formData.facilities.length > 0 && (
+                        <ul className="facilities-list">
+                          {formData.facilities.map((facility, index) => (
+                            <li key={index} className="facility-item">
+                              <span>{facility}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveFacility(index)}
+                                className="remove-facility-btn"
+                              >
+                                ×
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {errors.facilities && (
+                        <span className="error-message">
+                          <FaExclamationCircle /> {errors.facilities}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {userType === 'college' && (
+                <>
+                  <div className="input-group">
+                    <label htmlFor="registrationCertificate">
+                      <FaFileUpload className="input-icon" />
+                      Registration Certificate
+                    </label>
+                    <input
+                      type="file"
+                      id="registrationCertificate"
+                      name="registrationCertificate"
+                      onChange={handleFileChange}
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      required
+                    />
+                  </div>
+
+                  <div className="input-group">
+                    <label htmlFor="accreditationCertificate">
+                      <FaFileUpload className="input-icon" />
+                      Accreditation Certificate
+                    </label>
+                    <input
+                      type="file"
+                      id="accreditationCertificate"
+                      name="accreditationCertificate"
+                      onChange={handleFileChange}
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      required
+                    />
+                  </div>
+
+                  <div className="input-group">
+                    <label htmlFor="collegeLogo">
+                      <FaImage className="input-icon" />
+                      College Logo
+                    </label>
+                    <input
+                      type="file"
+                      id="collegeLogo"
+                      name="collegeLogo"
+                      onChange={handleFileChange}
+                      accept="image/*"
+                      required
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
-            <button type="submit" className="registration-button">
-              Continue <FaArrowRight />
+            <button type="submit" disabled={loading} className="registration-button">
+              {loading ? 'Registering...' : 'Register'}
             </button>
           </form>
         ) : (

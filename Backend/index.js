@@ -13,13 +13,6 @@ const collegeRoutes = require('./routes/college');
 const studentRoutes = require('./routes/student');
 const courseRoutes = require('./routes/course');
 
-// Import models
-require('./models/Course');
-require('./models/Application');
-require('./models/Notification');
-require('./models/Student');
-require('./models/User');
-
 // Load env vars
 dotenv.config();
 
@@ -30,7 +23,7 @@ app.use(cors({
   origin: 'http://localhost:5173', // Your frontend URL
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -58,6 +51,7 @@ app.use((req, res, next) => {
   console.log('Incoming request:', {
     method: req.method,
     path: req.url,
+    body: req.body,
     headers: req.headers
   });
   next();
@@ -70,20 +64,19 @@ app.get('/health', (req, res) => {
 
 // Mount routes - Update the order to be more specific
 app.use('/api/auth', authRoutes);
-app.use('/api/student', studentRoutes); // This should come before other routes
+app.use('/api/college', collegeRoutes); // Move this before other routes
+app.use('/api/student', studentRoutes);
 app.use('/api/college/courses', courseRoutes);
-app.use('/api/college', collegeRoutes);
 app.use('/api/admin', adminRoutes);
 
-// Add a debug middleware to log all requests
-app.use((req, res, next) => {
-  console.log('Incoming request:', {
-    method: req.method,
-    url: req.url,
-    headers: req.headers,
-    body: req.body
+// Add error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(err.statusCode || 500).json({
+    success: false,
+    message: err.message || 'Server Error',
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
-  next();
 });
 
 // Print all registered routes
@@ -112,16 +105,6 @@ app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: 'Route not found'
-  });
-});
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(err.statusCode || 500).json({
-    success: false,
-    error: err.message || 'Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 });
 

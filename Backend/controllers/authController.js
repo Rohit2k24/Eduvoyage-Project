@@ -63,8 +63,17 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check if user exists
+    // Validate email & password
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide email and password'
+      });
+    }
+
+    // Find user and include password field
     const user = await User.findOne({ email }).select('+password');
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -72,8 +81,9 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Check password
+    // Check if password matches
     const isMatch = await user.comparePassword(password);
+
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -81,39 +91,34 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Generate token
-    const token = generateToken(user._id);
+    // Create token
+    const token = jwt.sign(
+      { 
+        id: user._id, 
+        role: user.role,
+        email: user.email 
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' }
+    );
 
-    // Get user details based on role
-    let username = user.name;
-    let verificationStatus = null;
-    let paymentStatus = null;
-
-    if (user.role === 'student') {
-      const student = await Student.findOne({ user: user._id });
-      if (student) {
-        username = student.name;
-      }
-    } else if (user.role === 'college') {
-      const college = await College.findOne({ user: user._id });
-      verificationStatus = college ? college.verificationStatus : null;
-      username = college ? college.name : user.name;
-      paymentStatus = college ? college.paymentStatus : 'pending';
-    }
-
+    // Send response with user details
     res.status(200).json({
       success: true,
       token,
-      role: user.role,
-      username,
-      verificationStatus,
-      paymentStatus
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        profilePic: user.profilePic
+      }
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(400).json({
+    res.status(500).json({
       success: false,
-      message: error.message || 'Login failed'
+      message: 'Error logging in'
     });
   }
 };

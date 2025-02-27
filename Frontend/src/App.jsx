@@ -8,7 +8,7 @@ import ResetPassword from './Components/Login/ResetPassword'
 import AdminDashboard from './Admin Module/Components/AdminDashboard/AdminDashboard'
 import CollegeVerificationForm from './Components/College/CollegeVerification/CollegeVerificationForm'
 import VerificationStatus from './Components/College/CollegeVerification/VerificationStatus'
-import ProtectedRoute from './Components/Common/ProtectedRoute'
+import ProtectedRoute from './Components/ProtectedRoute'
 import CollegeManagement from './Admin Module/Components/CollegeManagement/CollegeManagement'
 import CourseManagement from './Components/College/Courses/CourseManagement'
 import CourseForm from './Components/College/Courses/CourseForm'
@@ -94,7 +94,7 @@ function App() {
           </ProtectedRoute>
         } />
         
-        <Route path="/student/dashboard" element={
+        <Route path="/student-dashboard" element={
           <ProtectedRoute allowedRoles={['student']}>
             <StudentDashboard />
           </ProtectedRoute>

@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import { FcGoogle } from 'react-icons/fc';
 import { FaGithub, FaArrowRight, FaExclamationCircle } from 'react-icons/fa';
 import './Login.css';
+import axios from 'axios';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ const Login = () => {
   });
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -52,88 +54,58 @@ const Login = () => {
       showConfirmButton: false
     }).then(() => {
       // Navigate after the alert is closed
-      navigate(role === 'student' ? '/student-dashboard' : '/college-dashboard');
+      navigate(role === 'student' ? '/student-dashboard' : '/college/dashboard');
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const newErrors = validateForm();
-    if (Object.keys(newErrors).length === 0) {
-      try {
-        // Show loading state
-        Swal.fire({
-          title: 'Logging in...',
-          text: 'Please wait',
-          allowOutsideClick: false,
-          showConfirmButton: false,
-          willOpen: () => {
-            Swal.showLoading();
-          }
-        });
+    setLoading(true);
 
-        const response = await fetch('http://localhost:3000/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(formData)
-        });
-
-        const data = await response.json();
-
-        // Close loading alert
-        Swal.close();
-
-        if (data.success) {
-          // Store user data in localStorage
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('userRole', data.role);
-          localStorage.setItem('username', data.username);
-
-          // Navigate based on role
-          if (data.role === 'college') {
-            if (data.paymentStatus === 'completed') {
-              // If payment is completed, go directly to dashboard
-              navigate('/college/dashboard');
-            } else {
-              // Check verification status only if payment is not completed
-              const verificationResponse = await fetch('http://localhost:3000/api/college/verification-status', {
-                headers: {
-                  'Authorization': `Bearer ${data.token}`
-                }
-              });
-              
-              const verificationData = await verificationResponse.json();
-              
-              if (!verificationData.status || verificationData.status === 'pending') {
-                navigate('/college/verification-form');
-              } else if (verificationData.status === 'approved') {
-                navigate('/college/payment'); // Redirect to payment if verification is approved
-              } else {
-                navigate('/college/verification-status');
-              }
-            }
-          } else if (data.role === 'admin') {
-            navigate('/admin-dashboard');
-          } else {
-            navigate('/student/dashboard');
-          }
-        } else {
-          showErrorAlert(data.message || 'Invalid credentials');
-        }
-      } catch (error) {
-        console.error('Login error:', error);
-        showErrorAlert('Network error occurred. Please check your connection and try again.');
-      }
-    } else {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Validation Error',
-        text: 'Please check the form for errors and try again.',
-        confirmButtonColor: '#3498db',
+    try {
+      const response = await axios.post('http://localhost:3000/api/auth/login', {
+        email: formData.email,
+        password: formData.password
       });
-      setErrors(newErrors);
+
+      if (response.data.success) {
+        // Store token and user info
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+
+        // Show success message
+        Swal.fire({
+          icon: 'success',
+          title: 'Login Successful!',
+          text: 'Welcome back!',
+          timer: 1500,
+          showConfirmButton: false
+        });
+
+        // Redirect based on role
+        switch (response.data.user.role) {
+          case 'student':
+            navigate('/student-dashboard');
+            break;
+          case 'college':
+            navigate('/college/dashboard');
+            break;
+          case 'admin':
+            navigate('/admin-dashboard');
+            break;
+          default:
+            navigate('/');
+        }
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Login Failed',
+        text: error.response?.data?.message || 'Invalid credentials'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -184,7 +156,7 @@ const Login = () => {
             <Link to="/forgot-password" className="forgot-password">Forgot Password?</Link>
           </div>
 
-          <button type="submit" className="login-button">
+          <button type="submit" className="login-button" disabled={loading}>
             Sign In <FaArrowRight className="arrow-icon" />
           </button>
         </form>
