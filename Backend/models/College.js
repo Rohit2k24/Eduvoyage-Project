@@ -17,6 +17,10 @@ const collegeSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please add a description']
   },
+  website: {
+    type: String,
+    
+  },
   location: {
     type: String,
     required: [true, 'Please add a location']

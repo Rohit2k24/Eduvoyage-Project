@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   FaChartBar, 
   FaBook, 
@@ -14,6 +14,7 @@ import './CollegeSidebar.css';
 
 const CollegeSidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
 
   const handleLogout = () => {
@@ -27,9 +28,19 @@ const CollegeSidebar = () => {
       confirmButtonText: 'Yes, logout'
     }).then((result) => {
       if (result.isConfirmed) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        navigate('/login');
+        // Clear all storage items
+        localStorage.clear();
+        // Show success message
+        Swal.fire({
+          title: 'Logged Out!',
+          text: 'You have been successfully logged out.',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        }).then(() => {
+          // Navigate to login page
+          navigate('/login');
+        });
       }
     });
   };
