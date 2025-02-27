@@ -12,8 +12,6 @@ const uploadToCloudinary = async (file) => {
       throw new Error('No file provided for upload');
     }
 
-    console.log('Uploading to Cloudinary:', file.path);
-    
     const result = await cloudinary.uploader.upload(file.path, {
       folder: 'eduvoyage/courses',
       resource_type: 'auto',
@@ -23,19 +21,11 @@ const uploadToCloudinary = async (file) => {
         { fetch_format: 'auto' }
       ]
     });
-    
-    console.log('Cloudinary upload successful:', result.secure_url);
-    
-    // Delete the local file after successful upload
-    try {
-      await fs.unlink(file.path);
-    } catch (unlinkError) {
-      console.error('Failed to delete local file:', unlinkError);
-    }
 
+    // Delete the local file after successful upload
+    await fs.unlink(file.path);
     return result.secure_url;
   } catch (error) {
-    console.error('Cloudinary upload failed:', error);
     // Clean up local file if upload fails
     if (file && file.path) {
       try {
@@ -48,46 +38,73 @@ const uploadToCloudinary = async (file) => {
   }
 };
 
-exports.createCourse = asyncHandler(async (req, res) => {
+exports.createCourse = async (req, res) => {
   try {
-    const college = await College.findOne({ user: req.user._id });
-    console.log('Found college:', college); // Debug log
-    
-    if (!college) {
-      return res.status(404).json({
+    console.log('Creating course with data:', req.body);
+    console.log('File:', req.file);
+
+    // Parse numeric values
+    const totalSeats = parseInt(req.body.seats.total);
+    const duration = parseInt(req.body.duration);
+    const fees = parseInt(req.body.fees);
+
+    // Validate numeric values
+    if (isNaN(totalSeats) || totalSeats < 1) {
+      return res.status(400).json({
         success: false,
-        message: 'College not found'
+        message: 'Total seats must be at least 1'
       });
     }
 
-    // Prepare course data
+    // Get eligibility criteria from request body
+    let eligibilityCriteria = [];
+    if (Array.isArray(req.body.eligibilityCriteria)) {
+      eligibilityCriteria = req.body.eligibilityCriteria.filter(criteria => criteria.trim());
+    } else if (typeof req.body.eligibilityCriteria === 'string') {
+      eligibilityCriteria = [req.body.eligibilityCriteria.trim()];
+    }
+
+    // Validate eligibility criteria
+    if (eligibilityCriteria.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one eligibility criterion is required'
+      });
+    }
+
     const courseData = {
-      ...req.body,
-      college: college._id,
+      name: req.body.name,
+      description: req.body.description,
+      duration: duration,
+      fees: fees,
+      college: req.user.id,
       seats: {
-        total: parseInt(req.body.seats.total),
-        available: parseInt(req.body.seats.total)
-      }
+        total: totalSeats,
+        available: totalSeats
+      },
+      eligibilityCriteria: eligibilityCriteria,
+      startDate: req.body.startDate,
+      applicationDeadline: req.body.applicationDeadline,
+      status: req.body.status || 'active'
     };
-    console.log('Course data before creation:', courseData); // Debug log
 
-    // Handle image upload if present
+    // Handle image upload
     if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: 'eduvoyage/courses'
-      });
-      courseData.image = result.secure_url;
+      try {
+        const imageUrl = await uploadToCloudinary(req.file);
+        courseData.image = imageUrl;
+      } catch (uploadError) {
+        console.error('Image upload failed:', uploadError);
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to upload course image'
+        });
+      }
     }
+
+    console.log('Course data to save:', courseData);
 
     const course = await Course.create(courseData);
-    console.log('Created course:', course); // Debug log
-
-    // Populate college details before sending response
-    await course.populate({
-      path: 'college',
-      select: 'name location'
-    });
-    console.log('Populated course:', course); // Debug log
 
     res.status(201).json({
       success: true,
@@ -95,84 +112,120 @@ exports.createCourse = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error('Create course error:', error);
-    res.status(500).json({
+    res.status(400).json({
       success: false,
-      message: error.message || 'Error creating course'
+      message: error.message || 'Failed to create course'
     });
   }
-});
+};
 
 exports.updateCourse = async (req, res) => {
   try {
-    const college = await College.findOne({ user: req.user._id });
-    const course = await Course.findOne({ 
-      _id: req.params.id,
-      college: college._id 
+    console.log('Update request body:', req.body);
+
+    const courseId = req.params.id;
+    const existingCourse = await Course.findOne({
+      _id: courseId,
+      college: req.user.id
     });
 
-    if (!course) {
+    if (!existingCourse) {
       return res.status(404).json({
         success: false,
         message: 'Course not found'
       });
     }
 
-    let imageUrl = course.image;
+    // Parse numeric values
+    const totalSeats = parseInt(req.body.seats.total);
+    const availableSeats = parseInt(req.body.seats.available);
+    const duration = parseInt(req.body.duration);
+    const fees = parseInt(req.body.fees);
+
+    // Validate numeric values
+    if (isNaN(totalSeats) || totalSeats < 1) {
+      return res.status(400).json({
+        success: false,
+        message: 'Total seats must be at least 1'
+      });
+    }
+
+    // Get eligibility criteria from request body
+    let eligibilityCriteria = [];
+    if (Array.isArray(req.body.eligibilityCriteria)) {
+      eligibilityCriteria = req.body.eligibilityCriteria.filter(criteria => criteria.trim());
+    } else if (typeof req.body.eligibilityCriteria === 'string') {
+      eligibilityCriteria = [req.body.eligibilityCriteria.trim()];
+    }
+
+    // Validate eligibility criteria
+    if (eligibilityCriteria.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one eligibility criterion is required'
+      });
+    }
+
+    const courseData = {
+      name: req.body.name,
+      description: req.body.description,
+      duration: duration,
+      fees: fees,
+      seats: {
+        total: totalSeats,
+        available: availableSeats
+      },
+      eligibilityCriteria: eligibilityCriteria,
+      startDate: req.body.startDate,
+      applicationDeadline: req.body.applicationDeadline
+    };
+
+    // Handle image upload
     if (req.file) {
       try {
         // Delete old image from Cloudinary if exists
-        if (course.image) {
-          const publicId = course.image.split('/').pop().split('.')[0];
+        if (existingCourse.image && existingCourse.image.includes('cloudinary')) {
+          const publicId = existingCourse.image.split('/').pop().split('.')[0];
           await cloudinary.uploader.destroy(`eduvoyage/courses/${publicId}`);
         }
-        // Upload new image
-        imageUrl = await uploadToCloudinary(req.file);
-      } catch (error) {
-        console.error('Image update failed:', error);
-        return res.status(500).json({
+        const imageUrl = await uploadToCloudinary(req.file);
+        courseData.image = imageUrl;
+      } catch (uploadError) {
+        console.error('Image update failed:', uploadError);
+        return res.status(400).json({
           success: false,
-          message: 'Failed to update image'
+          message: 'Failed to update course image'
         });
       }
     }
 
+    console.log('Course data to save:', courseData);
+
     const updatedCourse = await Course.findByIdAndUpdate(
-      req.params.id,
-      {
-        ...req.body,
-        image: imageUrl
-      },
-      { new: true }
+      courseId,
+      courseData,
+      { new: true, runValidators: true }
     );
 
     res.status(200).json({
       success: true,
-      message: 'Course updated successfully',
-      course: updatedCourse
+      data: updatedCourse
     });
   } catch (error) {
     console.error('Update course error:', error);
-    res.status(500).json({
+    res.status(400).json({
       success: false,
-      message: error.message || 'Error updating course'
+      message: error.message || 'Failed to update course'
     });
   }
 };
 
-exports.deleteCourse = asyncHandler(async (req, res) => {
+exports.deleteCourse = async (req, res) => {
   try {
-    const college = await College.findOne({ user: req.user._id });
-    
-    if (!college) {
-      return res.status(404).json({
-        success: false,
-        message: 'College not found'
-      });
-    }
-
+    const courseId = req.params.id;
     const course = await Course.findOne({
-      _id: req.params.id,
-      college: college._id
+      _id: courseId,
+      college: req.user.id // Use req.user.id directly
     });
 
     if (!course) {
@@ -183,7 +236,7 @@ exports.deleteCourse = asyncHandler(async (req, res) => {
     }
 
     // Delete image from Cloudinary if exists
-    if (course.image && course.image !== '/default-course.jpg') {
+    if (course.image && course.image.includes('cloudinary')) {
       try {
         const publicId = course.image.split('/').pop().split('.')[0];
         await cloudinary.uploader.destroy(`eduvoyage/courses/${publicId}`);
@@ -192,7 +245,7 @@ exports.deleteCourse = asyncHandler(async (req, res) => {
       }
     }
 
-    await Course.findByIdAndDelete(req.params.id);
+    await Course.findByIdAndDelete(courseId);
 
     res.status(200).json({
       success: true,
@@ -205,7 +258,7 @@ exports.deleteCourse = asyncHandler(async (req, res) => {
       message: 'Error deleting course'
     });
   }
-});
+};
 
 exports.getCourses = asyncHandler(async (req, res, next) => {
   try {
@@ -248,11 +301,16 @@ exports.getCourses = asyncHandler(async (req, res, next) => {
 
 exports.getCourse = async (req, res) => {
   try {
-    const college = await College.findOne({ user: req.user._id });
-    const course = await Course.findOne({ 
+    console.log('Getting course details...');
+    console.log('Course ID:', req.params.id);
+    console.log('User ID:', req.user.id);
+
+    const course = await Course.findOne({
       _id: req.params.id,
-      college: college._id 
-    });
+      college: req.user.id
+    }).lean();
+
+    console.log('Found course:', course);
 
     if (!course) {
       return res.status(404).json({
@@ -261,15 +319,36 @@ exports.getCourse = async (req, res) => {
       });
     }
 
+    // Format dates and ensure all fields are present
+    const formattedCourse = {
+      _id: course._id,
+      name: course.name,
+      description: course.description,
+      duration: course.duration,
+      fees: course.fees,
+      seats: {
+        total: course.seats?.total || 0,
+        available: course.seats?.available || 0
+      },
+      eligibilityCriteria: course.eligibilityCriteria || [''],
+      startDate: course.startDate ? new Date(course.startDate).toISOString().split('T')[0] : '',
+      applicationDeadline: course.applicationDeadline ? 
+        new Date(course.applicationDeadline).toISOString().split('T')[0] : '',
+      image: course.image || null,
+      status: course.status || 'active'
+    };
+
+    console.log('Formatted course:', formattedCourse);
+
     res.status(200).json({
       success: true,
-      course
+      data: formattedCourse
     });
   } catch (error) {
-    console.error('Get course error:', error);
+    console.error('Error in getCourse:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Error fetching course'
+      message: 'Error fetching course details'
     });
   }
 };
@@ -344,56 +423,42 @@ exports.getCourseDetailsForStudent = asyncHandler(async (req, res) => {
 // Get all courses for a specific college
 exports.getCollegeCourses = asyncHandler(async (req, res) => {
   try {
-    const college = await College.findOne({ user: req.user._id });
-    console.log('Found college in get courses:', college); // Debug log
+    console.log('Getting college courses...');
+    console.log('User ID:', req.user.id);
     
-    if (!college) {
-      return res.status(404).json({
-        success: false,
-        message: 'College not found'
-      });
-    }
-
-    const courses = await Course.find({ college: college._id })
+    // Find courses directly using the college ID from the authenticated user
+    const courses = await Course.find({ college: req.user.id })
       .populate({
         path: 'college',
         select: 'name location'
       })
       .lean();
     
-    console.log('Raw courses from DB:', courses); // Debug log
+    console.log('Found courses:', courses); // Debug log
 
-    const processedCourses = courses.map(course => {
-      console.log('Processing course:', course); // Debug log for each course
-      return {
-        _id: course._id,
-        name: course.name,
-        description: course.description || 'No description available',
-        duration: course.duration || 'Not specified',
-        fees: course.fees || 0,
-        image: course.image || '/default-course.jpg',
-        seats: {
-          total: course.seats?.total || 0,
-          available: course.seats?.available || 0,
-          occupied: (course.seats?.total || 0) - (course.seats?.available || 0)
-        },
-        college: {
-          name: course.college?.name || 'Unknown College',
-          location: course.college?.location || 'Location not specified'
-        },
-        status: course.status || 'inactive'
-      };
-    });
-
-    console.log('Processed courses:', processedCourses); // Debug log
+    const processedCourses = courses.map(course => ({
+      _id: course._id,
+      name: course.name,
+      description: course.description,
+      duration: course.duration,
+      fees: course.fees,
+      image: course.image || '/default-course.jpg',
+      seats: {
+        total: course.seats?.total || 0,
+        available: course.seats?.available || 0
+      },
+      startDate: course.startDate,
+      applicationDeadline: course.applicationDeadline,
+      status: course.status || 'active',
+      eligibilityCriteria: course.eligibilityCriteria || []
+    }));
 
     res.status(200).json({
       success: true,
-      count: processedCourses.length,
-      courses: processedCourses
+      data: processedCourses // Changed from 'courses' to 'data' to match frontend expectation
     });
   } catch (error) {
-    console.error('Error fetching courses:', error);
+    console.error('Error in getCollegeCourses:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching courses'

@@ -31,25 +31,38 @@ const CourseSchema = new mongoose.Schema({
     },
     available: {
       type: Number,
-      required: true,
+      required: [true, 'Please specify available seats'],
       min: 0
     }
   },
-  image: String,
+  image: {
+    type: String,
+    default: '/default-course.jpg'
+  },
   status: {
     type: String,
     enum: ['active', 'inactive'],
     default: 'active'
   },
-  eligibility: {
+  eligibilityCriteria: [{
     type: String,
-    required: [true, 'Please specify eligibility criteria']
-  },
+    trim: true
+  }],
   curriculum: [{
     type: String
   }],
-  startDate: Date,
-  applicationDeadline: Date
+  startDate: {
+    type: Date,
+    required: [true, 'Please specify start date']
+  },
+  applicationDeadline: {
+    type: Date,
+    required: [true, 'Please specify application deadline']
+  },
+  criteria: [{
+    type: String,
+    required: true
+  }]
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
@@ -77,11 +90,10 @@ CourseSchema.pre('save', function(next) {
   next();
 });
 
-// Pre-find middleware to populate college with all necessary fields
+// Pre-find middleware to populate college with necessary fields
 CourseSchema.pre(/^find/, function(next) {
   this.populate({
     path: 'college',
-    model: 'College',
     select: 'name description facilities location address contactEmail phoneNumber accreditation establishmentYear'
   });
   next();

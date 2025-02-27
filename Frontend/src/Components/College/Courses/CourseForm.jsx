@@ -18,11 +18,12 @@ const CourseForm = () => {
       total: '',
       available: ''
     },
-    eligibility: '',
+    eligibilityCriteria: [''],
     startDate: '',
     applicationDeadline: '',
     image: null
   });
+  const [imagePreview, setImagePreview] = useState(null);
 
   useEffect(() => {
     if (id) {
@@ -30,19 +31,69 @@ const CourseForm = () => {
     }
   }, [id]);
 
+  useEffect(() => {
+    // Cleanup function to revoke object URLs when component unmounts
+    // or when imagePreview changes
+    return () => {
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
   const fetchCourseDetails = async () => {
     try {
+      setLoading(true);
       const response = await fetch(`http://localhost:3000/api/college/courses/${id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
+
       const data = await response.json();
-      if (data.success) {
-        setFormData(data.course);
+      console.log('Course details response:', data);
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch course details');
+      }
+
+      if (data.success && data.data) {
+        // Format the data for the form
+        setFormData({
+          name: data.data.name || '',
+          description: data.data.description || '',
+          duration: data.data.duration || '',
+          fees: data.data.fees || '',
+          seats: {
+            total: data.data.seats?.total || '',
+            available: data.data.seats?.available || ''
+          },
+          eligibilityCriteria: data.data.eligibilityCriteria || [''],
+          startDate: data.data.startDate || '',
+          applicationDeadline: data.data.applicationDeadline || '',
+          image: data.data.image || null,
+          status: data.data.status || 'active'
+        });
+
+        // Set the image preview
+        setImagePreview(data.data.image);
+
+        console.log('Form data set:', formData);
+      } else {
+        throw new Error('Invalid course data received');
       }
     } catch (error) {
       console.error('Error fetching course details:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'Failed to load course details',
+        confirmButtonColor: '#3498db'
+      }).then(() => {
+        navigate('/college/courses');
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -66,9 +117,39 @@ const CourseForm = () => {
   };
 
   const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData(prev => ({
+        ...prev,
+        image: file
+      }));
+      // Create preview URL for the new image
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleCriteriaChange = (index, value) => {
+    setFormData(prev => {
+      const newCriteria = [...prev.eligibilityCriteria];
+      newCriteria[index] = value;
+      return {
+        ...prev,
+        eligibilityCriteria: newCriteria
+      };
+    });
+  };
+
+  const addCriteria = () => {
     setFormData(prev => ({
       ...prev,
-      image: e.target.files[0]
+      eligibilityCriteria: [...prev.eligibilityCriteria, '']
+    }));
+  };
+
+  const removeCriteria = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      eligibilityCriteria: prev.eligibilityCriteria.filter((_, i) => i !== index)
     }));
   };
 
@@ -77,50 +158,69 @@ const CourseForm = () => {
     setLoading(true);
 
     try {
-      // Validate required fields
-      if (!formData.name || !formData.description || !formData.duration || 
-          !formData.fees || !formData.seats.total || !formData.eligibility || 
-          !formData.startDate || !formData.applicationDeadline) {
-        throw new Error('Please fill in all required fields');
-      }
+      // Parse numeric values
+      const totalSeats = parseInt(formData.seats.total);
+      const availableSeats = id ? parseInt(formData.seats.available) : totalSeats;
+      const duration = parseInt(formData.duration);
+      const fees = parseInt(formData.fees);
 
-      // Validate numerical fields
-      const duration = Number(formData.duration);
-      const fees = Number(formData.fees);
-      const totalSeats = Number(formData.seats.total);
-
-      // Validate numerical values
-      if (!Number.isInteger(duration) || duration <= 0) {
-        throw new Error('Duration must be a positive whole number');
+      // Validate numeric values
+      if (isNaN(totalSeats) || totalSeats < 1) {
+        throw new Error('Total seats must be at least 1');
       }
-      if (!Number.isFinite(fees) || fees < 0) {
+      if (isNaN(duration) || duration < 1) {
+        throw new Error('Duration must be at least 1 year');
+      }
+      if (isNaN(fees) || fees < 0) {
         throw new Error('Fees must be a non-negative number');
       }
-      if (!Number.isInteger(totalSeats) || totalSeats <= 0) {
-        throw new Error('Total seats must be a positive whole number');
+      if (id && (isNaN(availableSeats) || availableSeats < 0 || availableSeats > totalSeats)) {
+        throw new Error('Available seats must be between 0 and total seats');
+      }
+
+      // Filter out empty criteria
+      const validCriteria = formData.eligibilityCriteria.filter(criteria => criteria.trim());
+      if (validCriteria.length === 0) {
+        throw new Error('At least one eligibility criterion is required');
       }
 
       const formDataToSend = new FormData();
 
-      // Append basic fields with validated numbers
+      // Append basic fields
       formDataToSend.append('name', formData.name.trim());
       formDataToSend.append('description', formData.description.trim());
-      formDataToSend.append('duration', String(duration));
-      formDataToSend.append('fees', String(fees));
-      formDataToSend.append('seats[total]', String(totalSeats));
-      formDataToSend.append('eligibility', formData.eligibility.trim());
+      formDataToSend.append('duration', duration);
+      formDataToSend.append('fees', fees);
       formDataToSend.append('startDate', formData.startDate);
       formDataToSend.append('applicationDeadline', formData.applicationDeadline);
+
+      // Append seats data
+      formDataToSend.append('seats[total]', totalSeats);
+      formDataToSend.append('seats[available]', id ? availableSeats : totalSeats);
+
+      // Append eligibility criteria as an array
+      validCriteria.forEach(criteria => {
+        formDataToSend.append('eligibilityCriteria', criteria);
+      });
 
       // Handle image
       if (formData.image instanceof File) {
         formDataToSend.append('image', formData.image);
       }
 
-      // Log the FormData contents for debugging
-      for (let pair of formDataToSend.entries()) {
-        console.log('Form data entry:', pair[0], ':', pair[1]);
-      }
+      console.log('Form data being sent:', {
+        name: formData.name,
+        description: formData.description,
+        duration,
+        fees,
+        seats: {
+          total: totalSeats,
+          available: id ? availableSeats : totalSeats
+        },
+        eligibilityCriteria: validCriteria,
+        startDate: formData.startDate,
+        applicationDeadline: formData.applicationDeadline
+      });
 
       const url = id 
         ? `http://localhost:3000/api/college/courses/${id}`
@@ -242,12 +342,32 @@ const CourseForm = () => {
 
           <div className="form-group">
             <label>Eligibility Criteria</label>
-            <textarea
-              name="eligibility"
-              value={formData.eligibility}
-              onChange={handleInputChange}
-              required
-            />
+            {formData.eligibilityCriteria.map((criteria, index) => (
+              <div key={index} className="criteria-row">
+                <textarea
+                  value={criteria}
+                  onChange={(e) => handleCriteriaChange(index, e.target.value)}
+                  placeholder={`Criterion ${index + 1}`}
+                  required={index === 0}
+                />
+                {index > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => removeCriteria(index)}
+                    className="remove-criteria-btn"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addCriteria}
+              className="add-criteria-btn"
+            >
+              Add Criterion
+            </button>
           </div>
 
           <div className="form-row">
@@ -279,6 +399,11 @@ const CourseForm = () => {
               <FaUpload className="upload-icon" />
               Course Image
             </label>
+            {imagePreview && (
+              <div className="image-preview">
+                <img src={imagePreview} alt="Course preview" />
+              </div>
+            )}
             <input
               type="file"
               name="image"

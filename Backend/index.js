@@ -64,7 +64,7 @@ app.get('/health', (req, res) => {
 
 // Mount routes - Update the order to be more specific
 app.use('/api/auth', authRoutes);
-app.use('/api/college', collegeRoutes); // Move this before other routes
+app.use('/api/college', collegeRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/college/courses', courseRoutes);
 app.use('/api/admin', adminRoutes);

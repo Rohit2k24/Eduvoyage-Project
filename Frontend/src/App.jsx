@@ -26,6 +26,9 @@ import CourseDetails from './Components/Student/Courses/CourseDetails'
 import CollegeApplications from './Components/College/Applications/CollegeApplications'
 import CollegeList from './Components/Student/Colleges/CollegeList'
 import CollegeCourses from './Components/Student/Colleges/CollegeCourses'
+import ErrorBoundary from './Components/ErrorBoundary'
+import Notifications from './Components/College/Notifications/Notifications'
+import Settings from './Components/College/Settings/Settings'
 import './App.css'
 
 function App() {
@@ -90,7 +93,9 @@ function App() {
         
         <Route path="/college/dashboard" element={
           <ProtectedRoute allowedRoles={['college']}>
-            <CollegeDashboard />
+            <ErrorBoundary>
+              <CollegeDashboard />
+            </ErrorBoundary>
           </ProtectedRoute>
         } />
         
@@ -162,6 +167,16 @@ function App() {
         <Route path="/student/colleges/:collegeId/courses" element={
           <ProtectedRoute allowedRoles={['student']}>
             <CollegeCourses />
+          </ProtectedRoute>
+        } />
+        <Route path="/college/notifications" element={
+          <ProtectedRoute allowedRoles={['college']}>
+            <Notifications />
+          </ProtectedRoute>
+        } />
+        <Route path="/college/settings" element={
+          <ProtectedRoute allowedRoles={['college']}>
+            <Settings />
           </ProtectedRoute>
         } />
       </Routes>

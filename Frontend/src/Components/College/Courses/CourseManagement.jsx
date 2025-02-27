@@ -1,39 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaEdit, FaTrash, FaGraduationCap, FaCalendarAlt, FaUserGraduate } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaSearch, FaGraduationCap } from 'react-icons/fa';
 import CollegeSidebar from '../CollegeDashboard/CollegeSidebar';
 import Swal from 'sweetalert2';
 import './CourseManagement.css';
 
 const CourseManagement = () => {
-  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    fetchCourses();
-  }, []);
-
-  const formatCourseData = (course) => {
-    return {
-      _id: course._id,
-      name: course.name,
-      description: course.description || 'No description available',
-      duration: course.duration || 'Not specified',
-      fees: course.fees || 0,
-      image: course.image || '/default-course.jpg',
-      seats: {
-        total: course.seats?.total || 0,
-        available: course.seats?.available || 0,
-        occupied: course.seats?.occupied || 0
-      },
-      college: course.college || {
-        name: 'Unknown College',
-        location: 'Location not specified'
-      }
-    };
-  };
+  const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
 
   const fetchCourses = async () => {
     try {
@@ -45,30 +21,33 @@ const CourseManagement = () => {
       });
 
       const data = await response.json();
-      console.log('Fetched courses:', data);
+      console.log('API Response:', data); // Debug log
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch courses');
       }
 
-      if (data.success) {
-        // Format each course data
-        const formattedCourses = data.courses.map(formatCourseData);
-        setCourses(formattedCourses);
+      if (data.success && Array.isArray(data.data)) {
+        setCourses(data.data);
+      } else {
+        console.error('Unexpected data format:', data);
+        throw new Error('Invalid data format received from server');
       }
     } catch (error) {
       console.error('Error fetching courses:', error);
-      setError(error.message);
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'Failed to load courses',
-        confirmButtonColor: '#3498db'
+        text: error.message || 'Failed to load courses'
       });
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
 
   const handleDelete = async (courseId) => {
     try {
@@ -77,8 +56,8 @@ const CourseManagement = () => {
         text: "You won't be able to revert this!",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#3498db',
-        cancelButtonColor: '#e74c3c',
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
         confirmButtonText: 'Yes, delete it!'
       });
 
@@ -91,7 +70,7 @@ const CourseManagement = () => {
         });
 
         const data = await response.json();
-        
+
         if (!response.ok) {
           throw new Error(data.message || 'Failed to delete course');
         }
@@ -101,7 +80,7 @@ const CourseManagement = () => {
             icon: 'success',
             title: 'Deleted!',
             text: 'Course has been deleted.',
-            confirmButtonColor: '#3498db'
+            confirmButtonColor: '#3085d6'
           });
           fetchCourses(); // Refresh the list
         }
@@ -112,56 +91,73 @@ const CourseManagement = () => {
         icon: 'error',
         title: 'Error',
         text: error.message || 'Failed to delete course',
-        confirmButtonColor: '#3498db'
+        confirmButtonColor: '#3085d6'
       });
     }
   };
 
+  const handleEdit = (courseId) => {
+    try {
+      navigate(`/college/courses/edit/${courseId}`);
+    } catch (error) {
+      console.error('Navigation error:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to navigate to edit page',
+        confirmButtonColor: '#3085d6'
+      });
+    }
+  };
+
+  const filteredCourses = courses.filter(course => 
+    course.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    course.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="course-management-layout">
+        <CollegeSidebar />
+        <div className="loading">
+          <div className="spinner"></div>
+          <p>Loading courses...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="college-dashboard-layout">
+    <div className="course-management-layout">
       <CollegeSidebar />
-      
-      <main className="course-management-main">
-        <div className="course-header">
+      <div className="course-management-main">
+        <div className="course-management-header">
           <h1>Course Management</h1>
           <button 
+            onClick={() => navigate('/college/courses/add')} 
             className="add-course-btn"
-            onClick={() => navigate('/college/courses/add')}
           >
             <FaPlus /> Add New Course
           </button>
         </div>
 
-        {loading ? (
-          <div className="loading-container">
-            <div className="spinner"></div>
-            <p>Loading courses...</p>
-          </div>
-        ) : error ? (
-          <div className="error-container">
-            <p>{error}</p>
-            <button onClick={fetchCourses} className="retry-btn">
-              Retry
-            </button>
-          </div>
-        ) : courses.length === 0 ? (
-          <div className="no-courses">
-            <FaGraduationCap className="no-courses-icon" />
-            <p>No courses added yet</p>
-            <button 
-              onClick={() => navigate('/college/courses/add')}
-              className="add-first-course-btn"
-            >
-              Add Your First Course
-            </button>
-          </div>
-        ) : (
+        <div className="search-bar">
+          <FaSearch className="search-icon" />
+          <input
+            type="text"
+            placeholder="Search courses..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {filteredCourses.length > 0 ? (
           <div className="courses-grid">
-            {courses.map(course => (
+            {filteredCourses.map(course => (
               <div key={course._id} className="course-card">
                 <div className="course-image">
                   <img 
-                    src={course.image} 
+                    src={course.image || '/default-course.jpg'} 
                     alt={course.name}
                     onError={(e) => {
                       e.target.src = '/default-course.jpg';
@@ -169,47 +165,54 @@ const CourseManagement = () => {
                   />
                 </div>
                 <div className="course-info">
-                  <h3>{course.name}</h3>
-                  <p className="duration">
-                    <FaCalendarAlt /> {course.duration} {course.duration === 1 ? 'year' : 'years'}
+                  <h3>{course.name || 'Untitled Course'}</h3>
+                  <p className="description">
+                    {course.description || 'No description available'}
                   </p>
-                  <p className="fees">
-                    <span>₹{course.fees.toLocaleString()}</span>
-                  </p>
-                  <div className="seats-info">
-                    <p className="seats">
-                      <FaUserGraduate />
-                      <span>Total Seats: {course.seats.total}</span>
-                    </p>
-                    <p className="seats available">
-                      <span>Available: {course.seats.available}</span>
-                    </p>
-                    <p className="seats occupied">
-                      <span>Occupied: {course.seats.occupied}</span>
-                    </p>
+                  <div className="course-details">
+                    <span>Duration: {course.duration || 'N/A'} years</span>
+                    <span>Fees: ₹{(course.fees || 0).toLocaleString()}</span>
+                    <span>
+                      Seats: {course.seats?.available || 0}/{course.seats?.total || 0}
+                    </span>
                   </div>
-                </div>
-                <div className="course-actions">
-                  <button 
-                    className="edit-btn"
-                    onClick={() => navigate(`/college/courses/edit/${course._id}`)}
-                    title="Edit course"
-                  >
-                    <FaEdit /> Edit
-                  </button>
-                  <button 
-                    className="delete-btn"
-                    onClick={() => handleDelete(course._id)}
-                    title="Delete course"
-                  >
-                    <FaTrash /> Delete
-                  </button>
+                  <div className="course-actions">
+                    <button 
+                      onClick={() => handleEdit(course._id)}
+                      className="edit-btn"
+                    >
+                      <FaEdit /> Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(course._id)}
+                      className="delete-btn"
+                    >
+                      <FaTrash /> Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
+        ) : (
+          <div className="no-courses">
+            <FaGraduationCap className="no-courses-icon" />
+            <p>
+              {searchTerm 
+                ? 'No courses found matching your search.' 
+                : 'No courses found. Add your first course!'}
+            </p>
+            {!searchTerm && (
+              <button 
+                onClick={() => navigate('/college/courses/add')}
+                className="add-first-course-btn"
+              >
+                <FaPlus /> Add Course
+              </button>
+            )}
+          </div>
         )}
-      </main>
+      </div>
     </div>
   );
 };

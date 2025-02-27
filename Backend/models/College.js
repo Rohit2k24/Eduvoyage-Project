@@ -72,7 +72,21 @@ const collegeSchema = new mongoose.Schema({
   subscriptionEndDate: {
     type: Date
   },
-  rejectionReason: String
+  rejectionReason: String,
+  notificationPreferences: {
+    email: {
+      type: Boolean,
+      default: true
+    },
+    application: {
+      type: Boolean,
+      default: true
+    },
+    payment: {
+      type: Boolean,
+      default: true
+    }
+  }
 }, {
   timestamps: true
 });

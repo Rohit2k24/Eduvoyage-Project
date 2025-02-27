@@ -1,9 +1,14 @@
 const mongoose = require('mongoose');
 
 const NotificationSchema = new mongoose.Schema({
-  user: {
+  college: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'College',
+    required: true
+  },
+  type: {
+    type: String,
+    enum: ['application', 'payment', 'status_update', 'other'],
     required: true
   },
   title: {
@@ -14,31 +19,23 @@ const NotificationSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  type: {
-    type: String,
-    enum: [
-      'application_submitted',
-      'application_approved',
-      'application_rejected',
-      'application_cancelled',
-      'course_update',
-      'payment_received',
-      'document_required',
-      'general'
-    ],
-    default: 'general'
+  relatedTo: {
+    application: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Application'
+    },
+    payment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Payment'
+    },
+    course: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course'
+    }
   },
-  read: {
+  isRead: {
     type: Boolean,
     default: false
-  },
-  relatedId: {
-    type: mongoose.Schema.Types.ObjectId,
-    refPath: 'onModel'
-  },
-  onModel: {
-    type: String,
-    enum: ['Application', 'Course']
   },
   createdAt: {
     type: Date,

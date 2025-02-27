@@ -161,9 +161,16 @@ const CourseDetails = () => {
               <p>{course.description}</p>
             </div>
 
-            <div className="course-section">
-              <h2>Eligibility Criteria</h2>
-              <p>{course.eligibility}</p>
+            <div className="course-criteria">
+              <h3>Eligibility Criteria</h3>
+              <ul className="criteria-list">
+                {course.criteria.map((criteria, index) => (
+                  <li key={index} className="criteria-item">
+                    <span className="criteria-bullet">•</span>
+                    {criteria}
+                  </li>
+                ))}
+              </ul>
             </div>
 
             {course.curriculum && course.curriculum.length > 0 && (

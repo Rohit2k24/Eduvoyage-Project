@@ -246,4 +246,33 @@ exports.cancelApplication = asyncHandler(async (req, res, next) => {
     console.error('Error cancelling application:', error);
     next(new ErrorResponse(error.message || 'Error cancelling application', 500));
   }
-}); 
+});
+
+// Add this to your application submission handler
+const createNotification = async (collegeId, application) => {
+  await Notification.create({
+    college: collegeId,
+    type: 'application',
+    title: 'New Application Received',
+    message: `A new application has been received for ${application.course.name}`,
+    relatedTo: {
+      application: application._id,
+      course: application.course
+    }
+  });
+};
+
+// Add this to your payment confirmation handler
+const createPaymentNotification = async (collegeId, payment, application) => {
+  await Notification.create({
+    college: collegeId,
+    type: 'payment',
+    title: 'Application Fee Received',
+    message: `Application fee received for ${application.course.name}`,
+    relatedTo: {
+      payment: payment._id,
+      application: application._id,
+      course: application.course
+    }
+  });
+}; 

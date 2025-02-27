@@ -8,7 +8,6 @@ const {
   updateCourse,
   deleteCourse,
   getCourses,
-  getCourse
 } = require('../controllers/courseController');
 
 // Debug logging middleware
@@ -28,7 +27,7 @@ router.get('/', getCourses);
 
 // Protected routes
 router.post('/', protect, upload.single('image'), createCourse);
-router.get('/:id', protect, getCourse);
+// router.get('/:id', protect, getCourse);
 router.put('/:id', protect, upload.single('image'), updateCourse);
 router.delete('/:id', protect, deleteCourse);
 

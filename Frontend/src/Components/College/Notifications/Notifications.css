@@ -1,0 +1,162 @@
+.college-dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.notifications-main {
+  flex: 1;
+  margin-left: 250px;
+  padding: 30px;
+}
+
+.notifications-container {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.notifications-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.notifications-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: #2c3e50;
+}
+
+.bell-icon {
+  color: #3498db;
+}
+
+.mark-all-read-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mark-all-read-btn:hover {
+  background: #2980b9;
+}
+
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.notification-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 15px;
+  border: 1px solid #e1e1e1;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.notification-item.unread {
+  background: #f8f9fa;
+  border-left: 4px solid #3498db;
+}
+
+.notification-content {
+  flex: 1;
+  padding-right: 15px;
+}
+
+.notification-content h3 {
+  margin: 0 0 8px 0;
+  color: #2c3e50;
+  font-size: 1.1em;
+}
+
+.notification-content p {
+  margin: 0;
+  color: #666;
+  line-height: 1.4;
+}
+
+.notification-time {
+  font-size: 0.85em;
+  color: #999;
+  display: block;
+  margin-top: 8px;
+}
+
+.notification-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.mark-read-btn,
+.delete-btn {
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 4px;
+}
+
+.mark-read-btn {
+  color: #2ecc71;
+}
+
+.delete-btn {
+  color: #e74c3c;
+}
+
+.mark-read-btn:hover {
+  background: rgba(46, 204, 113, 0.1);
+}
+
+.delete-btn:hover {
+  background: rgba(231, 76, 60, 0.1);
+}
+
+.loading,
+.no-notifications {
+  text-align: center;
+  padding: 30px;
+  color: #666;
+  font-size: 1.1em;
+}
+
+@media (max-width: 768px) {
+  .notifications-main {
+    margin-left: 0;
+    padding: 15px;
+  }
+
+  .notifications-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .notification-item {
+    flex-direction: column;
+  }
+
+  .notification-actions {
+    margin-top: 10px;
+    justify-content: flex-end;
+    width: 100%;
+  }
+} 
