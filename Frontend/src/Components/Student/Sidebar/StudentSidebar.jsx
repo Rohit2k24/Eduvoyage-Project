@@ -44,7 +44,7 @@ const StudentSidebar = () => {
       </div>
       
       <nav className="sidebar-nav">
-        <Link to="/student/dashboard" className={`nav-item ${isActive('/student/dashboard') ? 'active' : ''}`}>
+        <Link to="/student-dashboard" className={`nav-item ${isActive('/student/dashboard') ? 'active' : ''}`}>
           <FaHome className="nav-icon" />
           <span>Dashboard</span>
         </Link>

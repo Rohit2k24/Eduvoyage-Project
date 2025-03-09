@@ -29,6 +29,7 @@ import CollegeCourses from './Components/Student/Colleges/CollegeCourses'
 import ErrorBoundary from './Components/ErrorBoundary'
 import Notifications from './Components/College/Notifications/Notifications'
 import Settings from './Components/College/Settings/Settings'
+import CourseApplication from './Components/Student/Applications/CourseApplication'
 import './App.css'
 
 function App() {
@@ -146,6 +147,12 @@ function App() {
         <Route path="/student/courses/:courseId" element={
           <ProtectedRoute allowedRoles={['student']}>
             <CourseDetails />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/student/apply/:courseId" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <CourseApplication />
           </ProtectedRoute>
         } />
         

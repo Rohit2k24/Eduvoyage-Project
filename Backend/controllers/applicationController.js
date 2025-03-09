@@ -1,33 +1,58 @@
 const Application = require('../models/Application');
 const Course = require('../models/Course');
+const Student = require('../models/Student');
+const Notification = require('../models/Notification');
+const College = require('../models/College');
 const asyncHandler = require('../middleware/async');
 const ErrorResponse = require('../utils/errorResponse');
-const Notification = require('../models/Notification');
 
-// @desc    Submit new application
-// @route   POST /api/student/applications
-// @access  Private (Student only)
-exports.submitApplication = asyncHandler(async (req, res, next) => {
+exports.submitApplication = asyncHandler(async (req, res) => {
   try {
     console.log('Submitting application - Request body:', req.body);
     const { courseId } = req.body;
 
-    if (!courseId) {
-      return next(new ErrorResponse('Course ID is required', 400));
-    }
-
-    // Check if course exists and has available seats
-    const course = await Course.findById(courseId)
-      .populate('college', 'name');
+    // Find course and populate college details
+    let course = await Course.findById(courseId)
+      .populate('college', 'name _id');
 
     if (!course) {
-      return next(new ErrorResponse('Course not found', 404));
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
     }
 
-    // Check if student has already applied
+    // If course has no college, try to find and associate one
+    if (!course.college) {
+      const college = await College.findOne();
+      if (!college) {
+        return res.status(400).json({
+          success: false,
+          message: 'No colleges available in the system'
+        });
+      }
+
+      course.college = college._id;
+      await course.save();
+      await course.populate('college', 'name _id');
+    }
+
+    // Find student
+    const student = await Student.findOne({ user: req.user._id })
+      .populate('user', 'name email');
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student profile not found'
+      });
+    }
+
+    // Check for existing application
     const existingApplication = await Application.findOne({
       student: req.user._id,
-      course: courseId
+      course: courseId,
+      status: { $in: ['pending', 'approved'] }
     });
 
     if (existingApplication) {
@@ -37,94 +62,45 @@ exports.submitApplication = asyncHandler(async (req, res, next) => {
       });
     }
 
-    // Check if seats are available
-    if (course.seats.available <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'No seats available for this course'
-      });
-    }
-
     // Create application
-    const application = new Application({
+    const application = await Application.create({
       student: req.user._id,
       course: courseId,
-      status: 'pending'
+      college: course.college._id,
+      status: 'pending',
+      applicationData: {
+        studentName: student.name || student.user.name,
+        studentEmail: student.email || student.user.email,
+        courseName: course.name,
+        collegeName: course.college.name
+      }
     });
 
-    // Save the application
-    await application.save();
-
-    // Update course seats
-    await Course.findByIdAndUpdate(courseId, {
-      $inc: { 'seats.available': -1 }
-    }, { 
-      new: true,
-      runValidators: true
-    });
-
-    // Try to create notification, but don't fail if it errors
-    try {
-      await Notification.create({
-        user: req.user._id,
-        title: 'Application Submitted',
-        message: `Your application for ${course.name} has been submitted successfully. Application number: ${application.applicationNumber}`,
-        type: 'application_submitted'
-      });
-    } catch (notificationError) {
-      console.error('Error creating notification:', notificationError);
-      // Continue execution even if notification creation fails
-    }
-
-    // Return success response
-    res.status(201).json({
-      success: true,
-      message: 'Application submitted successfully',
+    // Create notification
+    await Notification.create({
+      user: course.college._id,
+      userModel: 'College',
+      title: 'New Application',
+      message: `New application received for ${course.name}`,
+      type: 'application',
       data: {
         applicationId: application._id,
-        applicationNumber: application.applicationNumber,
         courseName: course.name,
-        collegeName: course.college.name,
-        status: application.status
+        studentName: student.name || student.user.name
       }
     });
+
+    res.status(201).json({
+      success: true,
+      data: application
+    });
+
   } catch (error) {
     console.error('Submit application error:', error);
-    
-    // Check if application was created despite the error
-    if (error.code === 11000) { // Duplicate key error
-      return res.status(400).json({
-        success: false,
-        message: 'You have already applied for this course'
-      });
-    }
-
-    // If application was created but there was an error in subsequent operations
-    try {
-      const application = await Application.findOne({
-        student: req.user._id,
-        course: req.body.courseId
-      });
-
-      if (application) {
-        // Return success even if notification creation failed
-        return res.status(201).json({
-          success: true,
-          message: 'Application submitted successfully',
-          data: {
-            applicationId: application._id,
-            applicationNumber: application.applicationNumber,
-            courseName: course.name,
-            collegeName: course.college.name,
-            status: application.status
-          }
-        });
-      }
-    } catch (findError) {
-      console.error('Error finding application:', findError);
-    }
-
-    next(new ErrorResponse('Error submitting application', 500));
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error submitting application'
+    });
   }
 });
 
@@ -231,12 +207,23 @@ exports.cancelApplication = asyncHandler(async (req, res, next) => {
     );
 
     // Create notification for cancellation
-    await Notification.create({
-      user: req.user._id,
-      title: 'Application Cancelled',
-      message: `Your application for ${courseName} has been cancelled.`,
-      type: 'application_cancelled'
-    });
+    try {
+      await Notification.create({
+        user: req.user._id,
+        userModel: 'Student',
+        title: 'Application Cancelled',
+        message: `Your application for ${courseName} has been cancelled.`,
+        type: 'system',
+        data: {
+          courseId: application.course._id,
+          courseName: courseName,
+          applicationId: application._id
+        }
+      });
+    } catch (notificationError) {
+      console.error('Error creating notification:', notificationError);
+      // Don't fail the cancellation if notification fails
+    }
 
     res.status(200).json({
       success: true,
@@ -275,4 +262,87 @@ const createPaymentNotification = async (collegeId, payment, application) => {
       course: application.course
     }
   });
-}; 
+};
+
+exports.createApplication = asyncHandler(async (req, res) => {
+  try {
+    // Get student profile with proper population
+    const student = await Student.findOne({ user: req.user.id })
+      .populate('academicDetails qualifications')
+      .select('academicDetails qualifications marks documents');
+
+    // Updated profile completion check
+    if (!student || 
+        !student.academicDetails || 
+        !student.qualifications || 
+        !student.qualifications.length || 
+        !student.marks) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please complete your profile before applying'
+      });
+    }
+
+    // Get course and college details
+    const course = await Course.findById(req.body.courseId)
+      .populate('college', 'name email');
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Check if student has already applied
+    const existingApplication = await Application.findOne({
+      student: student._id,
+      course: course._id,
+      status: { $in: ['pending', 'approved'] }
+    });
+
+    if (existingApplication) {
+      return res.status(400).json({
+        success: false,
+        message: 'You have already applied for this course'
+      });
+    }
+
+    // Create application with profile data
+    const application = await Application.create({
+      student: student._id,
+      course: course._id,
+      college: course.college._id,
+      profileData: {
+        academicDetails: student.academicDetails,
+        qualifications: student.qualifications,
+        marks: student.marks,
+        documents: student.documents || []
+      }
+    });
+
+    // Create notification for college
+    await Notification.create({
+      user: course.college._id,
+      title: 'New Application',
+      message: `New application received for ${course.name}`,
+      type: 'application',
+      data: {
+        applicationId: application._id,
+        courseName: course.name,
+        studentName: student.name
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: application
+    });
+  } catch (error) {
+    console.error('Application creation error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error creating application'
+    });
+  }
+});

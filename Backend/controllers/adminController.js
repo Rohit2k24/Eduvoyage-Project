@@ -3,6 +3,7 @@ const Student = require('../models/Student');
 const College = require('../models/College');
 const asyncHandler = require('../middleware/async');
 const ErrorResponse = require('../utils/errorResponse');
+const Notification = require('../models/Notification');
 
 exports.getDashboardStats = async (req, res) => {
   try {
@@ -24,22 +25,17 @@ exports.getDashboardStats = async (req, res) => {
   }
 };
 
-exports.getAllColleges = async (req, res) => {
-  try {
-    const colleges = await College.find()
-      .sort({ createdAt: -1 }); // Most recent first
+exports.getAllColleges = asyncHandler(async (req, res) => {
+  const colleges = await College.find()
+    .select('name contactEmail location university verificationStatus paymentStatus documents')
+    .sort('-createdAt');
 
-    res.status(200).json({
-      success: true,
-      colleges
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching colleges'
-    });
-  }
-};
+  res.status(200).json({
+    success: true,
+    count: colleges.length,
+    colleges
+  });
+});
 
 exports.approveCollege = async (req, res) => {
   try {
@@ -104,87 +100,153 @@ exports.rejectCollege = async (req, res) => {
 // @route   GET /api/admin/students
 exports.getStudents = asyncHandler(async (req, res) => {
   const students = await Student.find()
-    .populate({
-      path: 'user',
-      select: 'name email profileImage role',
-      match: { role: 'student' } // Only include students
-    })
-    .populate({
-      path: 'applications',
-      select: 'status course'
-    })
-    .select('-password')
-    .lean();
-
-  // Filter out any null users (admin accounts)
-  const filteredStudents = students.filter(student => student.user !== null);
+    .populate('user', 'email accountStatus')
+    .select('-__v')
+    .sort('-createdAt');
 
   res.status(200).json({
     success: true,
-    count: filteredStudents.length,
-    data: filteredStudents
+    count: students.length,
+    data: students
   });
 });
 
 // @desc    Update student details
 // @route   PUT /api/admin/students/:id
-exports.updateStudent = asyncHandler(async (req, res, next) => {
-  const { name, dateOfBirth, country } = req.body;
-  
-  const student = await Student.findByIdAndUpdate(
-    req.params.id,
-    { name, dateOfBirth, country },
-    { new: true, runValidators: true }
-  ).populate('user', 'email');
+exports.updateStudent = asyncHandler(async (req, res) => {
+  const student = await Student.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+    runValidators: true
+  });
 
   if (!student) {
-    return next(new ErrorResponse('Student not found', 404));
+    return res.status(404).json({
+      success: false,
+      message: 'Student not found'
+    });
   }
 
-  res.status(200).json({ 
-    success: true, 
-    data: student 
+  res.status(200).json({
+    success: true,
+    data: student
   });
 });
 
 // @desc    Toggle student account status
 // @route   PUT /api/admin/students/:id/toggle-status
-exports.toggleStudentStatus = asyncHandler(async (req, res, next) => {
-  const student = await Student.findById(req.params.id);
-  
+exports.toggleStudentStatus = asyncHandler(async (req, res) => {
+  const student = await Student.findById(req.params.id).populate('user');
+
   if (!student) {
-    return next(new ErrorResponse('Student not found', 404));
+    return res.status(404).json({
+      success: false,
+      message: 'Student not found'
+    });
   }
 
-  student.accountActive = !student.accountActive;
-  await student.save();
+  student.user.accountStatus = !student.user.accountStatus;
+  await student.user.save();
 
-  res.status(200).json({ 
-    success: true, 
-    data: { 
-      _id: student._id, 
-      accountActive: student.accountActive 
-    } 
+  res.status(200).json({
+    success: true,
+    data: student
   });
 });
 
 // @desc    Deactivate student account
 // @route   PUT /api/admin/students/:id/deactivate
-exports.deactivateStudent = asyncHandler(async (req, res, next) => {
-  const student = await Student.findById(req.params.id);
-  
+exports.deactivateStudent = asyncHandler(async (req, res) => {
+  const student = await Student.findById(req.params.id).populate('user');
+
   if (!student) {
-    return next(new ErrorResponse('Student not found', 404));
+    return res.status(404).json({
+      success: false,
+      message: 'Student not found'
+    });
   }
 
-  student.accountActive = false;
-  await student.save();
+  student.user.accountStatus = false;
+  await student.user.save();
 
-  res.status(200).json({ 
-    success: true, 
-    data: { 
-      _id: student._id, 
-      status: 'deactivated' 
-    } 
+  res.status(200).json({
+    success: true,
+    message: 'Student account deactivated'
+  });
+});
+
+// Update college verification status
+exports.updateCollegeStatus = asyncHandler(async (req, res) => {
+  const { status, reason } = req.body;
+  const college = await College.findById(req.params.id);
+
+  if (!college) {
+    return res.status(404).json({
+      success: false,
+      message: 'College not found'
+    });
+  }
+
+  college.verificationStatus = status;
+  if (reason) {
+    college.rejectionReason = reason;
+  }
+
+  await college.save();
+
+  // Send notification to college
+  await Notification.create({
+    recipient: college.user,
+    title: `College Verification ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+    message: status === 'approved' 
+      ? 'Your college has been verified and approved.'
+      : `Your college verification was rejected. Reason: ${reason}`,
+    type: 'verification'
+  });
+
+  res.status(200).json({
+    success: true,
+    data: college
+  });
+});
+
+// Update college details
+exports.updateCollege = asyncHandler(async (req, res) => {
+  const college = await College.findByIdAndUpdate(
+    req.params.id,
+    req.body,
+    {
+      new: true,
+      runValidators: true
+    }
+  );
+
+  if (!college) {
+    return res.status(404).json({
+      success: false,
+      message: 'College not found'
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: college
+  });
+});
+
+// Get college details
+exports.getCollegeDetails = asyncHandler(async (req, res) => {
+  const college = await College.findById(req.params.id)
+    .select('-__v');
+
+  if (!college) {
+    return res.status(404).json({
+      success: false,
+      message: 'College not found'
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: college
   });
 }); 

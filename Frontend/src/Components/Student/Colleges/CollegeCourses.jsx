@@ -27,15 +27,18 @@ const CollegeCourses = () => {
 
   const fetchCollegeAndCourses = async () => {
     try {
-      console.log('Fetching college details for ID:', collegeId);
-      const response = await fetch(`http://localhost:3000/api/student/colleges/${collegeId}`, {
+      setLoading(true);
+      const response = await fetch(`http://localhost:3000/api/courses/college/${collegeId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        if (response.status === 404) {
+          throw new Error('College not found');
+        }
+        throw new Error('Failed to fetch college details');
       }
 
       const data = await response.json();
@@ -50,7 +53,7 @@ const CollegeCourses = () => {
       setError(null);
     } catch (error) {
       console.error('Error fetching college details:', error);
-      setError('Failed to load college details. Please try again later.');
+      setError(error.message || 'Failed to load college details. Please try again later.');
     } finally {
       setLoading(false);
     }

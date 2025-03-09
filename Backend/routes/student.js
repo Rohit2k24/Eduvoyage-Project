@@ -145,12 +145,22 @@ router.get('/profile', protect, async (req, res) => {
 router.put('/profile', protect, upload.fields([
   { name: 'profilePic', maxCount: 1 },
   { name: 'passportDocument', maxCount: 1 },
-  { name: 'educationDocuments', maxCount: 10 } // Allow multiple education documents
+  { name: 'educationDocuments', maxCount: 10 }
 ]), async (req, res) => {
   try {
+    console.log("entered profile update");
+    console.log("Request body:", req.body);
     const updateData = { ...req.body };
     
-    // Handle profile picture upload
+    // Validate gender if provided
+    if (updateData.gender && !['male', 'female', 'other'].includes(updateData.gender)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid gender value. Must be "male", "female", or "other"'
+      });
+    }
+
+    // Handle file uploads first
     if (req.files?.profilePic) {
       const result = await cloudinary.uploader.upload(req.files.profilePic[0].path, {
         folder: 'eduvoyage/profiles',
@@ -162,55 +172,32 @@ router.put('/profile', protect, upload.fields([
       updateData.profilePic = result.secure_url;
     }
 
-    // Handle passport document upload
-    if (req.files?.passportDocument) {
-      const result = await cloudinary.uploader.upload(req.files.passportDocument[0].path, {
-        folder: 'eduvoyage/passports',
-        resource_type: 'auto'
-      });
-      
-      let passportData = {};
-      if (updateData.passport) {
-        try {
-          passportData = JSON.parse(updateData.passport);
-        } catch (e) {
-          console.error('Error parsing passport data:', e);
-        }
-      }
-      updateData.passport = JSON.stringify({
-        ...passportData,
-        document: result.secure_url
-      });
-    }
-
-    // Handle education documents upload
-    if (req.files?.educationDocuments) {
-      const uploadPromises = req.files.educationDocuments.map(file => 
-        cloudinary.uploader.upload(file.path, {
-          folder: 'eduvoyage/education',
-          resource_type: 'auto'
-        })
-      );
-
-      const uploadResults = await Promise.all(uploadPromises);
-      
-      let educationData = {};
+    // Parse JSON strings if they exist
+    try {
       if (updateData.education) {
-        try {
-          educationData = JSON.parse(updateData.education);
-          // Map each document URL to its corresponding qualification
-          educationData.qualifications = educationData.qualifications.map((qual, index) => ({
-            ...qual,
-            documents: uploadResults[index]?.secure_url || qual.documents
-          }));
-        } catch (e) {
-          console.error('Error parsing education data:', e);
-        }
+        updateData.education = JSON.parse(updateData.education);
       }
-      updateData.education = educationData;
-    } else if (updateData.education) {
-      updateData.education = JSON.parse(updateData.education);
+      if (updateData.passport) {
+        updateData.passport = JSON.parse(updateData.passport);
+      }
+    } catch (error) {
+      console.error('Error parsing JSON data:', error);
     }
+
+    // Prepare the student update data
+    const studentUpdateData = {
+      name: updateData.name,
+      email: updateData.email,
+      phone: updateData.phone,
+      address: updateData.address,
+      gender: updateData.gender,
+      dateOfBirth: updateData.dateOfBirth,
+      education: updateData.education,
+      passport: updateData.passport,
+      profilePic: updateData.profilePic
+    };
+
+    console.log("Student update data:", studentUpdateData);
 
     // Update both User and Student models
     const [user, student] = await Promise.all([
@@ -218,18 +205,19 @@ router.put('/profile', protect, upload.fields([
         req.user._id,
         {
           name: updateData.name,
-          phone: updateData.phone,
-          email: updateData.email
+          email: updateData.email,
+          phone: updateData.phone
         },
         { new: true }
       ),
       Student.findOneAndUpdate(
         { user: req.user._id },
-        {
-          ...updateData,
-          passport: JSON.parse(updateData.passport || '{}')
-        },
-        { new: true, runValidators: true }
+        studentUpdateData,
+        { 
+          new: true, 
+          runValidators: true,
+          context: 'query'
+        }
       ).populate('user', 'email name phone')
     ]);
 
@@ -246,7 +234,8 @@ router.put('/profile', protect, upload.fields([
       success: true,
       profile: {
         ...student.toObject(),
-        email: user.email
+        email: user.email,
+        gender: student.gender
       }
     });
   } catch (error) {
@@ -392,6 +381,41 @@ router.get('/colleges/:id', protect, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching college details'
+    });
+  }
+});
+
+// Add this route to fix course-college association before application
+router.post('/check-course/:courseId', protect, async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.courseId)
+      .populate('college', 'name _id');
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    if (!course.college) {
+      const college = await College.findOne();
+      if (college) {
+        course.college = college._id;
+        await course.save();
+        await course.populate('college', 'name _id');
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    console.error('Check course error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error checking course'
     });
   }
 });

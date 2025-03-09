@@ -18,6 +18,11 @@ const StudentSchema = new mongoose.Schema({
       'Please add a valid email'
     ]
   },
+  gender: {
+    type: String,
+    enum: ['male', 'female', 'other'],
+    required: [true, 'Please specify gender']
+  },
   phone: {
     type: String
   },

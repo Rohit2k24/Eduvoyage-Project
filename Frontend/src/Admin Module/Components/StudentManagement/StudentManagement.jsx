@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FaUser, FaEdit, FaToggleOff, FaToggleOn, FaSearch } from 'react-icons/fa';
+import Sidebar from '../Sidebar/Sidebar';
 import Swal from 'sweetalert2';
 import './StudentManagement.css';
 
@@ -26,7 +27,9 @@ const StudentManagement = () => {
         }
       });
       const data = await response.json();
-      setStudents(data.data);
+      if (data.success) {
+        setStudents(data.data);
+      }
       setLoading(false);
     } catch (error) {
       console.error('Error fetching students:', error);
@@ -149,141 +152,134 @@ const StudentManagement = () => {
     });
   };
 
-  const filteredStudents = students.filter(student => {
-    const studentName = student.name?.toLowerCase() || '';
-    const userEmail = student.user?.email?.toLowerCase() || '';
-    return studentName.includes(searchTerm.toLowerCase()) || 
-           userEmail.includes(searchTerm.toLowerCase());
-  });
+  const filteredStudents = students.filter(student =>
+    student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.user?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="student-management">
-      <div className="management-header">
-        <h1><FaUser /> Student Management</h1>
-        <div className="search-bar">
-          <FaSearch />
-          <input
-            type="text"
-            placeholder="Search students..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="loading">Loading students...</div>
-      ) : (
-        <div className="students-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Applications</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredStudents.map(student => (
-                <tr key={student._id} className="student-row">
-                  <td className="student-name">
-                    <div className="user-info">
-                      {/* <img 
-                        src={student.user?.profileImage || '/default-avatar.png'} 
-                        alt="Profile" 
-                        className="profile-image"
-                      /> */}
-                      <div>
-                        <div className="student-name-text">{student.name || 'No Name'}</div>
-                        <div className="student-id">ID: {student._id || 'N/A'}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="student-email">
-                    <a href={`mailto:${student.user?.email}`}>
-                      {student.user?.email || 'No email'}
-                    </a>
-                  </td>
-                  <td className="applications-count">
-                    <div className="count-badge">
-                      {student.applications?.length || 0}
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`status ${student.accountActive ? 'active' : 'inactive'}`}>
-                      {student.accountActive ? (
-                        <><FaToggleOn className="status-icon" /> Active</>
-                      ) : (
-                        <><FaToggleOff className="status-icon" /> Inactive</>
-                      )}
-                    </span>
-                  </td>
-                  <td className="actions">
-                    <button className="btn-action btn-edit" onClick={() => openEditModal(student)}>
-                      <FaEdit className="action-icon" />
-                    </button>
-                    <button 
-                      className={`btn-action btn-toggle ${student.accountActive ? 'active' : 'inactive'}`}
-                      onClick={() => handleToggleStatus(student._id, student.accountActive)}
-                    >
-                      {student.accountActive ? <FaToggleOn /> : <FaToggleOff />}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {selectedStudent && (
-        <div className="edit-modal">
-          <div className="modal-content">
-            <h3>Edit Student Details</h3>
-            <form onSubmit={handleEditSubmit}>
-              <div className="form-group">
-                <label>Full Name:</label>
-                <input
-                  type="text"
-                  value={editFormData.name}
-                  onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Date of Birth:</label>
-                <input
-                  type="date"
-                  value={editFormData.dateOfBirth}
-                  onChange={(e) => setEditFormData({...editFormData, dateOfBirth: e.target.value})}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Country:</label>
-                <select
-                  value={editFormData.country}
-                  onChange={(e) => setEditFormData({...editFormData, country: e.target.value})}
-                  required
-                >
-                  <option value="">Select Country</option>
-                  <option value="IN">India</option>
-                  <option value="US">United States</option>
-                  <option value="UK">United Kingdom</option>
-                </select>
-              </div>
-              <div className="modal-actions">
-                <button type="button" onClick={() => setSelectedStudent(null)}>
-                  Cancel
-                </button>
-                <button type="submit">Save Changes</button>
-              </div>
-            </form>
+    <div className="admin-layout">
+      <Sidebar />
+      <div className="management-main">
+        <div className="management-header">
+          <h1><FaUser /> Student Management</h1>
+          <div className="search-bar">
+            <FaSearch />
+            <input
+              type="text"
+              placeholder="Search students..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </div>
-      )}
+
+        {loading ? (
+          <div className="loading">Loading students...</div>
+        ) : (
+          <div className="students-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Applications</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredStudents.map(student => (
+                  <tr key={student._id} className="student-row">
+                    <td className="student-name">
+                      <div className="user-info">
+                        <div>
+                          <div className="student-name-text">{student.name || 'No Name'}</div>
+                          <div className="student-id">ID: {student._id}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="student-email">
+                      {student.user?.email || 'No email'}
+                    </td>
+                    <td className="applications-count">
+                      <div className="count-badge">
+                        {student.applications?.length || 0}
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`status ${student.accountActive ? 'active' : 'inactive'}`}>
+                        {student.accountActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="actions">
+                      <button 
+                        className="btn-action btn-edit"
+                        onClick={() => openEditModal(student)}
+                      >
+                        <FaEdit />
+                      </button>
+                      <button 
+                        className={`btn-action btn-toggle ${student.accountActive ? 'active' : ''}`}
+                        onClick={() => handleToggleStatus(student._id, student.accountActive)}
+                      >
+                        {student.accountActive ? <FaToggleOn /> : <FaToggleOff />}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {selectedStudent && (
+          <div className="edit-modal">
+            <div className="modal-content">
+              <h3>Edit Student Details</h3>
+              <form onSubmit={handleEditSubmit}>
+                <div className="form-group">
+                  <label>Full Name:</label>
+                  <input
+                    type="text"
+                    value={editFormData.name}
+                    onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Date of Birth:</label>
+                  <input
+                    type="date"
+                    value={editFormData.dateOfBirth}
+                    onChange={(e) => setEditFormData({...editFormData, dateOfBirth: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Country:</label>
+                  <select
+                    value={editFormData.country}
+                    onChange={(e) => setEditFormData({...editFormData, country: e.target.value})}
+                    required
+                  >
+                    <option value="">Select Country</option>
+                    <option value="IN">India</option>
+                    <option value="US">United States</option>
+                    <option value="UK">United Kingdom</option>
+                  </select>
+                </div>
+                <div className="modal-actions">
+                  <button type="button" onClick={() => setSelectedStudent(null)}>
+                    Cancel
+                  </button>
+                  <button type="submit">Save Changes</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

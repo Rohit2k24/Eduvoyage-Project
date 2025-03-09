@@ -47,7 +47,9 @@ const StudentProfile = () => {
       document: null
     },
     address: '',
-    profilePic: ''
+    profilePic: '',
+    gender: '',
+    dateOfBirth: ''
   });
 
   const [loading, setLoading] = useState(true);
@@ -89,7 +91,9 @@ const StudentProfile = () => {
             document: null
           },
           address: profileData.address || '',
-          profilePic: profileData.profilePic || ''
+          profilePic: profileData.profilePic || '',
+          gender: profileData.gender || '',
+          dateOfBirth: profileData.dateOfBirth || ''
         });
 
         if (profileData.profilePic) {
@@ -187,53 +191,31 @@ const StudentProfile = () => {
     e.preventDefault();
     try {
       setLoading(true);
+      
+      // Create form data
       const formDataToSend = new FormData();
-
+      
       // Append basic fields
-      ['name', 'email', 'phone', 'address'].forEach(field => {
-        formDataToSend.append(field, formData[field] || '');
-      });
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('email', formData.email);
+      formDataToSend.append('phone', formData.phone);
+      formDataToSend.append('address', formData.address);
+      formDataToSend.append('gender', formData.gender);
+      formDataToSend.append('dateOfBirth', formData.dateOfBirth);
 
-      // Append profile picture if selected
-      if (selectedFile) {
-        formDataToSend.append('profilePic', selectedFile);
+      // Handle education data
+      if (formData.education) {
+        formDataToSend.append('education', JSON.stringify(formData.education));
       }
 
-      // Handle education documents
-      const educationData = {
-        ...formData.education,
-        qualifications: formData.education.qualifications.map(qual => ({
-          level: qual.level,
-          qualification: qual.qualification,
-          institute: qual.institute,
-          board: qual.board,
-          yearOfCompletion: qual.yearOfCompletion,
-          percentage: qual.percentage,
-          documents: qual.documents instanceof File ? '' : qual.documents // Keep existing URL if not a new file
-        }))
-      };
+      // Handle passport data
+      if (formData.passport) {
+        formDataToSend.append('passport', JSON.stringify(formData.passport));
+      }
 
-      // Append education data
-      formDataToSend.append('education', JSON.stringify(educationData));
-
-      // Append education documents separately
-      formData.education.qualifications.forEach((qual, index) => {
-        if (qual.documents instanceof File) {
-          formDataToSend.append('educationDocuments', qual.documents);
-        }
-      });
-
-      // Append passport data
-      const passportData = {
-        number: formData.passport.number || '',
-        expiryDate: formData.passport.expiryDate || '',
-        document: formData.passport.document instanceof File ? '' : formData.passport.document
-      };
-      formDataToSend.append('passport', JSON.stringify(passportData));
-
-      // Append files
-      if (formData.passport.document instanceof File) {
-        formDataToSend.append('passportDocument', formData.passport.document);
+      // Handle file uploads
+      if (selectedFile) {
+        formDataToSend.append('profilePic', selectedFile);
       }
 
       const response = await axiosInstance.put('/student/profile', formDataToSend, {
@@ -243,14 +225,16 @@ const StudentProfile = () => {
       });
 
       if (response.data.success) {
+        setProfile(response.data.profile);
+        setEditing(false);
         Swal.fire({
           icon: 'success',
           title: 'Success',
           text: 'Profile updated successfully'
         });
-        setEditing(false);
-        setSelectedFile(null);
-        fetchProfile();
+        
+        // Refresh profile data
+        await fetchProfile();
       }
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -637,6 +621,22 @@ const StudentProfile = () => {
                   />
                 </div>
 
+                <div className="form-group">
+                  <label>Gender</label>
+                  <select
+                    name="gender"
+                    value={formData.gender || ''}
+                    onChange={handleInputChange}
+                    required
+                    className="form-control"
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
                 <div className="form-actions">
                   <button type="submit" className="save-btn" disabled={loading}>
                     {loading ? 'Saving...' : <><FaSave /> Save Changes</>}
@@ -670,6 +670,14 @@ const StudentProfile = () => {
                       <label>Phone</label>
                       <p>{profile?.phone || 'Not provided'}</p>
                     </div>
+                  </div>
+                  <div className="info-item">
+                    <span className="label">Gender:</span>
+                    <span className="value">
+                      {profile?.gender ? 
+                        profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1) 
+                        : 'Not specified'}
+                    </span>
                   </div>
                 </div>
 

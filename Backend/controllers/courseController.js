@@ -260,57 +260,114 @@ exports.deleteCourse = async (req, res) => {
   }
 };
 
-exports.getCourses = asyncHandler(async (req, res, next) => {
+exports.getCourses = asyncHandler(async (req, res) => {
   try {
-    console.log('Getting courses...');
-    
-    // For public access, show all active courses with college info
-    const courses = await Course.find()
-      .populate({
-        path: 'college',
-        select: 'name location'
-      })
-      .select('name description duration fees image college')
-      .lean();
+    const courses = await Course.find({ status: 'active' })
+      .populate('college', 'name location')
+      .select('name description duration fees image startDate applicationDeadline seats eligibilityCriteria college')
+      .sort('-createdAt');
 
-    console.log(`Found ${courses.length} courses`);
-
-    // Add default values for any missing fields
     const processedCourses = courses.map(course => ({
-      ...course,
+      _id: course._id,
+      name: course.name,
+      description: course.description,
+      duration: course.duration,
+      fees: course.fees,
       image: course.image || '/default-course.jpg',
-      description: course.description || 'No description available',
-      duration: course.duration || 'Not specified',
-      fees: course.fees || 0,
+      startDate: course.startDate,
+      applicationDeadline: course.applicationDeadline,
+      availableSeats: course.seats?.available || 0,
+      eligibilityCriteria: course.eligibilityCriteria || [],
       college: {
-        name: course.college?.name || 'Unknown College',
-        location: course.college?.location || 'Location not specified'
+        _id: course.college?._id,
+        name: course.college?.name,
+        location: course.college?.location
       }
     }));
 
     res.status(200).json({
       success: true,
       count: processedCourses.length,
-      courses: processedCourses
+      data: processedCourses
     });
   } catch (error) {
-    console.error('Error fetching courses:', error);
-    return next(new ErrorResponse('Error fetching courses', 500));
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching courses'
+    });
   }
 });
 
-exports.getCourse = async (req, res) => {
+exports.getCollegeCourses = asyncHandler(async (req, res) => {
   try {
-    console.log('Getting course details...');
-    console.log('Course ID:', req.params.id);
-    console.log('User ID:', req.user.id);
+    // First, find the college
+    console.log('College ID:', req.user.id);
+    const college = await College.findById({user:req.user.id})
+      .select('name description location university establishmentYear accreditation facilities address phoneNumber contactEmail documents user');
 
-    const course = await Course.findOne({
-      _id: req.params.id,
-      college: req.user.id
-    }).lean();
+    if (!college) {
+      return res.status(404).json({
+        success: false,
+        message: 'College not found'
+      });
+    }
+    console.log('College:', college);
+    // Then find courses for this college using college.user as the reference
+    const courses = await Course.find({ 
+      college: college._id, // Use college._id instead of college.user
+      status: 'active'
+    })
+    .populate('college', 'name location')
+    .select('name description duration fees image startDate applicationDeadline seats eligibilityCriteria')
+    .sort('-createdAt');
 
-    console.log('Found course:', course);
+    const processedCourses = courses.map(course => ({
+      _id: course._id,
+      name: course.name,
+      description: course.description,
+      duration: course.duration,
+      fees: course.fees,
+      image: course.image || '/default-course.jpg',
+      startDate: course.startDate,
+      applicationDeadline: course.applicationDeadline,
+      seats: course.seats,
+      eligibilityCriteria: course.eligibilityCriteria || []
+    }));
+
+    // Send both college and courses data
+    res.status(200).json({
+      success: true,
+      college: {
+        _id: college._id,
+        name: college.name,
+        description: college.description,
+        location: college.location,
+        university: college.university,
+        establishmentYear: college.establishmentYear,
+        accreditation: college.accreditation,
+        facilities: college.facilities || [],
+        address: college.address,
+        phoneNumber: college.phoneNumber,
+        contactEmail: college.contactEmail,
+        documents: college.documents || {}
+      },
+      courses: processedCourses
+    });
+  } catch (error) {
+    console.error('Error in getCollegeCourses:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching college details and courses'
+    });
+  }
+});
+
+exports.getCourse = asyncHandler(async (req, res) => {
+  try {
+    console.log('Fetching course with ID:', req.params.id);
+    const course = await Course.findById(req.params.id)
+      .populate('college', 'name location contactEmail phoneNumber')
+      .select('-__v');
 
     if (!course) {
       return res.status(404).json({
@@ -319,39 +376,17 @@ exports.getCourse = async (req, res) => {
       });
     }
 
-    // Format dates and ensure all fields are present
-    const formattedCourse = {
-      _id: course._id,
-      name: course.name,
-      description: course.description,
-      duration: course.duration,
-      fees: course.fees,
-      seats: {
-        total: course.seats?.total || 0,
-        available: course.seats?.available || 0
-      },
-      eligibilityCriteria: course.eligibilityCriteria || [''],
-      startDate: course.startDate ? new Date(course.startDate).toISOString().split('T')[0] : '',
-      applicationDeadline: course.applicationDeadline ? 
-        new Date(course.applicationDeadline).toISOString().split('T')[0] : '',
-      image: course.image || null,
-      status: course.status || 'active'
-    };
-
-    console.log('Formatted course:', formattedCourse);
-
     res.status(200).json({
       success: true,
-      data: formattedCourse
+      data: course
     });
   } catch (error) {
-    console.error('Error in getCourse:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching course details'
     });
   }
-};
+});
 
 exports.getAllCoursesForStudent = asyncHandler(async (req, res) => {
   const courses = await Course.find({ status: 'active' })
@@ -418,50 +453,4 @@ exports.getCourseDetailsForStudent = asyncHandler(async (req, res) => {
       }
     }
   });
-});
-
-// Get all courses for a specific college
-exports.getCollegeCourses = asyncHandler(async (req, res) => {
-  try {
-    console.log('Getting college courses...');
-    console.log('User ID:', req.user.id);
-    
-    // Find courses directly using the college ID from the authenticated user
-    const courses = await Course.find({ college: req.user.id })
-      .populate({
-        path: 'college',
-        select: 'name location'
-      })
-      .lean();
-    
-    console.log('Found courses:', courses); // Debug log
-
-    const processedCourses = courses.map(course => ({
-      _id: course._id,
-      name: course.name,
-      description: course.description,
-      duration: course.duration,
-      fees: course.fees,
-      image: course.image || '/default-course.jpg',
-      seats: {
-        total: course.seats?.total || 0,
-        available: course.seats?.available || 0
-      },
-      startDate: course.startDate,
-      applicationDeadline: course.applicationDeadline,
-      status: course.status || 'active',
-      eligibilityCriteria: course.eligibilityCriteria || []
-    }));
-
-    res.status(200).json({
-      success: true,
-      data: processedCourses // Changed from 'courses' to 'data' to match frontend expectation
-    });
-  } catch (error) {
-    console.error('Error in getCollegeCourses:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching courses'
-    });
-  }
 });

@@ -46,27 +46,16 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Debug middleware - log all requests
-app.use((req, res, next) => {
-  console.log('Incoming request:', {
-    method: req.method,
-    path: req.url,
-    body: req.body,
-    headers: req.headers
-  });
-  next();
-});
-
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK' });
 });
 
-// Mount routes - Update the order to be more specific
+// Mount routes
 app.use('/api/auth', authRoutes);
+app.use('/api/courses', courseRoutes);
 app.use('/api/college', collegeRoutes);
 app.use('/api/student', studentRoutes);
-app.use('/api/college/courses', courseRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Add error handling middleware

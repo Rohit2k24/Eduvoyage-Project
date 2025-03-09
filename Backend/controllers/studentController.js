@@ -302,37 +302,30 @@ exports.handleDigilockerCallback = async (req, res) => {
   }
 };
 
-exports.getProfile = async (req, res) => {
+exports.getProfile = asyncHandler(async (req, res) => {
   try {
     const student = await Student.findOne({ user: req.user.id })
-      .populate('user', 'name email profilePic');
-    
+      .select('name email gender dateOfBirth phone address education passport profilePic status')
+      .populate('user', 'name email');
+
     if (!student) {
       return res.status(404).json({
         success: false,
-        message: 'Student profile not found'
+        message: 'Student not found'
       });
     }
 
     res.status(200).json({
       success: true,
-      profile: {
-        name: student.user.name,
-        email: student.user.email,
-        phone: student.phone,
-        education: student.education,
-        profilePic: student.user.profilePic,
-        // ... other fields
-      }
+      data: student
     });
   } catch (error) {
-    console.error('Get profile error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: error.message || 'Error fetching profile'
     });
   }
-};
+});
 
 // Configure Cloudinary storage
 const storage = new CloudinaryStorage({
@@ -359,62 +352,48 @@ const upload = multer({
   }
 }).single('passportDocument');
 
-exports.updateProfile = async (req, res) => {
+exports.updateProfile = asyncHandler(async (req, res) => {
   try {
-    const updates = { ...req.body };
-    let profilePicUrl = '';
-    
-    if(req.file) {
-      const result = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          {
-            folder: 'student-profiles',
-            transformation: [
-              { width: 500, height: 500, crop: 'fill' },
-              { quality: 'auto' }
-            ]
-          },
-          (error, result) => {
-            if(result) resolve(result);
-            else reject(error);
-          }
-        );
-        
-        streamifier.createReadStream(req.file.buffer).pipe(stream);
+    const {
+      name,
+      gender,
+      dateOfBirth,
+      phone,
+      address,
+      // ... other fields
+    } = req.body;
+
+    const student = await Student.findOne({ user: req.user.id });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found'
       });
-
-      profilePicUrl = result.secure_url;
     }
+    console.log("student",student);
+    // Update student profile
+    student.name = name || student.name;
+    student.gender = gender || student.gender;
+    student.dateOfBirth = dateOfBirth || student.dateOfBirth;
+    student.phone = phone || student.phone;
+    student.address = address || student.address;
+    // ... update other fields
 
-    // Update user profile picture
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { profilePic: profilePicUrl },
-      { new: true }
-    );
-
-    // Update student details
-    const student = await Student.findOneAndUpdate(
-      { user: req.user.id },
-      updates,
-      { new: true, runValidators: true }
-    ).populate('user', 'profilePic');
+    await student.save();
 
     res.status(200).json({
       success: true,
-      data: {
-        ...student.toObject(),
-        profilePic: user.profilePic
-      }
+      data: student
     });
-    
   } catch (error) {
-    res.status(400).json({
+    console.error('Error updating profile:', error);
+    res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || 'Error updating profile'
     });
   }
-};
+});
 
 exports.getSettings = async (req, res) => {
   try {

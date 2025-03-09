@@ -23,8 +23,10 @@ const CourseList = () => {
 
   const fetchCourses = async () => {
     try {
-      console.log('Fetching courses...');
-      const response = await fetch('http://localhost:3000/api/student/courses', {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('http://localhost:3000/api/courses', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -35,22 +37,14 @@ const CourseList = () => {
       }
 
       const data = await response.json();
-      console.log('Courses data:', data);
       
       if (data.success) {
-        setCourses(data.courses || []);
+        setCourses(data.data || []);
       } else {
         throw new Error(data.message || 'Failed to fetch courses');
       }
     } catch (error) {
-      console.error('Error fetching courses:', error);
       setError(error.message);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to load courses',
-        confirmButtonColor: '#3498db'
-      });
     } finally {
       setLoading(false);
     }

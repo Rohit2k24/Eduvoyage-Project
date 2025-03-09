@@ -1,49 +1,116 @@
 .admin-sidebar {
   width: 250px;
   height: 100vh;
-  background: linear-gradient(180deg, #2c3e50 0%, #3498db 100%);
+  background: linear-gradient(180deg, #1a237e 0%, #283593 100%);
   color: white;
-  padding: 20px 0;
+  padding: 20px;
   position: fixed;
   left: 0;
   top: 0;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
 }
 
 .sidebar-header {
-  padding: 0 20px 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding-bottom: 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 20px;
 }
 
-.sidebar-header h2 {
+.admin-icon {
+  font-size: 2.5rem;
+  color: #fff;
+}
+
+.header-text h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: 600;
 }
 
-.sidebar-nav {
-  padding: 20px 0;
+.header-text p {
+  margin: 5px 0 0;
+  font-size: 0.9rem;
+  opacity: 0.8;
 }
 
-.nav-item {
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nav-link {
   display: flex;
   align-items: center;
-  padding: 15px 20px;
+  gap: 12px;
+  padding: 12px 15px;
   color: white;
   text-decoration: none;
+  border-radius: 8px;
   transition: all 0.3s ease;
 }
 
-.nav-item:hover {
+.nav-link:hover {
   background: rgba(255, 255, 255, 0.1);
+  transform: translateX(5px);
 }
 
-.nav-item.active {
+.nav-link.active {
   background: rgba(255, 255, 255, 0.2);
-  border-left: 4px solid #e74c3c;
+  font-weight: 500;
 }
 
-.nav-icon {
-  margin-right: 10px;
+.nav-link .nav-icon {
   font-size: 1.2rem;
+}
+
+.logout-button {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.logout-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 768px) {
+  .admin-sidebar {
+    width: 70px;
+    padding: 15px 10px;
+  }
+
+  .header-text, 
+  .nav-link span {
+    display: none;
+  }
+
+  .nav-link {
+    justify-content: center;
+    padding: 12px;
+  }
+
+  .logout-button {
+    justify-content: center;
+    padding: 12px;
+  }
+
+  .logout-button span {
+    display: none;
+  }
 } 

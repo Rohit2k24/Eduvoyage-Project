@@ -8,6 +8,8 @@ const {
   updateCourse,
   deleteCourse,
   getCourses,
+  getCourse,
+  getCollegeCourses
 } = require('../controllers/courseController');
 
 // Debug logging middleware
@@ -22,12 +24,13 @@ router.use((req, res, next) => {
   next();
 });
 
-// Public routes
+// Public routes - Order matters!
+router.get('/college/:collegeId', getCollegeCourses); // This must come before /:id
 router.get('/', getCourses);
+router.get('/:id', getCourse);
 
 // Protected routes
 router.post('/', protect, upload.single('image'), createCourse);
-// router.get('/:id', protect, getCourse);
 router.put('/:id', protect, upload.single('image'), updateCourse);
 router.delete('/:id', protect, deleteCourse);
 
@@ -43,4 +46,4 @@ router.use((error, req, res, next) => {
   next(error);
 });
 
-module.exports = router; 
+module.exports = router;
