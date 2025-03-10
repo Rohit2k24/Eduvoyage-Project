@@ -93,10 +93,10 @@ exports.login = async (req, res) => {
 
     // Create token
     const token = jwt.sign(
-      { 
-        id: user._id, 
+      {
+        id: user._id,
         role: user.role,
-        email: user.email 
+        email: user.email
       },
       process.env.JWT_SECRET,
       { expiresIn: '30d' }
@@ -126,7 +126,7 @@ exports.login = async (req, res) => {
 exports.sendVerificationCode = async (req, res) => {
   try {
     const { email } = req.body;
-    
+
     if (!email) {
       return res.status(400).json({
         success: false,
@@ -135,11 +135,11 @@ exports.sendVerificationCode = async (req, res) => {
     }
 
     console.log('Starting verification process for:', email);
-    
+
     // Generate 6-digit code
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     console.log('Generated verification code:', verificationCode);
-    
+
     // Store code with timestamp
     verificationCodes.set(email, {
       code: verificationCode,
@@ -151,17 +151,17 @@ exports.sendVerificationCode = async (req, res) => {
       console.log('Attempting to send email...');
       await sendVerificationEmail(email, verificationCode);
       console.log('Email sent successfully');
-      
+
       res.status(200).json({
         success: true,
         message: 'Verification code sent successfully'
       });
     } catch (emailError) {
       console.error('Email sending failed:', emailError);
-      
+
       // Delete the stored code if email fails
       verificationCodes.delete(email);
-      
+
       res.status(500).json({
         success: false,
         message: emailError.message
@@ -179,10 +179,11 @@ exports.sendVerificationCode = async (req, res) => {
 exports.verifyAndRegister = async (req, res) => {
   try {
     const { email, verificationCode, ...userData } = req.body;
-    
+    console.log("🚀 ~ exports.verifyAndRegister= ~ email, verificationCode, ...userData :", userData)
+
     // Check if verification code exists and is valid
     const storedData = verificationCodes.get(email);
-    
+
     if (!storedData) {
       return res.status(400).json({
         success: false,
@@ -218,6 +219,7 @@ exports.verifyAndRegister = async (req, res) => {
     // Create user
     const user = await User.create({
       email,
+      name: userData.name,
       password: userData.password,
       role: userData.role
     });
@@ -231,6 +233,7 @@ exports.verifyAndRegister = async (req, res) => {
         country: userData.country
       });
     } else if (userData.role === 'college') {
+      console.log(userData.name)
       // Create college profile with all required fields
       await College.create({
         user: user._id,
@@ -238,7 +241,7 @@ exports.verifyAndRegister = async (req, res) => {
         country: userData.country,
         university: userData.university === 'other' ? userData.customUniversity : userData.university,
         accreditation: userData.accreditation === 'other' ? userData.customAccreditation : userData.accreditation,
-        establishmentYear: parseInt(userData.establishmentYear),
+        // establishmentYear: parseInt(userData.establishmentYear),
         verificationStatus: 'pending',
         // Optional fields can be added later during verification
         description: '',
@@ -306,7 +309,7 @@ exports.forgotPassword = async (req, res) => {
       // Send email
       await sendPasswordResetEmail(email, resetUrl);
       console.log('Password reset email sent successfully');
-      
+
       res.status(200).json({
         success: true,
         message: 'Password reset link sent to email'

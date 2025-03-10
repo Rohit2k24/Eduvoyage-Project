@@ -106,7 +106,7 @@ const Register = ({ userType }) => {
     if (name === 'university' && value === 'other') {
       setShowCustomUniversity(true);
     }
-    
+
     if (name === 'accreditation' && value === 'other') {
       setShowCustomAccreditation(true);
     } else if (name === 'accreditation') {
@@ -153,16 +153,16 @@ const Register = ({ userType }) => {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     // Basic validations for all users
     if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Valid email is required';
     }
-    
+
     if (!formData.password || formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
-    
+
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
@@ -192,20 +192,20 @@ const Register = ({ userType }) => {
       if (formData.university === 'other' && !formData.customUniversity) {
         newErrors.customUniversity = 'University name is required';
       }
-      if (!formData.accreditation) {
-        newErrors.accreditation = 'Accreditation is required';
-      } else if (formData.accreditation === 'other' && !formData.customAccreditation) {
-        newErrors.customAccreditation = 'Please specify the accreditation';
-      }
-      if (!formData.establishmentYear) {
-        newErrors.establishmentYear = 'Establishment year is required';
-      } else {
-        const year = parseInt(formData.establishmentYear);
-        const currentYear = new Date().getFullYear();
-        if (year < 1800 || year > currentYear) {
-          newErrors.establishmentYear = 'Please enter a valid establishment year';
-        }
-      }
+      // if (!formData.accreditation) {
+      //   newErrors.accreditation = 'Accreditation is required';
+      // } else if (formData.accreditation === 'other' && !formData.customAccreditation) {
+      //   newErrors.customAccreditation = 'Please specify the accreditation';
+      // }
+      // if (!formData.establishmentYear) {
+      //   newErrors.establishmentYear = 'Establishment year is required';
+      // } else {
+      //   const year = parseInt(formData.establishmentYear);
+      //   const currentYear = new Date().getFullYear();
+      //   if (year < 1800 || year > currentYear) {
+      //     newErrors.establishmentYear = 'Please enter a valid establishment year';
+      //   }
+      // }
     }
 
     return newErrors;
@@ -233,10 +233,13 @@ const Register = ({ userType }) => {
     });
   };
 
-  const handleSendVerification = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     const newErrors = validateForm();
-    
+  
+
     if (Object.keys(newErrors).length === 0) {
+     
       try {
         Swal.fire({
           title: 'Sending...',
@@ -303,6 +306,7 @@ const Register = ({ userType }) => {
   };
 
   const handleVerifyAndRegister = async () => {
+    console.log("DEEP")
     try {
       Swal.fire({
         title: 'Verifying...',
@@ -373,81 +377,6 @@ const Register = ({ userType }) => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    try {
-      setLoading(true);
-      
-      // Create FormData object
-      const formDataToSend = new FormData();
-      
-      // Append basic fields
-      Object.keys(formData).forEach(key => {
-        if (key !== 'documents' && key !== 'confirmPassword') {
-          if (key === 'facilities') {
-            formDataToSend.append(key, JSON.stringify(formData[key]));
-          } else {
-            formDataToSend.append(key, formData[key]);
-          }
-        }
-      });
-
-      // Append files if they exist
-      if (formData.documents.registrationCertificate) {
-        formDataToSend.append('registrationCertificate', formData.documents.registrationCertificate);
-      }
-      if (formData.documents.accreditationCertificate) {
-        formDataToSend.append('accreditationCertificate', formData.documents.accreditationCertificate);
-      }
-      if (formData.documents.collegeLogo) {
-        formDataToSend.append('collegeLogo', formData.documents.collegeLogo);
-      }
-
-      // Show loading state
-      Swal.fire({
-        title: 'Registering...',
-        text: 'Please wait while we process your registration',
-        allowOutsideClick: false,
-        didOpen: () => {
-          Swal.showLoading();
-        }
-      });
-
-      const response = await axiosInstance.post('/auth/register', formDataToSend);
-
-      if (response.data.success) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Registration Successful',
-          text: 'You can now login with your credentials',
-          confirmButtonColor: '#3498db'
-        }).then(() => {
-          navigate('/login');
-        });
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
-      let errorMessage = 'Something went wrong';
-      
-      if (error.response) {
-        // Server responded with error
-        errorMessage = error.response.data.message || 'Registration failed';
-      } else if (error.request) {
-        // No response received
-        errorMessage = 'Unable to connect to server. Please check your internet connection.';
-      }
-
-      Swal.fire({
-        icon: 'error',
-        title: 'Registration Failed',
-        text: errorMessage,
-        confirmButtonColor: '#3498db'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="registration-container">
@@ -472,7 +401,7 @@ const Register = ({ userType }) => {
         </div>
 
         {verificationStep === 'form' ? (
-          <form onSubmit={handleSubmit} className="registration-form">
+          <form className="registration-form" onSubmit={handleSubmit}>
             <div className="form-grid">
               <div className="input-group">
                 <label htmlFor="name">
@@ -671,7 +600,7 @@ const Register = ({ userType }) => {
                           onChange={(e) => setCurrentFacility(e.target.value)}
                           placeholder="Enter a facility"
                         />
-                        <button 
+                        <button
                           onClick={handleAddFacility}
                           className="add-facility-btn"
                           type="button"
@@ -755,7 +684,7 @@ const Register = ({ userType }) => {
               )}
             </div>
 
-            <button type="submit" disabled={loading} className="registration-button">
+            <button type='submit' disabled={loading} className="registration-button" >
               {loading ? 'Registering...' : 'Register'}
             </button>
           </form>
@@ -766,7 +695,7 @@ const Register = ({ userType }) => {
             </div>
             <h2>Verify Your Email</h2>
             <p>We've sent a 6-digit code to <strong>{formData.email}</strong></p>
-            
+
             <div className="code-input">
               <input
                 type="text"
@@ -781,7 +710,7 @@ const Register = ({ userType }) => {
               <button onClick={handleVerifyAndRegister} className="verify-button">
                 Verify & Continue
               </button>
-              <button onClick={() => handleSendVerification()} className="resend-button">
+              <button onClick={handleSubmit} className="resend-button">
                 Resend Code
               </button>
             </div>
@@ -792,7 +721,7 @@ const Register = ({ userType }) => {
           Already have an account? <Link to="/login">Login here</Link>
         </p>
       </div>
-    </div>
+    </div >
   );
 };
 

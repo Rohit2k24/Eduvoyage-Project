@@ -3,6 +3,7 @@ const { google } = require('googleapis');
 
 const createTransporter = async () => {
   try {
+    console.log(process.env.GMAIL_REFRESH_TOKEN)
     // Create OAuth2 client
     const oauth2Client = new google.auth.OAuth2(
       process.env.GMAIL_CLIENT_ID,
@@ -32,6 +33,7 @@ const createTransporter = async () => {
           accessToken: accessToken?.token
         }
       });
+      console.log("🚀 ~ createTransporter ~ transporter:", transporter)
 
       // Verify the transporter
       await transporter.verify();

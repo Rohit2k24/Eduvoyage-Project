@@ -4,43 +4,38 @@ const collegeSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    unique: true // Ensure one college per user
+  
   },
   name: {
-    type: String,
-    required: [true, 'Please add a name'],
-    trim: true,
-    maxlength: [50, 'Name can not be more than 50 characters']
+    type: String
   },
   description: {
     type: String,
-    required: [true, 'Please add a description']
+  
   },
   website: {
     type: String,
-    
+
   },
   location: {
     type: String,
-    required: [true, 'Please add a location']
+   
   },
   registrationNumber: {
     type: String,
-    sparse: true, // This allows multiple null values
-    unique: true  // But ensures uniqueness when value exists
+   
   },
   address: {
     type: String,
-    required: [true, 'Please add an address']
+
   },
   contactEmail: {
     type: String,
-    required: [true, 'Please add a contact email']
+  
   },
   phoneNumber: {
     type: String,
-    required: [true, 'Please add a phone number']
+  
   },
   facilities: [{
     type: String
@@ -48,11 +43,10 @@ const collegeSchema = new mongoose.Schema({
   courses: String,
   country: {
     type: String,
-    required: true
   },
   university: {
     type: String,
-    required: [true, 'Please add a university name']
+
   },
   accreditation: {
     type: String

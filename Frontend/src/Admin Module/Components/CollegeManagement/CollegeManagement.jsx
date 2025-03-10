@@ -205,13 +205,13 @@ const CollegeManagement = () => {
                       </span>
                     </td>
                     <td className="actions">
-                      <button 
+                      <button
                         className="btn-action btn-edit"
                         onClick={() => handleEdit(college)}
                       >
                         <FaEdit />
                       </button>
-                      <button 
+                      <button
                         className="btn-action btn-view"
                         onClick={() => handleViewDetails(college._id)}
                       >
@@ -255,35 +255,35 @@ const CollegeManagement = () => {
               <div className="documents-section">
                 <h4>Documents</h4>
                 <div className="documents-grid">
-                  {selectedCollege.documents.registrationCertificate && (
+                  {selectedCollege?.documents?.registrationCertificate && (
                     <div className="document-item">
                       <label>Registration Certificate</label>
-                      <a href={selectedCollege.documents.registrationCertificate} target="_blank" rel="noopener noreferrer">
+                      <a href={selectedCollege?.documents?.registrationCertificate} target="_blank" rel="noopener noreferrer">
                         View Document
                       </a>
                     </div>
                   )}
-                  {selectedCollege.documents.accreditationCertificate && (
+                  {selectedCollege?.documents?.accreditationCertificate && (
                     <div className="document-item">
                       <label>Accreditation Certificate</label>
-                      <a href={selectedCollege.documents.accreditationCertificate} target="_blank" rel="noopener noreferrer">
+                      <a href={selectedCollege?.documents?.accreditationCertificate} target="_blank" rel="noopener noreferrer">
                         View Document
                       </a>
                     </div>
                   )}
-                  {selectedCollege.documents.collegeLogo && (
+                  {selectedCollege?.documents?.collegeLogo && (
                     <div className="document-item">
                       <label>College Logo</label>
-                      <img src={selectedCollege.documents.collegeLogo} alt="College Logo" />
+                      <img src={selectedCollege?.documents?.collegeLogo} alt="College Logo" />
                     </div>
                   )}
                 </div>
 
-                {selectedCollege.documents.collegeImages && (
+                {selectedCollege?.documents?.collegeImages && (
                   <div className="college-images">
                     <h4>College Images</h4>
                     <div className="images-grid">
-                      {selectedCollege.documents.collegeImages.map((image, index) => (
+                      {selectedCollege?.documents?.collegeImages.map((image, index) => (
                         <img key={index} src={image} alt={`College Image ${index + 1}`} />
                       ))}
                     </div>
@@ -293,6 +293,13 @@ const CollegeManagement = () => {
 
               <button className="close-modal" onClick={() => setSelectedCollege(null)}>
                 Close
+              </button>
+
+              <button className="close-modal" onClick={() => handleUpdateStatus(selectedCollege._id, "approved")}>
+                Accept
+              </button>
+              <button className="close-modal" onClick={() => handleUpdateStatus(selectedCollege._id, "rejected")}>
+                Reject
               </button>
             </div>
           </div>

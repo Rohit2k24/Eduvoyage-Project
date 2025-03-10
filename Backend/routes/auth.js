@@ -4,6 +4,7 @@ const { sendVerificationCode, verifyAndRegister, login, forgotPassword, resetPas
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' });
 const User = require('../models/User');
+const College = require('../models/College');
 const jwt = require('jsonwebtoken');
 
 router.post('/send-verification', sendVerificationCode);
