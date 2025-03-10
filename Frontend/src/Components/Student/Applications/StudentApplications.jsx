@@ -31,10 +31,16 @@ const StudentApplications = () => {
         throw new Error(data.message || 'Failed to fetch applications');
       }
 
-      setApplications(data.data || []);
+      if (!data.data || !Array.isArray(data.data)) {
+        throw new Error('Invalid application data received');
+      }
+
+      setApplications(data.data);
+      setError(null);
     } catch (error) {
       console.error('Error fetching applications:', error);
       setError(error.message);
+      setApplications([]);
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -61,9 +67,7 @@ const StudentApplications = () => {
 
       if (result.isConfirmed) {
         setCancellingIds(prev => new Set([...prev, applicationId]));
-        setLoading(true);
-        console.log('Cancelling application:', applicationId);
-
+        
         const response = await fetch(`http://localhost:3000/api/student/applications/${applicationId}`, {
           method: 'DELETE',
           headers: {
@@ -73,21 +77,18 @@ const StudentApplications = () => {
         });
 
         const data = await response.json();
-        console.log('Cancel response:', data);
 
         if (!response.ok) {
           throw new Error(data.message || 'Failed to cancel application');
         }
 
-        // Show success message
         await Swal.fire({
           icon: 'success',
           title: 'Application Cancelled',
-          text: data.message || 'Your application has been cancelled successfully',
+          text: 'Your application has been cancelled successfully',
           confirmButtonColor: '#3498db'
         });
 
-        // Remove the cancelled application from state
         setApplications(prevApplications => 
           prevApplications.filter(app => app._id !== applicationId)
         );
@@ -106,7 +107,46 @@ const StudentApplications = () => {
         newSet.delete(applicationId);
         return newSet;
       });
-      setLoading(false);
+    }
+  };
+
+  const handlePaymentComplete = async (applicationId, updatedApplication = null) => {
+    try {
+      if (updatedApplication) {
+        // If we have the updated application data, use it directly
+        setApplications(prevApplications =>
+          prevApplications.map(app =>
+            app._id === applicationId 
+              ? { ...app, status: 'paid', payment: updatedApplication.payment }
+              : app
+          )
+        );
+      } else {
+        // Otherwise, fetch the latest application data
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const response = await fetch(`http://localhost:3000/api/student/applications/${applicationId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch updated application status');
+        }
+
+        const data = await response.json();
+        
+        setApplications(prevApplications =>
+          prevApplications.map(app =>
+            app._id === applicationId ? { ...app, ...data.data } : app
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error updating application status:', error);
+      // Fallback to fetching all applications if single update fails
+      await fetchApplications();
     }
   };
 
@@ -119,50 +159,58 @@ const StudentApplications = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to download receipt');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to download receipt');
       }
 
+      // Get the blob from the response
       const blob = await response.blob();
+      
+      // Create a URL for the blob
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `application-${applicationId}-receipt.pdf`;
-      document.body.appendChild(a);
-      a.click();
+      
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `receipt-${applicationId}.pdf`;
+      
+      // Append to body, click and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the URL
       window.URL.revokeObjectURL(url);
+
     } catch (error) {
       console.error('Error downloading receipt:', error);
       Swal.fire({
         icon: 'error',
-        title: 'Error',
-        text: 'Failed to download receipt',
+        title: 'Download Failed',
+        text: error.message || 'Failed to download receipt. Please try again.',
         confirmButtonColor: '#3498db'
       });
     }
   };
 
-  const handlePaymentComplete = async (applicationId) => {
-    await fetchApplications(); // Refresh all applications after payment
-  };
-
   const renderApplicationCard = (application) => (
     <div key={application._id} className="application-card">
       <div className="application-header">
-        <h3>{application.course?.name}</h3>
+        <h3>{application.course?.name || 'Course Name Not Available'}</h3>
         <ApplicationStatus 
           application={application} 
-          onPaymentComplete={() => handlePaymentComplete(application._id)} 
+          onPaymentComplete={handlePaymentComplete}
         />
       </div>
 
       <div className="application-details">
-        <p className="college-name">{application.course?.college?.name}</p>
+        <p className="college-name">{application.course?.college?.name || 'College Name Not Available'}</p>
         <p className="application-number">Application #{application.applicationNumber}</p>
         <p className="date">Applied on: {new Date(application.createdAt).toLocaleDateString()}</p>
         
         <div className="course-info">
-          <p>Duration: {application.course?.duration} years</p>
-          <p>Fees: ₹{application.course?.fees?.toLocaleString()}</p>
+          <p>Duration: {application.course?.duration || 'N/A'} years</p>
+          <p>Fees: ₹{application.course?.fees?.toLocaleString() || 'N/A'}</p>
         </div>
       </div>
 
@@ -184,11 +232,10 @@ const StudentApplications = () => {
           </button>
         )}
         
-        {application.status === 'approved' && (
+        {(application.status === 'paid' || application.payment?.paid) && (
           <button 
-            onClick={() => handleDownloadReceipt(application._id)}
             className="download-btn"
-            disabled={loading}
+            onClick={() => handleDownloadReceipt(application._id)}
           >
             <FaDownload /> Download Receipt
           </button>

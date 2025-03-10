@@ -4,28 +4,89 @@ import Swal from 'sweetalert2';
 import { FaClock, FaCheckCircle, FaTimesCircle, FaDownload, FaCreditCard } from 'react-icons/fa';
 import './ApplicationStatus.css';
 
-const ApplicationStatus = ({ status, application, onPaymentComplete }) => {
+const ApplicationStatus = ({ application, onPaymentComplete }) => {
   const [loading, setLoading] = useState(false);
   const [isPaid, setIsPaid] = useState(
     application?.status === 'paid' || application?.payment?.paid || false
   );
 
   const getStatusIcon = () => {
-    // Get status either from direct prop or from application object
-    const currentStatus = application?.status || status;
-    
-    switch (currentStatus) {
+    switch (application?.status) {
       case 'approved':
         return <FaCheckCircle className="status-icon approved" />;
       case 'rejected':
         return <FaTimesCircle className="status-icon rejected" />;
+      case 'paid':
+        return <FaCheckCircle className="status-icon paid" />;
       default:
         return <FaClock className="status-icon pending" />;
     }
   };
 
-  // Only show payment features if we have the full application object
-  const showPaymentFeatures = Boolean(application);
+  const getStatusClass = () => {
+    switch (application?.status) {
+      case 'approved':
+        return 'status-approved';
+      case 'rejected':
+        return 'status-rejected';
+      case 'paid':
+        return 'status-paid';
+      default:
+        return 'status-pending';
+    }
+  };
+
+  const verifyPayment = async (paymentData) => {
+    try {
+      const verifyResponse = await axios.post(
+        'http://localhost:3000/api/student/verify-payment',
+        {
+          applicationId: application._id,
+          paymentId: paymentData.razorpay_payment_id,
+          orderId: paymentData.razorpay_order_id,
+          signature: paymentData.razorpay_signature
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+
+      if (verifyResponse.data.success) {
+        setIsPaid(true);
+        // Update the application status immediately
+        const updatedApplication = verifyResponse.data.data.application;
+        if (onPaymentComplete) {
+          await onPaymentComplete(application._id, updatedApplication);
+        }
+        await Swal.fire({
+          icon: 'success',
+          title: 'Payment Successful',
+          text: 'Your payment has been processed successfully!'
+        });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Payment verification error:', error);
+      // Check if the error is due to notification creation
+      if (error.response?.status === 500 && error.response?.data?.message?.includes('Notification')) {
+        // Payment was successful but notification failed
+        setIsPaid(true);
+        if (onPaymentComplete) {
+          await onPaymentComplete(application._id);
+        }
+        await Swal.fire({
+          icon: 'success',
+          title: 'Payment Successful',
+          text: 'Your payment has been processed successfully!'
+        });
+        return true;
+      }
+      throw error;
+    }
+  };
 
   const handlePayment = async () => {
     if (!application) return;
@@ -33,15 +94,15 @@ const ApplicationStatus = ({ status, application, onPaymentComplete }) => {
     try {
       setLoading(true);
       
-      const orderResponse = await axios.post('/api/student/create-payment', {
-        applicationId: application._id
-      }, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+      const orderResponse = await axios.post(
+        'http://localhost:3000/api/student/create-payment',
+        { applicationId: application._id },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
         }
-      });
-
-      console.log('Order Response:', orderResponse.data);
+      );
 
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
@@ -50,43 +111,31 @@ const ApplicationStatus = ({ status, application, onPaymentComplete }) => {
         name: "EduVoyage",
         description: `Course fee for ${application.course.name}`,
         order_id: orderResponse.data.orderId,
-        handler: async (response) => {
+        handler: async function(response) {
           try {
-            console.log('Payment Response:', response);
-            
-            const verifyResponse = await axios.post('/api/student/verify-payment', {
-              applicationId: application._id,
-              paymentId: response.razorpay_payment_id,
-              orderId: response.razorpay_order_id,
-              signature: response.razorpay_signature
-            }, {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-              }
-            });
-
-            if (verifyResponse.data.success) {
-              setIsPaid(true); // Update local payment status
-              Swal.fire({
-                icon: 'success',
-                title: 'Payment Successful',
-                text: 'Your payment has been processed successfully!'
-              });
-              if (onPaymentComplete) onPaymentComplete();
-            }
+            await verifyPayment(response);
           } catch (error) {
             console.error('Payment verification error:', error);
-            Swal.fire({
-              icon: 'error',
-              title: 'Verification Error',
-              text: error.response?.data?.message || 'Failed to verify payment'
-            });
+            if (!isPaid) {
+              await Swal.fire({
+                icon: 'warning',
+                title: 'Payment Status Unclear',
+                text: 'Your payment might have been successful. Please wait a moment and refresh the page. If the issue persists, please contact support.',
+                confirmButtonText: 'Refresh Page',
+                showCancelButton: true,
+                cancelButtonText: 'Close'
+              }).then((result) => {
+                if (result.isConfirmed) {
+                  window.location.reload();
+                }
+              });
+            }
           }
         },
         prefill: {
-          name: application.student.name,
-          email: application.student.user?.email,
-          contact: application.student.phone
+          name: application.student?.name,
+          email: application.student?.email,
+          contact: application.student?.phone
         },
         theme: {
           color: "#3498db"
@@ -98,71 +147,32 @@ const ApplicationStatus = ({ status, application, onPaymentComplete }) => {
         }
       };
 
-      console.log('Razorpay Options:', { 
-        ...options, 
-        key: '***' // Hide key in logs
-      }); // Debug log
-
       const razorpay = new window.Razorpay(options);
       razorpay.open();
 
     } catch (error) {
       console.error('Payment error:', error);
+      setLoading(false);
       Swal.fire({
         icon: 'error',
         title: 'Payment Error',
         text: error.response?.data?.message || 'Failed to process payment'
       });
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Update isPaid when application changes
   useEffect(() => {
     setIsPaid(application?.status === 'paid' || application?.payment?.paid || false);
   }, [application]);
 
-  const handleDownloadReceipt = async () => {
-    if (!application) return;
-
-    try {
-      const response = await axios.get(`/api/student/payment-receipt/${application._id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        },
-        responseType: 'blob'
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `receipt-${application.applicationNumber}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to download receipt'
-      });
-    }
-  };
-
-  const showPaymentButton = 
-    showPaymentFeatures && 
-    application.status === 'approved' && 
-    !isPaid;
-
   return (
     <div className="application-status">
-      <div className="status-badge">
+      <div className={`status-badge ${getStatusClass()}`}>
         {getStatusIcon()}
-        <span>{application?.status === 'paid' ? 'Paid' : (application?.status || status)}</span>
+        <span>{application?.status === 'paid' ? 'Paid' : application?.status}</span>
       </div>
 
-      {showPaymentButton && (
+      {application?.status === 'approved' && !isPaid && (
         <button 
           className="payment-btn"
           onClick={handlePayment}
@@ -173,15 +183,15 @@ const ApplicationStatus = ({ status, application, onPaymentComplete }) => {
         </button>
       )}
 
-      {isPaid && (
+      {/* {isPaid && (
         <button 
           className="receipt-btn"
-          onClick={handleDownloadReceipt}
+          onClick={() => window.open(`http://localhost:3000/api/student/applications/${application._id}/receipt`, '_blank')}
         >
           <FaDownload />
-          Download Receipt
+          Download Receiptssss
         </button>
-      )}
+      )} */}
     </div>
   );
 };

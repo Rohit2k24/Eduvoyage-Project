@@ -13,6 +13,7 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const streamifier = require('streamifier');
 const User = require('../models/User');
 const College = require('../models/College');
+const PDFDocument = require('pdfkit');
 
 // @desc    Get student dashboard statistics
 // @route   GET /api/student/dashboard
@@ -164,8 +165,16 @@ exports.getApplications = asyncHandler(async (req, res, next) => {
   try {
     console.log('Fetching applications for student:', req.user._id);
 
+    const student = await Student.findOne({ user: req.user._id });
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found'
+      });
+    }
+
     const applications = await Application.find({ 
-      student: req.user._id 
+      student: student._id 
     })
     .populate({
       path: 'course',
@@ -175,13 +184,13 @@ exports.getApplications = asyncHandler(async (req, res, next) => {
         select: 'name location'
       }
     })
+    .populate('student', 'name email phone')
     .sort('-createdAt');
 
     console.log('Found applications:', applications);
 
     res.status(200).json({
       success: true,
-      count: applications.length,
       data: applications
     });
   } catch (error) {
@@ -194,30 +203,185 @@ exports.getApplications = asyncHandler(async (req, res, next) => {
 // @route   GET /api/student/applications/:id/receipt
 // @access  Private
 exports.downloadReceipt = asyncHandler(async (req, res, next) => {
-  const application = await Application.findById(req.params.id)
-    .populate({
-      path: 'course',
-      select: 'name college',
-      populate: {
-        path: 'college',
-        select: 'name'
+  try {
+    const student = await Student.findOne({ user: req.user._id });
+    if (!student) {
+      return next(new ErrorResponse('Student not found', 404));
+    }
+
+    const application = await Application.findById(req.params.id)
+      .populate({
+        path: 'course',
+        select: 'name fees college',
+        populate: {
+          path: 'college',
+          select: 'name address logo'
+        }
+      })
+      .populate('student', 'name email phone');
+
+    if (!application) {
+      return next(new ErrorResponse('Application not found', 404));
+    }
+
+    if (application.student._id.toString() !== student._id.toString()) {
+      return next(new ErrorResponse('Not authorized to access this receipt', 401));
+    }
+
+    if (!application.payment?.paid) {
+      return next(new ErrorResponse('Receipt not available - Payment pending', 400));
+    }
+
+    // Create PDF document
+    const doc = new PDFDocument({
+      size: 'A4',
+      margin: 50,
+      info: {
+        Title: `Payment Receipt - ${application.course.name}`,
+        Author: 'EduVoyage'
       }
     });
 
-  if (!application) {
-    return next(new ErrorResponse('Application not found', 404));
-  }
+    // Set response headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=receipt-${application._id}.pdf`);
 
-  if (application.student.toString() !== req.user.id) {
-    return next(new ErrorResponse('Not authorized', 401));
-  }
+    // Pipe the PDF to the response
+    doc.pipe(res);
 
-  // Generate and send receipt
-  // This is a placeholder - implement actual receipt generation logic
-  res.status(200).json({
-    success: true,
-    message: 'Receipt download functionality to be implemented'
-  });
+    // Add border to the page
+    doc.rect(20, 20, doc.page.width - 40, doc.page.height - 40).stroke();
+
+    // Header section with logo placeholder
+    doc.fontSize(24)
+       .font('Helvetica-Bold')
+       .text('EduVoyage', 50, 40, { align: 'center' })
+       .fontSize(16)
+       .font('Helvetica')
+       .text('Payment Receipt', { align: 'center' });
+
+    // Add horizontal line
+    doc.moveTo(50, 100)
+       .lineTo(545, 100)
+       .stroke();
+
+    // Receipt details in the top right
+    doc.font('Helvetica')
+       .fontSize(10)
+       .text('Receipt No:', 400, 120)
+       .font('Helvetica-Bold')
+       .text(application.payment.transactionId)
+       .font('Helvetica')
+       .text('Date:', 400)
+       .font('Helvetica-Bold')
+       .text(new Date(application.payment.paidAt).toLocaleDateString());
+
+    // College details box
+    doc.roundedRect(50, 160, 495, 80, 5)
+       .fillAndStroke('#f8f9fa', '#dee2e6');
+    
+    doc.fill('#000000')
+       .font('Helvetica-Bold')
+       .fontSize(12)
+       .text('College Details', 70, 170)
+       .font('Helvetica')
+       .fontSize(10)
+       .text(application.course.college.name, 70)
+       .text(application.course.college.address || 'Address not available');
+
+    // Student details box
+    doc.roundedRect(50, 260, 495, 80, 5)
+       .fillAndStroke('#f8f9fa', '#dee2e6');
+
+    doc.fill('#000000')
+       .font('Helvetica-Bold')
+       .fontSize(12)
+       .text('Student Details', 70, 270)
+       .font('Helvetica')
+       .fontSize(10)
+       .text(`Name: ${application.student.name}`, 70)
+       .text(`Email: ${application.student.email}`)
+       .text(`Phone: ${application.student.phone || 'Not provided'}`);
+
+    // Payment details box with table-like structure
+    doc.roundedRect(50, 360, 495, 160, 5)
+       .fillAndStroke('#f8f9fa', '#dee2e6');
+
+    doc.fill('#000000')
+       .font('Helvetica-Bold')
+       .fontSize(12)
+       .text('Payment Details', 70, 370);
+
+    // Create table header
+    const tableTop = 400;
+    const columnWidth = 150;
+    
+    // Table headers
+    doc.font('Helvetica-Bold')
+       .fontSize(10)
+       .text('Description', 70, tableTop)
+       .text('Details', 270, tableTop);
+
+    // Table rows
+    const rowData = [
+      ['Course Name', application.course.name],
+      ['Application ID', application._id],
+      ['Amount Paid', `₹${application.payment.amount.toLocaleString()}`],
+      ['Payment Date', new Date(application.payment.paidAt).toLocaleDateString()],
+      ['Transaction ID', application.payment.transactionId],
+      ['Payment Status', 'Successful']
+    ];
+
+    let yPos = tableTop + 20;
+    rowData.forEach(([label, value], index) => {
+      // Alternate row background
+      if (index % 2 === 0) {
+        doc.rect(60, yPos - 5, 475, 20).fill('#f8f9fa');
+      }
+      
+      doc.fill('#000000')
+         .font('Helvetica')
+         .text(label, 70, yPos)
+         .text(value, 270, yPos);
+      
+      yPos += 20;
+    });
+
+    // Add QR Code placeholder
+    doc.roundedRect(50, 540, 100, 100, 5).stroke();
+    doc.fontSize(8)
+       .text('Scan to verify', 65, 650);
+
+    // Footer
+    doc.fontSize(8)
+       .text('This is a computer-generated receipt and does not require a signature.', 50, 750, {
+         align: 'center',
+         color: 'grey'
+       })
+       .text('EduVoyage - Your Gateway to Higher Education', {
+         align: 'center',
+         color: '#666'
+       });
+
+    // Add page numbers
+    const pages = doc.bufferedPageRange();
+    for (let i = 0; i < pages.count; i++) {
+      doc.switchToPage(i);
+      doc.fontSize(8)
+         .text(`Page ${i + 1} of ${pages.count}`,
+           50,
+           doc.page.height - 50,
+           { align: 'center', color: '#666' }
+         );
+    }
+
+    // Finalize the PDF
+    doc.end();
+
+  } catch (error) {
+    console.error('Download receipt error:', error);
+    next(new ErrorResponse('Error generating receipt', 500));
+  }
 });
 
 exports.verifyPassport = async (req, res) => {

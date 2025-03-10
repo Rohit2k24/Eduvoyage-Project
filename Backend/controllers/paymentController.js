@@ -90,7 +90,7 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
     const application = await Application.findByIdAndUpdate(
       applicationId,
       {
-        status: 'paid',  // Update status to paid
+        status: 'paid',
         payment: {
           paid: true,
           paidAt: Date.now(),
@@ -100,17 +100,25 @@ exports.verifyPayment = asyncHandler(async (req, res, next) => {
         }
       },
       { new: true }
-    ).populate('student course');
+    ).populate({
+      path: 'student',
+      populate: { path: 'user' }
+    }).populate('course');
 
-    // Create notification for payment completion
-    await Notification.create({
-      user: application.student.user,
-      title: 'Payment Successful',
-      message: `Your payment for ${application.course.name} has been received. You can now download your receipt.`,
-      type: 'payment_success',
-      relatedId: application._id,
-      onModel: 'Application'
-    });
+    // Create notification with correct fields
+    try {
+      await Notification.create({
+        recipient: application.student.user._id, // Using user ID instead of student ID
+        title: 'Payment Successful',
+        message: `Your payment for ${application.course.name} has been received. You can now download your receipt.`,
+        type: 'payment',  // Changed from payment_success to match enum
+        relatedDocument: application._id,
+        documentModel: 'Application'
+      });
+    } catch (notificationError) {
+      console.log('Notification creation failed:', notificationError);
+      // Don't throw error, continue with payment success
+    }
 
     res.status(200).json({
       success: true,

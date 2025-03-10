@@ -23,4 +23,26 @@ cloudinary.api.ping()
   .then(() => console.log('✓ Cloudinary connection successful'))
   .catch(err => console.error('✗ Cloudinary connection failed:', err));
 
-module.exports = cloudinary; 
+// Generate signature for direct upload
+const generateSignature = (folder) => {
+  const timestamp = Math.round((new Date).getTime()/1000);
+  
+  const signature = cloudinary.utils.api_sign_request({
+    timestamp: timestamp,
+    folder: `eduvoyage/${folder}`,
+    upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET
+  }, process.env.CLOUDINARY_API_SECRET);
+
+  return {
+    timestamp,
+    signature,
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+    apiKey: process.env.CLOUDINARY_API_KEY,
+    folder: `eduvoyage/${folder}`
+  };
+};
+
+module.exports = {
+  cloudinary,
+  generateSignature
+}; 

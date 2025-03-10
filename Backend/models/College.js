@@ -79,7 +79,10 @@ const collegeSchema = new mongoose.Schema({
     collegeLogo: {
       type: String,
       default: null
-    }
+    },
+    collegeImages: [{
+      type: String
+    }]
   },
   paymentStatus: {
     type: String,

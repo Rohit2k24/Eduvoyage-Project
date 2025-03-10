@@ -12,6 +12,7 @@ const Notification = require('../models/Notification');
 const asyncHandler = require('../middleware/async');
 const ErrorResponse = require('../utils/errorResponse');
 const CollegeStudent = require('../models/CollegeStudent');
+const { generateSignature } = require('../config/cloudinary');
 
 // Move Razorpay initialization inside the functions where it's needed
 const getRazorpayInstance = () => {
@@ -787,4 +788,107 @@ exports.updateStudentStatus = asyncHandler(async (req, res, next) => {
     console.error('Error updating student status:', error);
     return next(new ErrorResponse('Error updating student status', 500));
   }
-}); 
+});
+
+// Add this function to get upload signature
+exports.getUploadSignature = async (req, res) => {
+  try {
+    const folder = req.query.folder || 'college'; // Default folder
+    const signatureData = generateSignature(folder);
+    
+    res.status(200).json({
+      success: true,
+      data: signatureData
+    });
+  } catch (error) {
+    console.error('Error generating signature:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate upload signature'
+    });
+  }
+};
+
+// Update the updateSettings function to handle Cloudinary URLs
+exports.updateSettings = async (req, res) => {
+  try {
+    const college = await College.findOne({ user: req.user._id });
+    if (!college) {
+      return res.status(404).json({
+        success: false,
+        message: 'College not found'
+      });
+    }
+
+    const updateData = { ...req.body };
+
+    // Handle facilities array properly
+    if (Array.isArray(req.body.facilities)) {
+      updateData.facilities = req.body.facilities.map(facility => ({
+        name: facility.name
+      }));
+    }
+
+    // Handle document URLs from Cloudinary
+    if (req.body.documents) {
+      updateData.documents = {
+        ...college.documents, // Keep existing documents
+        ...req.body.documents // Update with new documents
+      };
+    }
+
+    const updatedCollege = await College.findByIdAndUpdate(
+      college._id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      data: updatedCollege
+    });
+  } catch (error) {
+    console.error('Error updating college settings:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update college settings'
+    });
+  }
+};
+
+exports.getSettings = async (req, res) => {
+  try {
+    const college = await College.findOne({ user: req.user._id })
+      .select('name email phone website address description location university establishmentYear accreditation facilities documents notifications');
+
+    if (!college) {
+      return res.status(404).json({
+        success: false,
+        message: 'College not found'
+      });
+    }
+
+    // Ensure facilities is always an array
+    const settings = {
+      ...college.toObject(),
+      facilities: college.facilities || [],
+      documents: college.documents || {},
+      notifications: college.notifications || {
+        email: true,
+        application: true,
+        payment: true
+      }
+    };
+
+    res.status(200).json({
+      success: true,
+      data: settings
+    });
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch settings'
+    });
+  }
+}; 

@@ -9,7 +9,10 @@ import {
   FaEnvelope, 
   FaCalendarAlt,
   FaCheckCircle,
-  FaGraduationCap
+  FaGraduationCap,
+  FaTimes,
+  FaSearchPlus,
+  FaSearchMinus
 } from 'react-icons/fa';
 import './CollegeCourses.css';
 
@@ -18,6 +21,8 @@ const CollegeCourses = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isZoomed, setIsZoomed] = useState(false);
   const { collegeId } = useParams();
   const navigate = useNavigate();
 
@@ -133,6 +138,27 @@ const CollegeCourses = () => {
           </div>
 
           <div className="info-section">
+            <h2>College Gallery</h2>
+            <div className="college-gallery">
+              {college?.documents?.collegeImages && college.documents.collegeImages.length > 0 ? (
+                <div className="gallery-grid">
+                  {college.documents.collegeImages.map((imageUrl, index) => (
+                    <div 
+                      key={index} 
+                      className="gallery-item"
+                      onClick={() => setSelectedImage(imageUrl)}
+                    >
+                      <img src={imageUrl} alt={`${college.name} - Image ${index + 1}`} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="no-images">No images available for this college.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="info-section">
             <h2>Key Information</h2>
             <div className="info-grid">
               <div className="info-item">
@@ -225,6 +251,29 @@ const CollegeCourses = () => {
           </div>
         </div>
       </div>
+
+      {selectedImage && (
+        <div className="image-modal" onClick={() => setSelectedImage(null)}>
+          <button className="close-modal" onClick={() => setSelectedImage(null)}>
+            <FaTimes />
+          </button>
+          <button 
+            className="zoom-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsZoomed(!isZoomed);
+            }}
+          >
+            {isZoomed ? <FaSearchMinus /> : <FaSearchPlus />}
+          </button>
+          <div 
+            className={`modal-content ${isZoomed ? 'zoomed' : ''}`} 
+            onClick={e => e.stopPropagation()}
+          >
+            <img src={selectedImage} alt="College" />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

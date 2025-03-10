@@ -308,4 +308,7 @@ router.get('/status', async (req, res) => {
 router.get('/students', protect, authorize('college'), collegeController.getStudents);
 router.patch('/students/:id/status', protect, authorize('college'), collegeController.updateStudentStatus);
 
+// Add this route for getting upload signatures
+router.get('/upload-signature', protect, authorize('college'), collegeController.getUploadSignature);
+
 module.exports = router; 
