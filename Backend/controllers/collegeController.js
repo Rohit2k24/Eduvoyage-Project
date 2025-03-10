@@ -370,37 +370,91 @@ exports.getDashboardStats = async (req, res) => {
         message: 'College not found'
       });
     }
-
+    console.log("college",college);
     // Get total active courses
     const totalCourses = await Course.countDocuments({ 
       college: college._id,
-      // Add any active status condition if you have one
+      status: 'active'
     });
+    console.log("totalCourses",totalCourses);
+    // Get courses IDs for this college
+    const courseIds = await Course.find({ college: college._id }).distinct('_id');
 
     // Get total enrolled students
-    const totalStudents = await Student.countDocuments({
+    const totalStudents = await CollegeStudent.countDocuments({
       college: college._id,
-      status: 'active' // Assuming you have a status field
+      status: 'active'
     });
 
-    // Get recent applications (last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const recentApplications = await Student.countDocuments({
+    // Get pending applications count
+    const pendingApplications = await Application.countDocuments({
       college: college._id,
-      createdAt: { $gte: thirtyDaysAgo },
-      status: 'pending' // Or whatever status you use for new applications
+      status: 'pending'
     });
+
+    // Get recent applications with populated data
+    const recentApplications = await Application.find({
+      college: college._id
+    })
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .populate({
+      path: 'student',
+      select: 'name email'
+    })
+    .populate({
+      path: 'course',
+      select: 'name'
+    })
+    .lean();
+
+    // Calculate monthly growth
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const firstDayOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const lastDayOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+
+    // Get current month's new students
+    const currentMonthStudents = await CollegeStudent.countDocuments({
+      college: college._id,
+      createdAt: { $gte: firstDayOfMonth }
+    });
+
+    // Get last month's total students
+    const lastMonthStudents = await CollegeStudent.countDocuments({
+      college: college._id,
+      createdAt: {
+        $gte: firstDayOfLastMonth,
+        $lte: lastDayOfLastMonth
+      }
+    });
+
+    // Process recent applications
+    const processedApplications = recentApplications.map(app => ({
+      _id: app._id,
+      status: app.status,
+      student: {
+        name: app.student?.name || 'N/A',
+        email: app.student?.email || 'N/A'
+      },
+      course: {
+        name: app.course?.name || 'N/A'
+      },
+      createdAt: app.createdAt
+    }));
 
     res.status(200).json({
       success: true,
-      stats: {
+      data: {
         totalCourses,
         totalStudents,
-        recentApplications
+        pendingApplications,
+        recentApplications: processedApplications,
+        currentMonthStudents,
+        lastMonthStudents
       }
     });
+
   } catch (error) {
     console.error('Get dashboard stats error:', error);
     res.status(500).json({

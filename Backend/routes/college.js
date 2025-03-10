@@ -61,89 +61,89 @@ router.get('/details', async (req, res) => {
 });
 
 // Dashboard stats route
-router.get('/dashboard-stats', async (req, res) => {
-  try {
-    const collegeId = req.user.id;
+// router.get('/dashboard-stats', async (req, res) => {
+//   try {
+//     const collegeId = req.user.id;
 
-    // Get total courses for this college
-    const totalCourses = await Course.countDocuments({
-      college: collegeId,
-      status: 'active' // Only count active courses
-    });
+//     // Get total courses for this college
+//     const totalCourses = await Course.countDocuments({
+//       college: collegeId,
+//       status: 'active' // Only count active courses
+//     });
 
-    // Get total enrolled students (accepted applications)
-    const totalStudents = await Application.aggregate([
-      {
-        $match: {
-          college: collegeId,
-          status: 'accepted'
-        }
-      },
-      {
-        $group: {
-          _id: '$student', // Group by student to avoid counting duplicates
-          count: { $first: 1 }
-        }
-      },
-      {
-        $count: 'total'
-      }
-    ]);
+//     // Get total enrolled students (accepted applications)
+//     const totalStudents = await Application.aggregate([
+//       {
+//         $match: {
+//           college: collegeId,
+//           status: 'accepted'
+//         }
+//       },
+//       {
+//         $group: {
+//           _id: '$student', // Group by student to avoid counting duplicates
+//           count: { $first: 1 }
+//         }
+//       },
+//       {
+//         $count: 'total'
+//       }
+//     ]);
 
-    // Get pending applications count
-    const pendingApplications = await Application.countDocuments({
-      college: collegeId,
-      status: 'pending'
-    });
+//     // Get pending applications count
+//     const pendingApplications = await Application.countDocuments({
+//       college: collegeId,
+//       status: 'pending'
+//     });
 
-    // Get recent applications with populated data
-    const recentApplications = await Application.find({
-      college: collegeId
-    })
-    .sort({ createdAt: -1 })
-    .limit(5)
-    .populate('student', 'name email')
-    .populate('course', 'name')
-    .lean(); // Use lean() for better performance
+//     // Get recent applications with populated data
+//     const recentApplications = await Application.find({
+//       college: collegeId
+//     })
+//     .sort({ createdAt: -1 })
+//     .limit(5)
+//     .populate('student', 'name email')
+//     .populate('course', 'name')
+//     .lean(); // Use lean() for better performance
 
-    // Calculate monthly growth (example: based on applications in last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+//     // Calculate monthly growth (example: based on applications in last 30 days)
+//     const thirtyDaysAgo = new Date();
+//     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const monthlyApplications = await Application.countDocuments({
-      college: collegeId,
-      createdAt: { $gte: thirtyDaysAgo }
-    });
+//     const monthlyApplications = await Application.countDocuments({
+//       college: collegeId,
+//       createdAt: { $gte: thirtyDaysAgo }
+//     });
 
-    const monthlyGrowthRate = monthlyApplications > 0 
-      ? ((monthlyApplications / (totalStudents[0]?.total || 1)) * 100).toFixed(1)
-      : 0;
+//     const monthlyGrowthRate = monthlyApplications > 0 
+//       ? ((monthlyApplications / (totalStudents[0]?.total || 1)) * 100).toFixed(1)
+//       : 0;
 
-    res.json({
-      success: true,
-      data: {
-        totalCourses,
-        totalStudents: totalStudents[0]?.total || 0,
-        pendingApplications,
-        recentApplications,
-        monthlyGrowthRate
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching dashboard statistics'
-    });
-  }
-});
+//     res.json({
+//       success: true,
+//       data: {
+//         totalCourses,
+//         totalStudents: totalStudents[0]?.total || 0,
+//         pendingApplications,
+//         recentApplications,
+//         monthlyGrowthRate
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Error fetching dashboard stats:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Error fetching dashboard statistics'
+//     });
+//   }
+// });
 
 // College verification routes
 router.post('/submit-verification', upload.fields(verificationFields), submitVerification);
 router.get('/verification-status', getVerificationStatus);
 router.post('/initiate-payment', initiatePayment);
 router.post('/verify-payment', verifyPayment);
-
+router.get('/dashboard-stats', getDashboardStats);  
 // Course routes with proper middleware
 router.route('/courses')
   .get(async (req, res) => {
