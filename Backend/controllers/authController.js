@@ -233,7 +233,27 @@ exports.verifyAndRegister = async (req, res) => {
         country: userData.country
       });
     } else if (userData.role === 'college') {
-      console.log(userData.name)
+      // Upload documents to Cloudinary if they exist
+      console.log("user data", userData)
+      const documents = {};
+      
+      if (userData.documents) {
+        const cloudinary = require('../config/cloudinary');
+        
+        for (const [key, file] of Object.entries(userData.documents)) {
+          if (file) {
+            try {
+              const result = await cloudinary.uploader.upload(file, {
+                folder: `college_documents/${user._id}`,
+                resource_type: 'auto'
+              });
+              documents[key] = result.secure_url;
+            } catch (uploadError) {
+              console.error(`Error uploading ${key}:`, uploadError);
+            }
+          } 
+        }
+      }
       // Create college profile with all required fields
       await College.create({
         user: user._id,
@@ -241,16 +261,14 @@ exports.verifyAndRegister = async (req, res) => {
         country: userData.country,
         university: userData.university === 'other' ? userData.customUniversity : userData.university,
         accreditation: userData.accreditation === 'other' ? userData.customAccreditation : userData.accreditation,
-        // establishmentYear: parseInt(userData.establishmentYear),
         verificationStatus: 'pending',
-        // Optional fields can be added later during verification
-        description: '',
-        address: '',
-        contactEmail: email, // Use registration email as initial contact
-        phoneNumber: '',
-        facilities: '',
+        description: userData.description || '',
+        address: userData.address || '',
+        contactEmail: email,
+        phoneNumber: userData.phone || '',
+        facilities: userData.facilities || [],
         courses: '',
-        documents: {}
+        documents: documents // Store Cloudinary URLs
       });
     }
 

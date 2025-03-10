@@ -35,7 +35,15 @@ const collegeSchema = new mongoose.Schema({
   },
   phoneNumber: {
     type: String,
-  
+    required: [true, 'Phone number is required'],
+    trim: true,
+    validate: {
+      validator: function(v) {
+        // Basic phone number validation
+        return /^\+?[\d\s-]{8,}$/.test(v);
+      },
+      message: props => `${props.value} is not a valid phone number!`
+    }
   },
   facilities: [{
     type: String
@@ -60,7 +68,18 @@ const collegeSchema = new mongoose.Schema({
     default: 'pending'
   },
   documents: {
-    type: Object
+    registrationCertificate: {
+      type: String,
+      default: null
+    },
+    accreditationCertificate: {
+      type: String,
+      default: null
+    },
+    collegeLogo: {
+      type: String,
+      default: null
+    }
   },
   paymentStatus: {
     type: String,

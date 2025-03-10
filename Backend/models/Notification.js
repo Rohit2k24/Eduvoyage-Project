@@ -1,15 +1,10 @@
 const mongoose = require('mongoose');
 
-const NotificationSchema = new mongoose.Schema({
-  user: {
+const notificationSchema = new mongoose.Schema({
+  recipient: {
     type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    refPath: 'userModel'
-  },
-  userModel: {
-    type: String,
-    required: true,
-    enum: ['Student', 'College', 'Admin']
+    ref: 'User',
+    required: true
   },
   title: {
     type: String,
@@ -21,13 +16,10 @@ const NotificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    required: true,
-    enum: ['application', 'payment', 'status_update', 'system']
+    enum: ['college_verification', 'application', 'payment', 'general'],
+    required: true
   },
-  data: {
-    type: mongoose.Schema.Types.Mixed
-  },
-  read: {
+  isRead: {
     type: Boolean,
     default: false
   },
@@ -35,8 +27,9 @@ const NotificationSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
-}, {
-  timestamps: true
 });
 
-module.exports = mongoose.model('Notification', NotificationSchema); 
+// Add index for better query performance
+notificationSchema.index({ recipient: 1, createdAt: -1 });
+
+module.exports = mongoose.model('Notification', notificationSchema); 

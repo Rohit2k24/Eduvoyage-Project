@@ -71,23 +71,54 @@ const CollegeManagement = () => {
 
   const handleUpdateStatus = async (collegeId, newStatus) => {
     try {
-      let reason = '';
-      if (newStatus === 'rejected') {
-        const { value: rejectionReason } = await Swal.fire({
+      let confirmResult;
+      
+      if (newStatus === 'approved') {
+        confirmResult = await Swal.fire({
+          title: 'Confirm Approval',
+          text: 'Are you sure you want to approve this college?',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#3085d6',
+          cancelButtonColor: '#d33',
+          confirmButtonText: 'Yes, approve it!'
+        });
+      } else if (newStatus === 'rejected') {
+        confirmResult = await Swal.fire({
           title: 'Provide Rejection Reason',
           input: 'textarea',
-          inputLabel: 'Reason',
+          inputLabel: 'Reason for Rejection',
           inputPlaceholder: 'Enter the reason for rejection...',
           inputAttributes: {
             'aria-label': 'Rejection reason'
           },
           showCancelButton: true,
-          validationMessage: 'Rejection reason is required'
+          confirmButtonColor: '#3085d6',
+          cancelButtonColor: '#d33',
+          confirmButtonText: 'Reject',
+          inputValidator: (value) => {
+            if (!value) {
+              return 'You need to provide a reason for rejection!';
+            }
+          }
         });
-
-        if (!rejectionReason) return;
-        reason = rejectionReason;
       }
+
+      if (!confirmResult.isConfirmed) {
+        return;
+      }
+
+      const reason = newStatus === 'rejected' ? confirmResult.value : '';
+
+      // Show loading state
+      Swal.fire({
+        title: 'Processing...',
+        text: 'Updating college status',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
 
       const response = await fetch(`http://localhost:3000/api/admin/colleges/${collegeId}/status`, {
         method: 'PUT',
@@ -95,24 +126,55 @@ const CollegeManagement = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ status: newStatus, reason })
+        body: JSON.stringify({
+          status: newStatus,
+          reason
+        })
       });
 
-      if (response.ok) {
-        Swal.fire({
+      const data = await response.json();
+
+      if (data.success) {
+        // Update local state immediately
+        setColleges(prevColleges => 
+          prevColleges.map(college => 
+            college._id === collegeId 
+              ? { ...college, verificationStatus: newStatus }
+              : college
+          )
+        );
+
+        // Update selected college if in modal
+        if (selectedCollege && selectedCollege._id === collegeId) {
+          setSelectedCollege(prev => ({
+            ...prev,
+            verificationStatus: newStatus
+          }));
+        }
+
+        // Close loading dialog
+        Swal.close();
+
+        // Show success message
+        await Swal.fire({
           icon: 'success',
           title: 'Status Updated',
           text: `College has been ${newStatus}`,
-          timer: 1500
+          timer: 1500,
+          showConfirmButton: false
         });
-        fetchColleges();
+
+        // Refresh the colleges list
+        await fetchColleges();
+      } else {
+        throw new Error(data.message || 'Failed to update status');
       }
     } catch (error) {
       console.error('Error updating status:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'Failed to update college status'
+        text: error.message || 'Failed to update college status'
       });
     }
   };
@@ -291,16 +353,33 @@ const CollegeManagement = () => {
                 )}
               </div>
 
-              <button className="close-modal" onClick={() => setSelectedCollege(null)}>
-                Close
-              </button>
-
-              <button className="close-modal" onClick={() => handleUpdateStatus(selectedCollege._id, "approved")}>
-                Accept
-              </button>
-              <button className="close-modal" onClick={() => handleUpdateStatus(selectedCollege._id, "rejected")}>
-                Reject
-              </button>
+              <div className="modal-actions">
+                <button 
+                  className="action-btn close"
+                  onClick={() => setSelectedCollege(null)}
+                >
+                  Close
+                </button>
+                
+                {selectedCollege.verificationStatus === 'pending' && (
+                  <>
+                    <button 
+                      className="action-btn approve"
+                      onClick={() => handleUpdateStatus(selectedCollege._id, "approved")}
+                      disabled={selectedCollege.verificationStatus === 'approved'}
+                    >
+                      <FaCheck /> Approve
+                    </button>
+                    <button 
+                      className="action-btn reject"
+                      onClick={() => handleUpdateStatus(selectedCollege._id, "rejected")}
+                      disabled={selectedCollege.verificationStatus === 'rejected'}
+                    >
+                      <FaTimes /> Reject
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         )}

@@ -23,6 +23,7 @@ const {
   getSettings,
   updateSettings
 } = require('../controllers/settingsController');
+const College = require('../models/College');
 
 // Configure multer for verification uploads
 const verificationFields = [
@@ -35,6 +36,28 @@ const verificationFields = [
 // Protect all routes
 router.use(protect);
 router.use(authorize('college'));
+
+// Get college details
+router.get('/details', async (req, res) => {
+  try {
+    const college = await College.findOne({ user: req.user.id });
+    if (!college) {
+      return res.status(404).json({
+        success: false,
+        message: 'College not found'
+      });
+    }
+    res.json({
+      success: true,
+      college
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching college details'
+    });
+  }
+});
 
 // Dashboard stats route
 router.get('/dashboard-stats', async (req, res) => {

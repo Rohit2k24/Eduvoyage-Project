@@ -176,37 +176,49 @@ exports.deactivateStudent = asyncHandler(async (req, res) => {
 
 // Update college verification status
 exports.updateCollegeStatus = asyncHandler(async (req, res) => {
-  const { status, reason } = req.body;
-  const college = await College.findById(req.params.id);
+  try {
+    const { status, reason } = req.body;
+    const college = await College.findById(req.params.id).populate('user');
 
-  if (!college) {
-    return res.status(404).json({
+    if (!college) {
+      return res.status(404).json({
+        success: false,
+        message: 'College not found'
+      });
+    }
+
+    // Update college status
+    college.verificationStatus = status;
+    if (reason) {
+      college.rejectionReason = reason;
+    }
+
+    await college.save();
+
+    // Create notification
+    const notification = {
+      recipient: college.user._id, // Use the populated user ID
+      title: `College Registration ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+      message: status === 'approved' 
+        ? 'Congratulations! Your college registration has been approved.'
+        : `Your college registration was rejected. Reason: ${reason}`,
+      type: 'college_verification', // Make sure this matches your Notification model enum
+      isRead: false
+    };
+
+    await Notification.create(notification);
+
+    res.status(200).json({
+      success: true,
+      data: college
+    });
+  } catch (error) {
+    console.error('Error in updateCollegeStatus:', error);
+    res.status(500).json({
       success: false,
-      message: 'College not found'
+      message: error.message || 'Error updating college status'
     });
   }
-
-  college.verificationStatus = status;
-  if (reason) {
-    college.rejectionReason = reason;
-  }
-
-  await college.save();
-
-  // Send notification to college
-  await Notification.create({
-    recipient: college.user,
-    title: `College Verification ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-    message: status === 'approved' 
-      ? 'Your college has been verified and approved.'
-      : `Your college verification was rejected. Reason: ${reason}`,
-    type: 'verification'
-  });
-
-  res.status(200).json({
-    success: true,
-    data: college
-  });
 });
 
 // Update college details

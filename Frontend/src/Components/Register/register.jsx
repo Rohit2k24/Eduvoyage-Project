@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaUserGraduate, FaUniversity, FaEnvelope, FaLock, FaUser, FaPassport, FaCalendar, FaBuilding, FaGlobe, FaSearch, FaPlus, FaExclamationCircle, FaArrowRight, FaFile, FaFileUpload, FaImage } from 'react-icons/fa';
+import { FaUserGraduate, FaUniversity, FaEnvelope, FaLock, FaUser, FaPassport, FaCalendar, FaBuilding, FaGlobe, FaSearch, FaPlus, FaExclamationCircle, FaArrowRight, FaFile, FaFileUpload, FaImage, FaPhone } from 'react-icons/fa';
 import { getCountries, getUniversitiesByCountry, countryNames } from '../../utils/universityData';
 import './Register.css';
 import Swal from 'sweetalert2';
@@ -60,10 +60,10 @@ const Register = ({ userType }) => {
       website: '',
       address: '',
       contactPerson: '',
+      phone: '',
       phoneNumber: ''
     }),
     customAccreditation: '',
-    phone: '',
     role: userType,
     description: '',
     facilities: [],
@@ -122,15 +122,89 @@ const Register = ({ userType }) => {
     }));
   };
 
-  const handleFileChange = (e) => {
+  const compressImage = (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Max dimensions
+          const MAX_WIDTH = 1200;
+          const MAX_HEIGHT = 1200;
+          
+          // Calculate new dimensions while maintaining aspect ratio
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Get compressed image as base64 string
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7); // 0.7 is the quality (70%)
+          resolve(compressedBase64);
+        };
+      };
+    });
+  };
+
+  const handleFileChange = async (e) => {
     const { name, files } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      documents: {
-        ...prev.documents,
-        [name]: files[0]
+    const file = files[0];
+    
+    if (file) {
+      try {
+        // Show loading state
+        setLoading(true);
+        
+        let fileData;
+        if (file.type.startsWith('image/')) {
+          // Compress image files
+          fileData = await compressImage(file);
+        } else {
+          // For non-image files (like PDFs), use regular FileReader
+          fileData = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(file);
+          });
+        }
+        
+        setFormData(prev => ({
+          ...prev,
+          documents: {
+            ...prev.documents,
+            [name]: fileData
+          }
+        }));
+      } catch (error) {
+        console.error('Error processing file:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'File Processing Error',
+          text: 'There was an error processing your file. Please try again.'
+        });
+      } finally {
+        setLoading(false);
       }
-    }));
+    }
   };
 
   const handleAddFacility = (e) => {
@@ -192,20 +266,11 @@ const Register = ({ userType }) => {
       if (formData.university === 'other' && !formData.customUniversity) {
         newErrors.customUniversity = 'University name is required';
       }
-      // if (!formData.accreditation) {
-      //   newErrors.accreditation = 'Accreditation is required';
-      // } else if (formData.accreditation === 'other' && !formData.customAccreditation) {
-      //   newErrors.customAccreditation = 'Please specify the accreditation';
-      // }
-      // if (!formData.establishmentYear) {
-      //   newErrors.establishmentYear = 'Establishment year is required';
-      // } else {
-      //   const year = parseInt(formData.establishmentYear);
-      //   const currentYear = new Date().getFullYear();
-      //   if (year < 1800 || year > currentYear) {
-      //     newErrors.establishmentYear = 'Please enter a valid establishment year';
-      //   }
-      // }
+      if (!formData.phone) {
+        newErrors.phone = 'Phone number is required';
+      } else if (!/^\+?[\d\s-]{8,}$/.test(formData.phone)) {
+        newErrors.phone = 'Please enter a valid phone number';
+      }
     }
 
     return newErrors;
@@ -553,85 +618,23 @@ const Register = ({ userType }) => {
                 {errors.confirmPassword && <span className="error-message"><FaExclamationCircle /> {errors.confirmPassword}</span>}
               </div>
 
-              <div className="input-group">
-                <label htmlFor="phone">
-                  <FaUser className="input-icon" />
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  placeholder="+1 (555) 555-5555"
-                />
-                {errors.phone && <span className="error-message"><FaExclamationCircle /> {errors.phone}</span>}
-              </div>
-
               {userType === 'college' && (
-                <>
-                  <div className="input-group">
-                    <label htmlFor="description">
-                      <FaBuilding className="input-icon" />
-                      Description
-                    </label>
-                    <textarea
-                      id="description"
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      required
-                    />
-                    {errors.description && <span className="error-message"><FaExclamationCircle /> {errors.description}</span>}
-                  </div>
-
-                  <div className="input-group">
-                    <label htmlFor="facilities">
-                      <FaBuilding className="input-icon" />
-                      Facilities
-                    </label>
-                    <div className="facilities-input-container">
-                      <div className="facility-add-section">
-                        <input
-                          type="text"
-                          id="facilities"
-                          value={currentFacility}
-                          onChange={(e) => setCurrentFacility(e.target.value)}
-                          placeholder="Enter a facility"
-                        />
-                        <button
-                          onClick={handleAddFacility}
-                          className="add-facility-btn"
-                          type="button"
-                        >
-                          <FaPlus /> Add
-                        </button>
-                      </div>
-                      {formData.facilities.length > 0 && (
-                        <ul className="facilities-list">
-                          {formData.facilities.map((facility, index) => (
-                            <li key={index} className="facility-item">
-                              <span>{facility}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveFacility(index)}
-                                className="remove-facility-btn"
-                              >
-                                ×
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      {errors.facilities && (
-                        <span className="error-message">
-                          <FaExclamationCircle /> {errors.facilities}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </>
+                <div className="input-group">
+                  <label htmlFor="phone">
+                    <FaPhone className="input-icon" />
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    placeholder="+1 (555) 555-5555"
+                    className={errors.phone ? 'error' : ''}
+                  />
+                  {errors.phone && <span className="error-message"><FaExclamationCircle /> {errors.phone}</span>}
+                </div>
               )}
 
               {userType === 'college' && (
