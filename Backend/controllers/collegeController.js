@@ -11,6 +11,7 @@ const Application = require('../models/Application');
 const Notification = require('../models/Notification');
 const asyncHandler = require('../middleware/async');
 const ErrorResponse = require('../utils/errorResponse');
+const CollegeStudent = require('../models/CollegeStudent');
 
 // Move Razorpay initialization inside the functions where it's needed
 const getRazorpayInstance = () => {
@@ -505,14 +506,14 @@ exports.updateApplicationStatus = asyncHandler(async (req, res, next) => {
     const application = await Application.findById(req.params.id)
       .populate({
         path: 'course',
-        select: 'name college'
+        select: 'name college duration'
       })
       .populate({
         path: 'student',
-        select: 'user name',
+        select: 'user name email phone gender dateOfBirth address education',
         populate: {
           path: 'user',
-          select: '_id'
+          select: '_id email'
         }
       });
 
@@ -534,12 +535,49 @@ exports.updateApplicationStatus = asyncHandler(async (req, res, next) => {
 
     await application.save();
 
+    // If application is approved, create CollegeStudent record
+    if (status === 'approved') {
+      try {
+        // Check if CollegeStudent record already exists
+        let collegeStudent = await CollegeStudent.findOne({
+          college: college._id,
+          student: application.student._id
+        });
+
+        if (!collegeStudent) {
+          // Create new CollegeStudent record
+          collegeStudent = await CollegeStudent.create({
+            college: college._id,
+            student: application.student._id,
+            course: application.course._id,
+            application: application._id,
+            status: 'active',
+            academicDetails: {
+              batch: new Date().getFullYear().toString(),
+              semester: 1
+            }
+          });
+
+          console.log('Created new college student record:', collegeStudent._id);
+        } else {
+          // Update existing record
+          collegeStudent.course = application.course._id;
+          collegeStudent.status = 'active';
+          collegeStudent.application = application._id;
+          await collegeStudent.save();
+          console.log('Updated existing college student record:', collegeStudent._id);
+        }
+      } catch (studentError) {
+        console.error('Error creating/updating college student record:', studentError);
+      }
+    }
+
     // Create notification for student
     try {
       if (application.student?.user?._id) {
         await Notification.create({
           recipient: application.student.user._id,
-          type: 'application', // Changed from 'status_update' to 'application'
+          type: 'application',
           title: `Application ${status.charAt(0).toUpperCase() + status.slice(1)}`,
           message: `Your application for ${application.course.name} has been ${status}${remarks ? `. Remarks: ${remarks}` : ''}`,
           data: {
@@ -550,7 +588,6 @@ exports.updateApplicationStatus = asyncHandler(async (req, res, next) => {
         });
       }
     } catch (notificationError) {
-      // Log notification error but don't fail the status update
       console.error('Notification creation error:', notificationError);
     }
 
@@ -569,5 +606,131 @@ exports.updateApplicationStatus = asyncHandler(async (req, res, next) => {
   } catch (error) {
     console.error('Update application error:', error);
     return next(new ErrorResponse(error.message || 'Error updating application status', 500));
+  }
+});
+
+// @desc    Get all students for a college
+// @route   GET /api/college/students
+// @access  Private (College only)
+exports.getStudents = asyncHandler(async (req, res, next) => {
+  try {
+    // First find the college associated with the logged-in user
+    const college = await College.findOne({ user: req.user._id });
+    if (!college) {
+      return next(new ErrorResponse('College not found', 404));
+    }
+
+    console.log('Found college:', college._id);
+
+    // Find all college students with populated data
+    const collegeStudents = await CollegeStudent.find({ 
+      college: college._id 
+    })
+    .populate({
+      path: 'student',
+      select: 'name email phone gender dateOfBirth address education user',
+      populate: {
+        path: 'user',
+        select: 'email'
+      }
+    })
+    .populate({
+      path: 'course',
+      select: 'name duration'
+    })
+    .sort({ createdAt: -1 });
+
+    console.log('Found college students:', collegeStudents.length);
+
+    // Process student data to include all necessary information
+    const processedStudents = collegeStudents.map(collegeStudent => ({
+      _id: collegeStudent._id,
+      enrollmentNumber: collegeStudent.enrollmentNumber,
+      name: collegeStudent.student?.name,
+      email: collegeStudent.student?.user?.email || collegeStudent.student?.email,
+      phone: collegeStudent.student?.phone || 'N/A',
+      gender: collegeStudent.student?.gender || 'N/A',
+      dateOfBirth: collegeStudent.student?.dateOfBirth,
+      address: collegeStudent.student?.address || 'N/A',
+      status: collegeStudent.status,
+      enrollmentDate: collegeStudent.enrollmentDate,
+      education: collegeStudent.student?.education || { qualifications: [] },
+      course: collegeStudent.course ? {
+        _id: collegeStudent.course._id,
+        name: collegeStudent.course.name,
+        duration: collegeStudent.course.duration
+      } : null,
+      academicDetails: collegeStudent.academicDetails
+    }));
+
+    res.status(200).json({
+      success: true,
+      count: processedStudents.length,
+      students: processedStudents
+    });
+
+  } catch (error) {
+    console.error('Error fetching students:', error);
+    return next(new ErrorResponse('Error fetching students', 500));
+  }
+});
+
+// @desc    Update student status
+// @route   PATCH /api/college/students/:id/status
+// @access  Private (College only)
+exports.updateStudentStatus = asyncHandler(async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    
+    // First find the college associated with the logged-in user
+    const college = await College.findOne({ user: req.user._id });
+    if (!college) {
+      return next(new ErrorResponse('College not found', 404));
+    }
+
+    // Find the student and verify they belong to this college
+    const student = await Student.findOne({
+      _id: req.params.id,
+      college: college._id
+    });
+
+    if (!student) {
+      return next(new ErrorResponse('Student not found', 404));
+    }
+
+    // Update student status
+    student.status = status;
+    await student.save();
+
+    // Create notification for student
+    try {
+      if (student.user) {
+        await Notification.create({
+          recipient: student.user,
+          type: 'application',
+          title: `Status Updated`,
+          message: `Your student status has been updated to ${status}`,
+          data: {
+            studentId: student._id,
+            status: status
+          }
+        });
+      }
+    } catch (notificationError) {
+      console.error('Notification creation error:', notificationError);
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        _id: student._id,
+        status: student.status,
+        updatedAt: student.updatedAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Error updating student status:', error);
+    return next(new ErrorResponse('Error updating student status', 500));
   }
 }); 

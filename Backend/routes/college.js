@@ -24,6 +24,7 @@ const {
   updateSettings
 } = require('../controllers/settingsController');
 const College = require('../models/College');
+const collegeController = require('../controllers/collegeController');
 
 // Configure multer for verification uploads
 const verificationFields = [
@@ -302,5 +303,9 @@ router.get('/status', async (req, res) => {
     });
   }
 });
+
+// Add these routes to your existing router
+router.get('/students', protect, authorize('college'), collegeController.getStudents);
+router.patch('/students/:id/status', protect, authorize('college'), collegeController.updateStudentStatus);
 
 module.exports = router; 
