@@ -12,21 +12,32 @@ import {
   FaClock,
   FaArrowRight,
   FaBookOpen,
-  FaAward
+  FaAward,
+  FaTimesCircle,
+  FaSpinner
 } from 'react-icons/fa';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import StudentSidebar from '../Sidebar/StudentSidebar';
+import Swal from 'sweetalert2';
 import './StudentDashboard.css';
 
 const StudentDashboard = () => {
   const [dashboardData, setDashboardData] = useState({
-    applications: 0,
-    accepted: 0,
-    pending: 0,
+    stats: {
+      total: 0,
+      pending: 0,
+      approved: 0,
+      rejected: 0,
+      paid: 0
+    },
+    recentApplications: [],
     deadlines: [],
-    recommendations: []
+    recommendedColleges: [],
+    unreadNotifications: 0,
+    studentName: ''
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
   const username = localStorage.getItem('username') || 'Student';
 
@@ -36,16 +47,33 @@ const StudentDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
+      setLoading(true);
       const response = await fetch('http://localhost:3000/api/student/dashboard', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      const data = await response.json();
-      setDashboardData(data.data);
-      setLoading(false);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch dashboard data');
+      }
+
+      const result = await response.json();
+      setDashboardData({
+        ...result.data,
+        studentName: result.data.studentName || localStorage.getItem('name') || 'Student'
+      });
+      setError(null);
     } catch (error) {
       console.error('Dashboard error:', error);
+      setError('Failed to load dashboard data');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to load dashboard data',
+        confirmButtonColor: '#3498db'
+      });
+    } finally {
       setLoading(false);
     }
   };
@@ -64,7 +92,7 @@ const StudentDashboard = () => {
       color: 'var(--gradient-green)'
     },
     {
-      title: 'Notifications',
+      title: `Notifications ${dashboardData.unreadNotifications > 0 ? `(${dashboardData.unreadNotifications})` : ''}`,
       icon: <FaBell />,
       path: '/student/notifications',
       color: 'var(--gradient-purple)'
@@ -72,10 +100,43 @@ const StudentDashboard = () => {
   ];
 
   const chartData = [
-    { name: 'Applied', value: dashboardData.applications },
-    { name: 'Accepted', value: dashboardData.accepted },
-    { name: 'Pending', value: dashboardData.pending }
+    { name: 'Total', value: dashboardData.stats.total },
+    { name: 'Approved', value: dashboardData.stats.approved },
+    { name: 'Pending', value: dashboardData.stats.pending },
+    { name: 'Rejected', value: dashboardData.stats.rejected },
+    { name: 'Paid', value: dashboardData.stats.paid }
   ];
+
+  if (loading) {
+    return (
+      <div className="student-dashboard-container">
+        <StudentSidebar />
+        <main className="dashboard-main">
+          <div className="loading-container">
+            <FaSpinner className="spinner" />
+            <p>Loading dashboard...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="student-dashboard-container">
+        <StudentSidebar />
+        <main className="dashboard-main">
+          <div className="error-container">
+            <FaTimesCircle className="error-icon" />
+            <p>{error}</p>
+            <button onClick={fetchDashboardData} className="retry-button">
+              Retry
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="student-dashboard-container">
@@ -84,7 +145,7 @@ const StudentDashboard = () => {
       <main className="dashboard-main">
         <div className="dashboard-header">
           <div className="welcome-section">
-            <h1>Welcome back, {username}! 👋</h1>
+            <h1>Welcome back, {dashboardData.studentName}! 👋</h1>
             <p className="dashboard-subtitle">Track your academic journey and manage your applications</p>
           </div>
           
@@ -113,7 +174,7 @@ const StudentDashboard = () => {
                   <FaBookOpen />
                 </div>
                 <div className="stat-content">
-                  <h3>{dashboardData.applications}</h3>
+                  <h3>{dashboardData.stats.total}</h3>
                   <p>Total Applications</p>
                 </div>
               </div>
@@ -123,8 +184,8 @@ const StudentDashboard = () => {
                   <FaCheckCircle />
                 </div>
                 <div className="stat-content">
-                  <h3>{dashboardData.accepted}</h3>
-                  <p>Accepted</p>
+                  <h3>{dashboardData.stats.approved}</h3>
+                  <p>Approved</p>
                 </div>
               </div>
               
@@ -133,7 +194,7 @@ const StudentDashboard = () => {
                   <FaClock />
                 </div>
                 <div className="stat-content">
-                  <h3>{dashboardData.pending}</h3>
+                  <h3>{dashboardData.stats.pending}</h3>
                   <p>Pending</p>
                 </div>
               </div>
@@ -163,49 +224,66 @@ const StudentDashboard = () => {
           <div className="deadlines-section glass-card">
             <div className="section-header">
               <h2>Upcoming Deadlines</h2>
-              <button className="view-all">View All</button>
+              <button className="view-all" onClick={() => navigate('/student/colleges')}>
+                View All
+              </button>
             </div>
             <div className="deadlines-list">
-              {dashboardData.deadlines?.map((deadline, index) => (
-                <div key={index} className="deadline-card">
-                  <div className="deadline-icon">
-                    <FaCalendarAlt />
+              {dashboardData.deadlines.length > 0 ? (
+                dashboardData.deadlines.map((deadline, index) => (
+                  <div key={index} className="deadline-card">
+                    <div className="deadline-icon">
+                      <FaCalendarAlt />
+                    </div>
+                    <div className="deadline-info">
+                      <h3>{deadline.courseName}</h3>
+                      <p>{deadline.collegeName}</p>
+                      <p>{new Date(deadline.deadline).toLocaleDateString()}</p>
+                    </div>
+                    <span className="days-left">
+                      {deadline.daysLeft} days left
+                    </span>
                   </div>
-                  <div className="deadline-info">
-                    <h3>{deadline.university}</h3>
-                    <p>{new Date(deadline.date).toLocaleDateString()}</p>
-                  </div>
-                  <span className="days-left">
-                    {Math.ceil((new Date(deadline.date) - new Date()) / (1000 * 3600 * 24))} days left
-                  </span>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="no-data">No upcoming deadlines</p>
+              )}
             </div>
           </div>
 
           <div className="recommendations-section glass-card">
             <div className="section-header">
               <h2>Recommended Colleges</h2>
-              <button className="view-all">Explore More</button>
+              <button className="view-all" onClick={() => navigate('/student/colleges')}>
+                Explore More
+              </button>
             </div>
             <div className="recommendations-grid">
-              {dashboardData.recommendations?.slice(0, 3).map((college, index) => (
-                <div key={index} className="college-card">
-                  <div className="college-icon">
-                    <FaAward />
+              {dashboardData.recommendedColleges.length > 0 ? (
+                dashboardData.recommendedColleges.map((college, index) => (
+                  <div key={index} className="college-card">
+                    <div className="college-icon">
+                      <FaUniversity />
+                    </div>
+                    <div className="college-info">
+                      <h3>{college.name}</h3>
+                      <p>{college.location}</p>
+                      <p className="college-details">
+                        <span>{college.totalCourses} Courses</span>
+                        <span>{college.university}</span>
+                      </p>
+                      <button 
+                        className="view-details"
+                        onClick={() => navigate(`/student/colleges/${college._id}/courses`)}
+                      >
+                        View College
+                      </button>
+                    </div>
                   </div>
-                  <div className="college-info">
-                    <h3>{college.name}</h3>
-                    <p>{college.location}</p>
-                    <button 
-                      className="view-details"
-                      onClick={() => navigate(`/student/colleges/${college._id}`)}
-                    >
-                      View Details
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="no-data">No recommended colleges available</p>
+              )}
             </div>
           </div>
         </div>

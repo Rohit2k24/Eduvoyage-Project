@@ -20,15 +20,16 @@ const PDFDocument = require('pdfkit');
 // @access  Private
 exports.getDashboardStats = asyncHandler(async (req, res, next) => {
   try {
-    console.log('getDashboardStats called');
-    const studentId = req.user.id;
-    console.log('Student ID:', studentId);
+    const student = await Student.findOne({ user: req.user._id });
+    if (!student) {
+      return next(new ErrorResponse('Student not found', 404));
+    }
 
     // Get applications count by status
     const applicationStats = await Application.aggregate([
       { 
         $match: { 
-          student: new mongoose.Types.ObjectId(studentId)
+          student: student._id
         } 
       },
       {
@@ -38,57 +39,104 @@ exports.getDashboardStats = asyncHandler(async (req, res, next) => {
         }
       }
     ]);
-    console.log('Application stats:', applicationStats);
 
-    // Get recent applications
+    // Get recent applications with full details
     const recentApplications = await Application.find({ 
-      student: studentId 
+      student: student._id 
     })
     .sort('-createdAt')
     .limit(5)
     .populate({
       path: 'course',
-      select: 'name college',
+      select: 'name fees duration college startDate applicationDeadline',
       populate: {
         path: 'college',
-        select: 'name'
+        select: 'name location'
       }
     });
-    console.log('Recent applications:', recentApplications);
 
-    // Get unread notifications count
-    const unreadNotifications = await Notification.countDocuments({
-      user: studentId,
-      read: false
-    });
-    console.log('Unread notifications:', unreadNotifications);
+    // Get upcoming deadlines
+    const upcomingDeadlines = await Course.find({
+      applicationDeadline: { $gt: new Date() },
+      status: 'active'
+    })
+    .sort('applicationDeadline')
+    .limit(3)
+    .populate('college', 'name location')
+    .select('name applicationDeadline college');
 
-    // Get recommended courses
-    const recommendedCourses = await Course.find({ 
-      status: 'active',
-      _id: { $nin: recentApplications.map(app => app.course._id) }
+    // Get recommended colleges based on student's interests and applications
+    const appliedColleges = await Application.find({ student: student._id })
+      .distinct('course')
+      .then(courses => Course.find({ _id: { $in: courses } })
+      .distinct('college'));
+
+    const recommendedColleges = await College.find({ 
+      _id: { $nin: appliedColleges },
+      verificationStatus: 'approved'
     })
     .sort('-createdAt')
     .limit(3)
-    .populate('college', 'name');
-    console.log('Recommended courses:', recommendedCourses);
+    .select('name location university totalCourses')
+    .lean();
 
-    // Format the response
-    const response = {
-      applicationStats: applicationStats.reduce((acc, stat) => {
-        acc[stat._id || 'pending'] = stat.count;
-        return acc;
-      }, {
-        pending: 0,
-        approved: 0,
-        rejected: 0
-      }),
-      recentApplications,
-      unreadNotifications,
-      recommendedCourses
+    // Get total courses for each recommended college
+    const recommendedCollegesWithCounts = await Promise.all(
+      recommendedColleges.map(async (college) => {
+        const totalCourses = await Course.countDocuments({ 
+          college: college._id,
+          status: 'active'
+        });
+        return { ...college, totalCourses };
+      })
+    );
+
+    // Get unread notifications
+    const unreadNotifications = await Notification.countDocuments({
+      recipient: student._id,
+      read: false
+    });
+
+    // Format application statistics
+    const stats = {
+      total: 0,
+      pending: 0,
+      approved: 0,
+      rejected: 0,
+      paid: 0
     };
 
-    console.log('Sending response:', response);
+    applicationStats.forEach(stat => {
+      if (stat._id) {
+        stats[stat._id] = stat.count;
+        stats.total += stat.count;
+      }
+    });
+
+    // Format deadlines
+    const formattedDeadlines = upcomingDeadlines.map(course => ({
+      id: course._id,
+      courseName: course.name,
+      collegeName: course.college.name,
+      deadline: course.applicationDeadline,
+      daysLeft: Math.ceil((new Date(course.applicationDeadline) - new Date()) / (1000 * 60 * 60 * 24))
+    }));
+
+    const response = {
+      stats,
+      recentApplications: recentApplications.map(app => ({
+        id: app._id,
+        courseName: app.course.name,
+        collegeName: app.course.college.name,
+        status: app.status,
+        appliedDate: app.createdAt,
+        fees: app.course.fees
+      })),
+      deadlines: formattedDeadlines,
+      recommendedColleges: recommendedCollegesWithCounts,
+      unreadNotifications,
+      studentName: student.name
+    };
 
     res.status(200).json({
       success: true,
