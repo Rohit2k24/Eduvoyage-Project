@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FaGraduationCap, FaUsers, FaClipboardList, FaChartLine, FaPlus, FaRedo, FaBell } from 'react-icons/fa';
+import { FaGraduationCap, FaUsers, FaClipboardList, FaChartLine, FaPlus, FaRedo, FaBell, FaCreditCard } from 'react-icons/fa';
 import CollegeSidebar from './CollegeSidebar';
 import Swal from 'sweetalert2';
 import './CollegeDashboard.css';
@@ -19,11 +19,70 @@ const CollegeDashboard = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    checkCollegeStatus();
+  }, []);
+
+  const checkCollegeStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      const response = await fetch('http://localhost:3000/api/college/status', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch college status');
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        const { verificationStatus, paymentStatus } = data.status;
+
+        // Handle different status combinations
+        if (verificationStatus === 'pending') {
+          navigate('/college/verification-status');
+          return;
+        }
+
+        if (verificationStatus === 'rejected') {
+          Swal.fire({
+            icon: 'error',
+            title: 'Verification Rejected',
+            text: data.status.rejectionReason || 'Your college verification was rejected. Please contact support.',
+            confirmButtonText: 'View Details'
+          }).then(() => {
+            navigate('/college/verification-status');
+          });
+          return;
+        }
+
+        if (verificationStatus === 'approved' && paymentStatus === 'pending') {
+          navigate('/college/verification-status');
+          return;
+        }
+
+        // If verification is approved and payment is completed, fetch dashboard data
+        if (verificationStatus === 'approved' && paymentStatus === 'completed') {
+          fetchDashboardStats();
+        }
+      }
+    } catch (error) {
+      console.error('Error checking college status:', error);
+      setError('Failed to verify college status');
+      setLoading(false);
+    }
+  };
+
   const fetchDashboardStats = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      
       const response = await fetch('http://localhost:3000/api/college/dashboard-stats', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -44,20 +103,10 @@ const CollegeDashboard = () => {
     } catch (error) {
       console.error('Error fetching stats:', error);
       setError(error.message);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to load dashboard statistics'
-      });
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchDashboardStats();
-    fetchNotifications();
-  }, []);
 
   const fetchNotifications = async () => {
     try {
@@ -99,7 +148,7 @@ const CollegeDashboard = () => {
         <div className="dashboard-error">
           <h2>Error loading dashboard</h2>
           <p>{error}</p>
-          <button onClick={fetchDashboardStats} className="retry-btn">
+          <button onClick={checkCollegeStatus} className="retry-btn">
             <FaRedo /> Retry
           </button>
         </div>

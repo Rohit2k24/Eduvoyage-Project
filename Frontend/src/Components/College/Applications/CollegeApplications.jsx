@@ -23,31 +23,35 @@ const CollegeApplications = () => {
       setLoading(true);
       setError(null);
       
-      const response = await axios.get('/api/college/applications', {
+      const response = await axios.get('http://localhost:3000/api/college/applications', {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
 
-      console.log('API Response:', response.data); // Debug log
+      console.log('API Response:', response.data);
 
       if (response.data.success) {
-        setApplications(response.data.applications);
+        // Filter out any invalid applications
+        const validApplications = response.data.applications.filter(app => 
+          app && app.student && app.course
+        );
+        setApplications(validApplications);
       } else {
-        throw new Error(response.data.error || 'Failed to fetch applications');
+        throw new Error(response.data.message || 'Failed to fetch applications');
       }
     } catch (error) {
       console.error('Error details:', {
-        message: error.response?.data?.error || error.message,
+        message: error.response?.data?.message || error.message,
         status: error.response?.status,
         data: error.response?.data
       });
       
-      setError(error.response?.data?.error || 'Failed to load applications');
+      setError(error.response?.data?.message || 'Failed to load applications');
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: error.response?.data?.error || 'Failed to load applications',
+        text: error.response?.data?.message || 'Failed to load applications',
         confirmButtonColor: '#3498db'
       });
     } finally {
@@ -225,42 +229,115 @@ const CollegeApplications = () => {
     });
 
   const renderApplicationCard = (application) => {
-    // For debugging
-    console.log('Rendering application:', {
-      id: application._id,
-      student: application.student,
-      course: application.course
-    });
+    if (!application || !application.student || !application.course) {
+      return null;
+    }
+
+    const formatDate = (date) => {
+      if (!date) return 'N/A';
+      try {
+        return new Date(date).toLocaleDateString();
+      } catch (error) {
+        return 'N/A';
+      }
+    };
+
+    const renderEducationDetails = (education) => {
+      if (!education || !education.qualifications || !Array.isArray(education.qualifications)) {
+        return <p>No educational details available</p>;
+      }
+
+      return education.qualifications.map((qual, index) => (
+        <div key={index} className="education-item">
+          <h5>{qual.level || 'Education Level Not Specified'}</h5>
+          <div className="info-row">
+            <p><strong>Qualification:</strong> {qual.qualification || 'N/A'}</p>
+            <p><strong>Institute:</strong> {qual.institute || 'N/A'}</p>
+            <p><strong>Board:</strong> {qual.board || 'N/A'}</p>
+          </div>
+          <div className="info-row">
+            <p><strong>Year:</strong> {qual.yearOfCompletion || 'N/A'}</p>
+            <p><strong>Percentage:</strong> {qual.percentage ? `${qual.percentage}%` : 'N/A'}</p>
+            {qual.documents && (
+              <p>
+                <strong>Documents:</strong>
+                <a href={qual.documents} target="_blank" rel="noopener noreferrer">View</a>
+              </p>
+            )}
+          </div>
+        </div>
+      ));
+    };
 
     return (
       <div key={application._id} className="application-card">
         <div className="application-header">
-          <h3>{application?.student?.name || 'Unknown Student'}</h3>
-          <ApplicationStatus status={application?.status || 'pending'} />
+          <h3>{application.student.name || 'Unknown Student'}</h3>
+          <ApplicationStatus status={application.status || 'pending'} />
         </div>
 
         <div className="application-details">
-          <p><strong>Application Number:</strong> {application?.applicationNumber || 'N/A'}</p>
-          <p><strong>Course:</strong> {application?.course?.name || 'N/A'}</p>
-          <p><strong>Applied Date:</strong> {application?.createdAt ? new Date(application.createdAt).toLocaleDateString() : 'N/A'}</p>
+          <p><strong>Application Number:</strong> {application.applicationNumber || 'N/A'}</p>
+          <p><strong>Course:</strong> {application.course.name || 'N/A'}</p>
+          <p><strong>Applied Date:</strong> {formatDate(application.createdAt)}</p>
         </div>
 
         <div className="student-details">
-          <h4>Student Details</h4>
+          <h4>Personal Information</h4>
           <div className="info-row">
-            <div className="info-item">
-              <p><strong>Name:</strong> {application?.student?.name || 'N/A'}</p>
-            </div>
-            <div className="info-item">
-              <p><strong>Email:</strong> {application?.student?.user?.email || 'N/A'}</p>
-            </div>
-            <div className="info-item">
-              <p><strong>Phone:</strong> {application?.student?.phone || 'N/A'}</p>
-            </div>
+            <p><strong>Name:</strong> {application.student.name || 'N/A'}</p>
+            <p><strong>Email:</strong> {application.student.email || 'N/A'}</p>
+            <p><strong>Phone:</strong> {application.student.phone || 'N/A'}</p>
           </div>
+          <div className="info-row">
+            <p><strong>Gender:</strong> {application.student.gender || 'N/A'}</p>
+            <p><strong>Date of Birth:</strong> {formatDate(application.student.dateOfBirth)}</p>
+            <p><strong>Country:</strong> {application.student.country || 'N/A'}</p>
+          </div>
+          <div className="info-row">
+            <p><strong>Address:</strong> {application.student.address || 'N/A'}</p>
+          </div>
+
+          <h4>Educational Background</h4>
+          {renderEducationDetails(application.student.education)}
+
+          {application.student.passport && (
+            <div className="passport-details">
+              <h4>Passport Information</h4>
+              <div className="info-row">
+                <p><strong>Passport Number:</strong> {application.student.passport.number || 'N/A'}</p>
+                <p><strong>Expiry Date:</strong> {formatDate(application.student.passport.expiryDate)}</p>
+                {application.student.passport.document && (
+                  <p>
+                    <strong>Document:</strong>
+                    <a href={application.student.passport.document} target="_blank" rel="noopener noreferrer">View</a>
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {application.documents && application.documents.length > 0 && (
+            <div className="application-documents">
+              <h4>Application Documents</h4>
+              <div className="documents-grid">
+                {application.documents.map((doc, index) => (
+                  <a 
+                    key={index}
+                    href={doc}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="document-link"
+                  >
+                    Document {index + 1}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {application?.status === 'pending' && (
+        {application.status === 'pending' && (
           <div className="application-actions">
             <button
               onClick={() => handleApprove(application._id)}

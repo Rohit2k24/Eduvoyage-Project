@@ -51,6 +51,7 @@ const CollegeList = () => {
   });
 
   const handleCollegeClick = (collegeId) => {
+    console.log('Navigating to college courses:', collegeId);
     navigate(`/student/colleges/${collegeId}/courses`);
   };
 

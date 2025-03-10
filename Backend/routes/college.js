@@ -143,9 +143,37 @@ router.get('/verification-status', getVerificationStatus);
 router.post('/initiate-payment', initiatePayment);
 router.post('/verify-payment', verifyPayment);
 
-// Course routes
+// Course routes with proper middleware
 router.route('/courses')
-  .get(getCollegeCourses)
+  .get(async (req, res) => {
+    try {
+      const college = await College.findOne({ user: req.user.id });
+      if (!college) {
+        return res.status(404).json({
+          success: false,
+          message: 'College not found'
+        });
+      }
+
+      const courses = await Course.find({ 
+        college: college._id,
+        status: 'active'
+      })
+      .select('name description duration fees image startDate applicationDeadline seats eligibilityCriteria')
+      .sort('-createdAt');
+
+      res.status(200).json({
+        success: true,
+        data: courses
+      });
+    } catch (error) {
+      console.error('Error in /courses route:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching courses'
+      });
+    }
+  })
   .post(upload.single('image'), createCourse);
 
 router.route('/courses/:id')
@@ -154,7 +182,99 @@ router.route('/courses/:id')
   .delete(deleteCourse);
 
 // Application routes
-router.get('/applications', getApplications);
+router.get('/applications', async (req, res) => {
+  try {
+    // First find the college
+    const college = await College.findOne({ user: req.user.id });
+    if (!college) {
+      return res.status(404).json({
+        success: false,
+        message: 'College not found'
+      });
+    }
+
+    // Find all courses belonging to this college
+    const courses = await Course.find({ college: college._id });
+    if (!courses || courses.length === 0) {
+      return res.status(200).json({
+        success: true,
+        applications: []
+      });
+    }
+
+    // Get all applications for these courses with complete student details
+    const applications = await Application.find({
+      course: { $in: courses.map(c => c._id) }
+    })
+    .populate({
+      path: 'student',
+      select: 'name email gender phone dateOfBirth country education passport address profilePic',
+      populate: {
+        path: 'user',
+        select: 'email'
+      }
+    })
+    .populate({
+      path: 'course',
+      select: 'name description duration fees eligibilityCriteria'
+    })
+    .sort('-createdAt');
+
+    // Process applications with null checks
+    const processedApplications = applications.map(app => {
+      // Ensure course exists
+      const courseData = app.course ? {
+        _id: app.course._id,
+        name: app.course.name || 'N/A',
+        description: app.course.description || 'N/A',
+        duration: app.course.duration || 'N/A',
+        fees: app.course.fees || 0,
+        eligibilityCriteria: app.course.eligibilityCriteria || []
+      } : null;
+
+      // Ensure student exists
+      const studentData = app.student ? {
+        _id: app.student._id,
+        name: app.student.name || 'N/A',
+        email: app.student.user ? app.student.user.email : 'N/A',
+        gender: app.student.gender || 'N/A',
+        phone: app.student.phone || 'N/A',
+        dateOfBirth: app.student.dateOfBirth || null,
+        country: app.student.country || 'N/A',
+        education: app.student.education || {
+          qualifications: []
+        },
+        passport: app.student.passport || null,
+        address: app.student.address || 'N/A',
+        profilePic: app.student.profilePic || null
+      } : null;
+
+      return {
+        _id: app._id,
+        applicationNumber: app.applicationNumber || 'N/A',
+        status: app.status || 'pending',
+        createdAt: app.createdAt,
+        remarks: app.remarks || '',
+        documents: app.documents || [],
+        course: courseData,
+        student: studentData
+      };
+    }).filter(app => app.course && app.student); // Filter out any applications with missing course or student
+
+    res.status(200).json({
+      success: true,
+      applications: processedApplications
+    });
+  } catch (error) {
+    console.error('Error fetching applications:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching applications',
+      error: error.message
+    });
+  }
+});
+
 router.put('/applications/:id/status', updateApplicationStatus);
 
 // Notification routes
@@ -166,5 +286,33 @@ router.delete('/notifications/:id', deleteNotification);
 // Settings routes
 router.get('/settings', getSettings);
 router.put('/settings', updateSettings);
+
+// Get college status (verification and payment)
+router.get('/status', async (req, res) => {
+  try {
+    const college = await College.findOne({ user: req.user.id });
+    if (!college) {
+      return res.status(404).json({
+        success: false,
+        message: 'College not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      status: {
+        verificationStatus: college.verificationStatus,
+        paymentStatus: college.paymentStatus,
+        rejectionReason: college.rejectionReason
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching college status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching college status'
+    });
+  }
+});
 
 module.exports = router; 

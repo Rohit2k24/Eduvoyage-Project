@@ -14,14 +14,21 @@ const CourseManagement = () => {
   const fetchCourses = async () => {
     try {
       setLoading(true);
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
       const response = await fetch('http://localhost:3000/api/college/courses', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
 
       const data = await response.json();
-      console.log('API Response:', data); // Debug log
+      console.log('API Response:', data);
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch courses');
@@ -38,7 +45,8 @@ const CourseManagement = () => {
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: error.message || 'Failed to load courses'
+        text: error.message || 'Failed to load courses',
+        confirmButtonColor: '#3498db'
       });
     } finally {
       setLoading(false);

@@ -102,33 +102,89 @@
 
 .student-details {
   background: #f8f9fa;
-  padding: 15px;
+  padding: 20px;
   border-radius: 8px;
   margin: 15px 0;
 }
 
 .student-details h4 {
   color: #2c3e50;
-  margin-bottom: 12px;
+  margin: 20px 0 15px;
   font-size: 1.1rem;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+}
+
+.student-details h4:first-child {
+  margin-top: 0;
 }
 
 .info-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 15px;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
 
 .info-row p {
   margin: 0;
   color: #2c3e50;
+  font-size: 0.95rem;
 }
 
 .info-row strong {
   color: #64748b;
   font-weight: 500;
   margin-right: 5px;
+}
+
+.education-item {
+  background: white;
+  padding: 15px;
+  border-radius: 6px;
+  margin: 10px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.education-item h5 {
+  color: #1a237e;
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+
+.passport-details {
+  background: white;
+  padding: 15px;
+  border-radius: 6px;
+  margin: 15px 0;
+}
+
+.documents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.document-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.document-link:hover {
+  background: #bbdefb;
+  transform: translateY(-2px);
+}
+
+.application-documents {
+  margin-top: 20px;
 }
 
 .additional-info {
@@ -220,5 +276,13 @@
 
   .applications-grid {
     grid-template-columns: 1fr;
+  }
+
+  .info-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .documents-grid {
+    grid-template-columns: 1fr 1fr;
   }
 } 

@@ -173,12 +173,13 @@ const CourseDetails = () => {
           throw new Error(data.message || 'Failed to submit application');
         }
 
-        Swal.fire({
+        await Swal.fire({
           icon: 'success',
           title: 'Application Submitted',
           text: 'Your application has been submitted successfully!',
           confirmButtonColor: '#3498db'
         });
+        
         navigate('/student/applications');
       }
     } catch (error) {

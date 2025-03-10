@@ -28,32 +28,47 @@ const CollegeCourses = () => {
   const fetchCollegeAndCourses = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      if (!collegeId || !collegeId.match(/^[0-9a-fA-F]{24}$/)) {
+        throw new Error('Invalid college ID');
+      }
+
+      console.log('Fetching details for college:', collegeId);
+      
       const response = await fetch(`http://localhost:3000/api/courses/college/${collegeId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error('College not found');
-        }
-        throw new Error('Failed to fetch college details');
-      }
-
       const data = await response.json();
       console.log('Received data:', data);
+
+      if (!response.ok) {
+        throw new Error(
+          response.status === 404 
+            ? 'College not found' 
+            : data.message || 'Failed to fetch college details'
+        );
+      }
 
       if (!data.success) {
         throw new Error(data.message || 'Failed to fetch college details');
       }
 
+      if (!data.college) {
+        throw new Error('College data is missing');
+      }
+
       setCollege(data.college);
-      setCourses(data.courses);
+      setCourses(data.courses || []);
       setError(null);
     } catch (error) {
       console.error('Error fetching college details:', error);
       setError(error.message || 'Failed to load college details. Please try again later.');
+      setCollege(null);
+      setCourses([]);
     } finally {
       setLoading(false);
     }

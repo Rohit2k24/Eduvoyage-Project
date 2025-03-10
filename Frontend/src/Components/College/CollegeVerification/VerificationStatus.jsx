@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaSpinner, FaCheckCircle, FaCreditCard, FaSignOutAlt } from 'react-icons/fa';
+import { FaSpinner, FaCheckCircle, FaCreditCard, FaSignOutAlt, FaTimes, FaExclamationTriangle } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import './VerificationStatus.css';
 
@@ -17,24 +17,58 @@ const VerificationStatus = () => {
 
   const fetchVerificationStatus = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/college/verification-status', {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      const response = await fetch('http://localhost:3000/api/college/status', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
 
+      if (!response.ok) {
+        throw new Error('Failed to fetch verification status');
+      }
+
       const data = await response.json();
-      setStatus(data.status);
-      setLoading(false);
+      
+      if (data.success) {
+        setStatus(data.status);
+        
+        // If both verification and payment are completed, redirect to dashboard
+        if (data.status.verificationStatus === 'approved' && 
+            data.status.paymentStatus === 'completed') {
+          navigate('/college/dashboard');
+        }
+      } else {
+        throw new Error(data.message);
+      }
     } catch (error) {
       console.error('Error fetching status:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to fetch verification status'
+      });
+    } finally {
       setLoading(false);
     }
   };
 
   const handlePayment = async () => {
     try {
-      console.log('Initiating payment...');
+      Swal.fire({
+        title: 'Processing...',
+        text: 'Initiating payment',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
       const response = await fetch('http://localhost:3000/api/college/initiate-payment', {
         method: 'POST',
         headers: {
@@ -44,7 +78,7 @@ const VerificationStatus = () => {
       });
 
       const data = await response.json();
-      console.log('Payment initiation response:', data);
+      Swal.close();
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to initiate payment');
@@ -57,10 +91,9 @@ const VerificationStatus = () => {
           currency: data.currency,
           order_id: data.orderId,
           name: 'EduVoyage',
-          description: '2 Months College Listing Payment',
+          description: 'College Registration Payment',
           handler: async function(response) {
             try {
-              console.log('Payment successful, verifying...', response);
               const verifyResponse = await fetch('http://localhost:3000/api/college/verify-payment', {
                 method: 'POST',
                 headers: {
@@ -75,13 +108,12 @@ const VerificationStatus = () => {
               });
 
               const verifyData = await verifyResponse.json();
-              console.log('Payment verification response:', verifyData);
 
               if (verifyData.success) {
                 Swal.fire({
                   icon: 'success',
                   title: 'Payment Successful!',
-                  text: 'Welcome to EduVoyage! You can now manage your college profile.',
+                  text: 'Welcome to EduVoyage! You can now access your college dashboard.',
                   confirmButtonColor: '#3498db'
                 }).then(() => {
                   navigate('/college/dashboard');
@@ -122,22 +154,10 @@ const VerificationStatus = () => {
   };
 
   const handleLogout = () => {
-    // Clear all stored data
     localStorage.removeItem('token');
     localStorage.removeItem('userRole');
-    
-    // Show success message
-    Swal.fire({
-      icon: 'success',
-      title: 'Logged Out Successfully',
-      text: 'Thank you for using EduVoyage!',
-      confirmButtonColor: '#3498db',
-      timer: 1500,
-      showConfirmButton: false
-    }).then(() => {
-      // Navigate to login page
-      navigate('/login');
-    });
+    localStorage.removeItem('userEmail');
+    navigate('/login');
   };
 
   if (loading) {
@@ -154,13 +174,14 @@ const VerificationStatus = () => {
   return (
     <div className="verification-status-container">
       <div className="status-box">
-        {status === 'pending' && (
+        {status?.verificationStatus === 'pending' && (
           <>
             <div className="status-icon pending">
-              <FaSpinner className="spinner" />
+              <FaExclamationTriangle />
             </div>
             <h2>Verification Pending</h2>
             <p>Your college verification request is under review. We'll notify you once it's approved.</p>
+            <p className="sub-text">This usually takes 1-2 business days.</p>
             <button onClick={handleLogout} className="logout-button">
               <FaSignOutAlt className="button-icon" />
               Logout
@@ -168,13 +189,14 @@ const VerificationStatus = () => {
           </>
         )}
 
-        {status === 'approved' && (
+        {status?.verificationStatus === 'approved' && status?.paymentStatus === 'pending' && (
           <>
             <div className="status-icon approved">
               <FaCheckCircle />
             </div>
             <h2>Verification Approved!</h2>
             <p>Your college has been verified. Please proceed with the payment to activate your listing.</p>
+            <p className="payment-info">Registration Fee: ₹200</p>
             <button onClick={handlePayment} className="payment-button">
               <FaCreditCard className="button-icon" />
               Proceed to Payment
@@ -182,13 +204,19 @@ const VerificationStatus = () => {
           </>
         )}
 
-        {status === 'rejected' && (
+        {status?.verificationStatus === 'rejected' && (
           <>
             <div className="status-icon rejected">
               <FaTimes />
             </div>
             <h2>Verification Rejected</h2>
-            <p>Your verification request was not approved. Please contact support for more information.</p>
+            <p className="rejection-reason">{status.rejectionReason || 'Your verification request was not approved.'}</p>
+            <p className="support-text">Please contact our support team for assistance:</p>
+            <a href="mailto:support@eduvoyage.com" className="support-email">support@eduvoyage.com</a>
+            <button onClick={handleLogout} className="logout-button">
+              <FaSignOutAlt className="button-icon" />
+              Logout
+            </button>
           </>
         )}
       </div>

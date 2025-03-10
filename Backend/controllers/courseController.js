@@ -122,11 +122,21 @@ exports.createCourse = async (req, res) => {
 exports.updateCourse = async (req, res) => {
   try {
     console.log('Update request body:', req.body);
+    console.log('Course ID:', req.params.id);
 
-    const courseId = req.params.id;
+    // First find the college
+    const college = await College.findOne({ user: req.user.id });
+    if (!college) {
+      return res.status(404).json({
+        success: false,
+        message: 'College not found'
+      });
+    }
+
+    // Find the course using both course ID and college ID
     const existingCourse = await Course.findOne({
-      _id: courseId,
-      college: req.user.id
+      _id: req.params.id,
+      college: college._id // Use college._id instead of req.user.id
     });
 
     if (!existingCourse) {
@@ -199,10 +209,10 @@ exports.updateCourse = async (req, res) => {
       }
     }
 
-    console.log('Course data to save:', courseData);
+    console.log('Course data to update:', courseData);
 
     const updatedCourse = await Course.findByIdAndUpdate(
-      courseId,
+      req.params.id,
       courseData,
       { new: true, runValidators: true }
     );
@@ -300,24 +310,21 @@ exports.getCourses = asyncHandler(async (req, res) => {
 
 exports.getCollegeCourses = asyncHandler(async (req, res) => {
   try {
-    // First, find the college
-    console.log('College ID:', req.user.id);
-    const college = await College.findById({user:req.user.id})
-      .select('name description location university establishmentYear accreditation facilities address phoneNumber contactEmail documents user');
-
+    // First, find the college using user ID
+    const college = await College.findOne({ user: req.user.id });
+    
     if (!college) {
       return res.status(404).json({
         success: false,
         message: 'College not found'
       });
     }
-    console.log('College:', college);
-    // Then find courses for this college using college.user as the reference
+
+    // Then find courses for this college using college._id
     const courses = await Course.find({ 
-      college: college._id, // Use college._id instead of college.user
+      college: college._id,
       status: 'active'
     })
-    .populate('college', 'name location')
     .select('name description duration fees image startDate applicationDeadline seats eligibilityCriteria')
     .sort('-createdAt');
 
@@ -334,30 +341,15 @@ exports.getCollegeCourses = asyncHandler(async (req, res) => {
       eligibilityCriteria: course.eligibilityCriteria || []
     }));
 
-    // Send both college and courses data
     res.status(200).json({
       success: true,
-      college: {
-        _id: college._id,
-        name: college.name,
-        description: college.description,
-        location: college.location,
-        university: college.university,
-        establishmentYear: college.establishmentYear,
-        accreditation: college.accreditation,
-        facilities: college.facilities || [],
-        address: college.address,
-        phoneNumber: college.phoneNumber,
-        contactEmail: college.contactEmail,
-        documents: college.documents || {}
-      },
-      courses: processedCourses
+      data: processedCourses
     });
   } catch (error) {
     console.error('Error in getCollegeCourses:', error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching college details and courses'
+      message: 'Error fetching college courses'
     });
   }
 });

@@ -198,7 +198,7 @@ const CourseForm = () => {
       formDataToSend.append('seats[total]', totalSeats);
       formDataToSend.append('seats[available]', id ? availableSeats : totalSeats);
 
-      // Append eligibility criteria as an array
+      // Append eligibility criteria
       validCriteria.forEach(criteria => {
         formDataToSend.append('eligibilityCriteria', criteria);
       });
@@ -208,19 +208,10 @@ const CourseForm = () => {
         formDataToSend.append('image', formData.image);
       }
 
-      console.log('Form data being sent:', {
-        name: formData.name,
-        description: formData.description,
-        duration,
-        fees,
-        seats: {
-          total: totalSeats,
-          available: id ? availableSeats : totalSeats
-        },
-        eligibilityCriteria: validCriteria,
-        startDate: formData.startDate,
-        applicationDeadline: formData.applicationDeadline
-      });
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
 
       const url = id 
         ? `http://localhost:3000/api/college/courses/${id}`
@@ -229,7 +220,7 @@ const CourseForm = () => {
       const response = await fetch(url, {
         method: id ? 'PUT' : 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: formDataToSend
       });
