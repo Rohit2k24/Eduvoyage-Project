@@ -11,6 +11,16 @@ exports.submitApplication = async (req, res) => {
     const { courseId } = req.body;
     console.log('Submitting application - Request body:', req.body);
 
+    // First, find the student record for the current user
+    console.log('Student ID:', req.user);
+    const student = await Student.findOne({ user: req.user._id });
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student profile not found. Please complete your profile first.'
+      });
+    }
+
     // Find the course and populate college
     const course = await Course.findById(courseId).populate('college');
     if (!course) {
@@ -22,7 +32,7 @@ exports.submitApplication = async (req, res) => {
 
     // Check if student has already applied
     const existingApplication = await Application.findOne({
-      student: req.user._id,
+      student: student._id, // Use student._id instead of req.user._id
       course: courseId
     });
 
@@ -41,9 +51,9 @@ exports.submitApplication = async (req, res) => {
       });
     }
 
-    // Create application
+    // Create application with student ID
     const application = await Application.create({
-      student: req.user._id,
+      student: student._id, // Use student._id instead of req.user._id
       course: courseId,
       college: course.college._id,
       status: 'pending',
@@ -62,18 +72,24 @@ exports.submitApplication = async (req, res) => {
 
     // Create notification for college
     const notification = await Notification.create({
-      recipient: college.user._id, // Use college's user ID as recipient
+      recipient: college.user._id,
       type: 'application',
       title: 'New Application Received',
       message: `A new application has been submitted for ${course.name}`,
       data: {
         applicationId: application._id,
         courseName: course.name,
-        studentId: req.user._id
+        studentId: student._id, // Use student._id instead of req.user._id
+        studentName: student.name
       }
     });
 
     console.log('Created notification:', notification);
+
+    // Add application to student's applications array
+    student.applications = student.applications || [];
+    student.applications.push(application._id);
+    await student.save();
 
     res.status(201).json({
       success: true,

@@ -11,6 +11,11 @@ const ApplicationSchema = new mongoose.Schema({
     ref: 'Course',
     required: true
   },
+  college: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'College',
+    required: true
+  },
   status: {
     type: String,
     enum: ['pending', 'approved', 'rejected', 'paid'],
@@ -72,5 +77,6 @@ ApplicationSchema.pre('save', async function(next) {
 ApplicationSchema.index({ student: 1 });
 ApplicationSchema.index({ course: 1 });
 ApplicationSchema.index({ status: 1 });
+ApplicationSchema.index({ college: 1 });
 
 module.exports = mongoose.model('Application', ApplicationSchema); 

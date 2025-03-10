@@ -228,6 +228,32 @@ const CollegeApplications = () => {
       return studentName.includes(searchQuery) || appNumber.includes(searchQuery);
     });
 
+  const renderEducationDetails = (education) => {
+    if (!education || !education.qualifications || !Array.isArray(education.qualifications)) {
+      return <p>No educational details available</p>;
+    }
+
+    return education.qualifications.map((qual, index) => (
+      <div key={index} className="education-item">
+        <h5>{qual.level || 'Education Level Not Specified'}</h5>
+        <div className="info-row">
+          <p><strong>Institute:</strong> {qual.institute || 'N/A'}</p>
+          <p><strong>Board:</strong> {qual.board || 'N/A'}</p>
+          <p><strong>Year:</strong> {qual.yearOfCompletion || 'N/A'}</p>
+        </div>
+        <div className="info-row">
+          <p><strong>Percentage:</strong> {qual.percentage ? `${qual.percentage}%` : 'N/A'}</p>
+          {qual.documents && (
+            <p>
+              <strong>Documents:</strong>
+              <a href={qual.documents} target="_blank" rel="noopener noreferrer">View</a>
+            </p>
+          )}
+        </div>
+      </div>
+    ));
+  };
+
   const renderApplicationCard = (application) => {
     if (!application || !application.student || !application.course) {
       return null;
@@ -240,33 +266,6 @@ const CollegeApplications = () => {
       } catch (error) {
         return 'N/A';
       }
-    };
-
-    const renderEducationDetails = (education) => {
-      if (!education || !education.qualifications || !Array.isArray(education.qualifications)) {
-        return <p>No educational details available</p>;
-      }
-
-      return education.qualifications.map((qual, index) => (
-        <div key={index} className="education-item">
-          <h5>{qual.level || 'Education Level Not Specified'}</h5>
-          <div className="info-row">
-            <p><strong>Qualification:</strong> {qual.qualification || 'N/A'}</p>
-            <p><strong>Institute:</strong> {qual.institute || 'N/A'}</p>
-            <p><strong>Board:</strong> {qual.board || 'N/A'}</p>
-          </div>
-          <div className="info-row">
-            <p><strong>Year:</strong> {qual.yearOfCompletion || 'N/A'}</p>
-            <p><strong>Percentage:</strong> {qual.percentage ? `${qual.percentage}%` : 'N/A'}</p>
-            {qual.documents && (
-              <p>
-                <strong>Documents:</strong>
-                <a href={qual.documents} target="_blank" rel="noopener noreferrer">View</a>
-              </p>
-            )}
-          </div>
-        </div>
-      ));
     };
 
     return (
@@ -285,56 +284,17 @@ const CollegeApplications = () => {
         <div className="student-details">
           <h4>Personal Information</h4>
           <div className="info-row">
-            <p><strong>Name:</strong> {application.student.name || 'N/A'}</p>
             <p><strong>Email:</strong> {application.student.email || 'N/A'}</p>
             <p><strong>Phone:</strong> {application.student.phone || 'N/A'}</p>
-          </div>
-          <div className="info-row">
             <p><strong>Gender:</strong> {application.student.gender || 'N/A'}</p>
-            <p><strong>Date of Birth:</strong> {formatDate(application.student.dateOfBirth)}</p>
-            <p><strong>Country:</strong> {application.student.country || 'N/A'}</p>
           </div>
           <div className="info-row">
+            <p><strong>Date of Birth:</strong> {formatDate(application.student.dateOfBirth)}</p>
             <p><strong>Address:</strong> {application.student.address || 'N/A'}</p>
           </div>
 
           <h4>Educational Background</h4>
           {renderEducationDetails(application.student.education)}
-
-          {application.student.passport && (
-            <div className="passport-details">
-              <h4>Passport Information</h4>
-              <div className="info-row">
-                <p><strong>Passport Number:</strong> {application.student.passport.number || 'N/A'}</p>
-                <p><strong>Expiry Date:</strong> {formatDate(application.student.passport.expiryDate)}</p>
-                {application.student.passport.document && (
-                  <p>
-                    <strong>Document:</strong>
-                    <a href={application.student.passport.document} target="_blank" rel="noopener noreferrer">View</a>
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {application.documents && application.documents.length > 0 && (
-            <div className="application-documents">
-              <h4>Application Documents</h4>
-              <div className="documents-grid">
-                {application.documents.map((doc, index) => (
-                  <a 
-                    key={index}
-                    href={doc}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="document-link"
-                  >
-                    Document {index + 1}
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         {application.status === 'pending' && (

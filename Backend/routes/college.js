@@ -193,14 +193,11 @@ router.get('/applications', async (req, res) => {
       });
     }
 
+    console.log('Found college:', college._id);
+
     // Find all courses belonging to this college
     const courses = await Course.find({ college: college._id });
-    if (!courses || courses.length === 0) {
-      return res.status(200).json({
-        success: true,
-        applications: []
-      });
-    }
+    console.log('Found courses:', courses.map(c => c._id));
 
     // Get all applications for these courses with complete student details
     const applications = await Application.find({
@@ -208,7 +205,7 @@ router.get('/applications', async (req, res) => {
     })
     .populate({
       path: 'student',
-      select: 'name email gender phone dateOfBirth country education passport address profilePic',
+      select: 'name email gender phone dateOfBirth education address profilePic',
       populate: {
         path: 'user',
         select: 'email'
@@ -220,51 +217,42 @@ router.get('/applications', async (req, res) => {
     })
     .sort('-createdAt');
 
-    // Process applications with null checks
-    const processedApplications = applications.map(app => {
-      // Ensure course exists
-      const courseData = app.course ? {
-        _id: app.course._id,
-        name: app.course.name || 'N/A',
-        description: app.course.description || 'N/A',
-        duration: app.course.duration || 'N/A',
-        fees: app.course.fees || 0,
-        eligibilityCriteria: app.course.eligibilityCriteria || []
-      } : null;
+    console.log(`Found ${applications.length} applications`);
 
-      // Ensure student exists
-      const studentData = app.student ? {
-        _id: app.student._id,
-        name: app.student.name || 'N/A',
-        email: app.student.user ? app.student.user.email : 'N/A',
-        gender: app.student.gender || 'N/A',
-        phone: app.student.phone || 'N/A',
-        dateOfBirth: app.student.dateOfBirth || null,
-        country: app.student.country || 'N/A',
-        education: app.student.education || {
-          qualifications: []
-        },
-        passport: app.student.passport || null,
-        address: app.student.address || 'N/A',
-        profilePic: app.student.profilePic || null
-      } : null;
-
-      return {
-        _id: app._id,
-        applicationNumber: app.applicationNumber || 'N/A',
-        status: app.status || 'pending',
-        createdAt: app.createdAt,
-        remarks: app.remarks || '',
-        documents: app.documents || [],
-        course: courseData,
-        student: studentData
-      };
-    }).filter(app => app.course && app.student); // Filter out any applications with missing course or student
+    // Process applications to ensure all required data is present
+    const processedApplications = applications.map(app => ({
+      _id: app._id,
+      applicationNumber: app.applicationNumber,
+      status: app.status,
+      createdAt: app.createdAt,
+      remarks: app.remarks || '',
+      student: {
+        _id: app.student?._id,
+        name: app.student?.name || 'N/A',
+        email: app.student?.user?.email || 'N/A',
+        phone: app.student?.phone || 'N/A',
+        gender: app.student?.gender || 'N/A',
+        dateOfBirth: app.student?.dateOfBirth,
+        education: app.student?.education || { qualifications: [] },
+        address: app.student?.address || 'N/A',
+        profilePic: app.student?.profilePic
+      },
+      course: {
+        _id: app.course?._id,
+        name: app.course?.name || 'N/A',
+        description: app.course?.description || 'N/A',
+        duration: app.course?.duration,
+        fees: app.course?.fees,
+        eligibilityCriteria: app.course?.eligibilityCriteria || []
+      }
+    }));
 
     res.status(200).json({
       success: true,
+      count: processedApplications.length,
       applications: processedApplications
     });
+
   } catch (error) {
     console.error('Error fetching applications:', error);
     res.status(500).json({
