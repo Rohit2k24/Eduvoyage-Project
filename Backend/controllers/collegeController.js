@@ -501,12 +501,18 @@ exports.updateApplicationStatus = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse('College not found', 404));
     }
 
-    // Find the application with populated course and college
+    // Find the application with populated course and student
     const application = await Application.findById(req.params.id)
       .populate({
         path: 'course',
+        select: 'name college'
+      })
+      .populate({
+        path: 'student',
+        select: 'user name',
         populate: {
-          path: 'college'
+          path: 'user',
+          select: '_id'
         }
       });
 
@@ -514,24 +520,10 @@ exports.updateApplicationStatus = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse('Application not found', 404));
     }
 
-    // Debug logs
-    console.log('College ID from user:', college._id);
-    console.log('Application course college:', application.course?.college?._id);
-    console.log('Application:', {
-      id: application._id,
-      courseId: application.course?._id,
-      collegeId: application.course?.college?._id
-    });
-
     // Verify that the application belongs to a course in this college
-    if (!application.course?.college?._id || 
-        application.course.college._id.toString() !== college._id.toString()) {
+    if (!application.course?.college || 
+        application.course.college.toString() !== college._id.toString()) {
       return next(new ErrorResponse('Not authorized to update this application', 403));
-    }
-
-    // Don't allow status update if application is already paid
-    if (application.status === 'paid') {
-      return next(new ErrorResponse('Cannot update status of paid application', 400));
     }
 
     // Update application status
@@ -543,14 +535,24 @@ exports.updateApplicationStatus = asyncHandler(async (req, res, next) => {
     await application.save();
 
     // Create notification for student
-    await Notification.create({
-      user: application.student,
-      title: `Application ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-      message: `Your application for ${application.course.name} has been ${status}.${remarks ? ` Remarks: ${remarks}` : ''}`,
-      type: `application_${status}`,
-      relatedId: application._id,
-      onModel: 'Application'
-    });
+    try {
+      if (application.student?.user?._id) {
+        await Notification.create({
+          recipient: application.student.user._id,
+          type: 'application', // Changed from 'status_update' to 'application'
+          title: `Application ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+          message: `Your application for ${application.course.name} has been ${status}${remarks ? `. Remarks: ${remarks}` : ''}`,
+          data: {
+            applicationId: application._id,
+            courseName: application.course.name,
+            status: status
+          }
+        });
+      }
+    } catch (notificationError) {
+      // Log notification error but don't fail the status update
+      console.error('Notification creation error:', notificationError);
+    }
 
     // Send response
     res.status(200).json({
@@ -566,6 +568,6 @@ exports.updateApplicationStatus = asyncHandler(async (req, res, next) => {
 
   } catch (error) {
     console.error('Update application error:', error);
-    return next(new ErrorResponse('Error updating application status', 500));
+    return next(new ErrorResponse(error.message || 'Error updating application status', 500));
   }
 }); 

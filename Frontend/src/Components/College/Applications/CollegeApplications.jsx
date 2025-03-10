@@ -123,32 +123,55 @@ const CollegeApplications = () => {
       if (result.isConfirmed) {
         setProcessingIds(prev => new Set([...prev, applicationId]));
         
-        const response = await axios.put(`/api/college/applications/${applicationId}/status`, {
-          status: 'approved'
-        }, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
+        const response = await axios.put(
+          `http://localhost:3000/api/college/applications/${applicationId}/status`,
+          {
+            status: 'approved'
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
           }
-        });
+        );
 
         if (response.data.success) {
-          Swal.fire({
+          // Update the application in the local state
+          setApplications(prevApplications =>
+            prevApplications.map(app =>
+              app._id === applicationId
+                ? { 
+                    ...app, 
+                    status: 'approved',
+                    updatedAt: response.data.data.updatedAt,
+                    remarks: response.data.data.remarks
+                  }
+                : app
+            )
+          );
+
+          await Swal.fire({
             icon: 'success',
             title: 'Application Approved',
             text: 'The application has been approved successfully.',
             showConfirmButton: false,
             timer: 1500
           });
-          await fetchApplications();
         }
       }
     } catch (error) {
-      console.error('Approval error:', error.response?.data);
+      console.error('Approval error:', error);
+      
+      // Show error message
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: error.response?.data?.error || 'Failed to approve application'
+        text: error.response?.data?.message || 'Failed to approve application. Please try again.',
+        confirmButtonColor: '#3498db'
       });
+
+      // Refresh applications to ensure consistency
+      await fetchApplications();
     } finally {
       setProcessingIds(prev => {
         const newSet = new Set(prev);
@@ -178,33 +201,56 @@ const CollegeApplications = () => {
       if (remarks) {
         setProcessingIds(prev => new Set([...prev, applicationId]));
         
-        const response = await axios.put(`/api/college/applications/${applicationId}/status`, {
-          status: 'rejected',
-          remarks
-        }, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
+        const response = await axios.put(
+          `http://localhost:3000/api/college/applications/${applicationId}/status`,
+          {
+            status: 'rejected',
+            remarks
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
           }
-        });
+        );
 
         if (response.data.success) {
-          Swal.fire({
+          // Update the application in the local state
+          setApplications(prevApplications =>
+            prevApplications.map(app =>
+              app._id === applicationId
+                ? {
+                    ...app,
+                    status: 'rejected',
+                    remarks: remarks,
+                    updatedAt: response.data.data.updatedAt
+                  }
+                : app
+            )
+          );
+
+          await Swal.fire({
             icon: 'success',
             title: 'Application Rejected',
             text: 'The application has been rejected successfully.',
             showConfirmButton: false,
             timer: 1500
           });
-          await fetchApplications(); // Refresh the applications list
         }
       }
     } catch (error) {
-      console.error('Rejection error:', error.response?.data || error);
+      console.error('Rejection error:', error);
+      
+      // Show error message
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: error.response?.data?.error || 'Failed to reject application'
+        text: error.response?.data?.message || 'Failed to reject application. Please try again.',
+        confirmButtonColor: '#3498db'
       });
+
+      // Refresh applications to ensure consistency
+      await fetchApplications();
     } finally {
       setProcessingIds(prev => {
         const newSet = new Set(prev);
