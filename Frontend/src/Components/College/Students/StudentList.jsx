@@ -82,6 +82,35 @@ const StudentDetailsModal = ({ student, onClose }) => {
             </div>
           </div>
 
+          {student.bankStatement && (
+            <div className="info-section">
+              <h4><FaIdCard /> Bank Statement</h4>
+              <div className="info-grid">
+                <div className="info-item">
+                  <div className="info-content">
+                    <label>Upload Date</label>
+                    <span>{formatDate(student.bankStatement.uploadDate)}</span>
+                  </div>
+                </div>
+                {student.bankStatement.document && (
+                  <div className="info-item">
+                    <div className="info-content">
+                      <label>Document</label>
+                      <a 
+                        href={student.bankStatement.document} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="document-link"
+                      >
+                        View Bank Statement
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="info-section">
             <h4><FaGraduationCap /> Academic Information</h4>
             <div className="info-grid">

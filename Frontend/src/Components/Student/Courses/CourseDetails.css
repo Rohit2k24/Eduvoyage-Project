@@ -292,3 +292,130 @@
   background-color: #bdc3c7;
   cursor: not-allowed;
 }
+
+.ai-career-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background-color: #6c5ce7;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 20px;
+}
+
+.ai-career-btn:hover {
+  background-color: #5b4bc4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.2);
+}
+
+.career-paths-section {
+  margin-top: 40px;
+  padding: 30px;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.career-paths-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #2d3436;
+  margin-bottom: 25px;
+}
+
+.career-paths-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.career-card {
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.career-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.career-card h3 {
+  color: #2d3436;
+  margin-bottom: 15px;
+  font-size: 1.25rem;
+}
+
+.career-description {
+  color: #636e72;
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.salary-ranges {
+  margin: 20px 0;
+}
+
+.salary-ranges h4, .skills-required h4, .additional-info h4 {
+  color: #2d3436;
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+}
+
+.salary-ranges ul {
+  list-style: none;
+  padding: 0;
+}
+
+.salary-ranges li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed #e9ecef;
+}
+
+.salary-ranges .level {
+  color: #636e72;
+  font-weight: 500;
+}
+
+.salary-ranges .range {
+  color: #00b894;
+  font-weight: 600;
+}
+
+.skills-required ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+}
+
+.skills-required li {
+  background-color: #e9ecef;
+  color: #2d3436;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+}
+
+.additional-info {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e9ecef;
+}
+
+.additional-info p {
+  color: #636e72;
+  line-height: 1.6;
+}

@@ -53,6 +53,10 @@ const StudentSchema = new mongoose.Schema({
       default: false
     }
   },
+  bankStatement: {
+    document: String,
+    uploadDate: Date
+  },
   address: String,
   profilePic: String,
   profileImage: String,

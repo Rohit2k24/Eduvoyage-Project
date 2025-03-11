@@ -285,4 +285,92 @@
   .documents-grid {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+.bank-statement-section {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.bank-statement-section h4 {
+  color: #2d3748;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.document-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #3b82f6;
+  text-decoration: none;
+  margin-left: 0.5rem;
+}
+
+.document-link:hover {
+  text-decoration: underline;
+  color: #2563eb;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.status-badge .status-icon {
+  font-size: 1.1rem;
+}
+
+.status-badge.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.status-approved {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-badge.status-rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.status-badge.status-paid {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.payment-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.payment-status.paid {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.payment-status.pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.payment-status .payment-date {
+  font-size: 0.85rem;
+  opacity: 0.8;
+  margin-left: 4px;
 } 

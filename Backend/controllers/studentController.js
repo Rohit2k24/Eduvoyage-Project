@@ -257,20 +257,20 @@ exports.downloadReceipt = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse('Student not found', 404));
     }
 
-    const application = await Application.findById(req.params.id)
-      .populate({
-        path: 'course',
+  const application = await Application.findById(req.params.id)
+    .populate({
+      path: 'course',
         select: 'name fees college',
-        populate: {
-          path: 'college',
+      populate: {
+        path: 'college',
           select: 'name address logo'
-        }
+      }
       })
       .populate('student', 'name email phone');
 
-    if (!application) {
-      return next(new ErrorResponse('Application not found', 404));
-    }
+  if (!application) {
+    return next(new ErrorResponse('Application not found', 404));
+  }
 
     if (application.student._id.toString() !== student._id.toString()) {
       return next(new ErrorResponse('Not authorized to access this receipt', 401));

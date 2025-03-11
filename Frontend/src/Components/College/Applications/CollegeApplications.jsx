@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaCheckCircle, FaTimesCircle, FaSpinner, FaSearch, FaFilter } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle, FaSpinner, FaSearch, FaFilter, FaClock } from 'react-icons/fa';
 import CollegeSidebar from '../CollegeDashboard/CollegeSidebar';
 import ApplicationStatus from '../../Student/Applications/ApplicationStatus';
 import Swal from 'sweetalert2';
@@ -314,17 +314,70 @@ const CollegeApplications = () => {
       }
     };
 
+    const getStatusDisplay = () => {
+      if (application.status === 'paid') {
+        return (
+          <div className="status-badge status-paid">
+            <FaCheckCircle className="status-icon" />
+            <span>Paid</span>
+          </div>
+        );
+      } else if (application.status === 'approved') {
+        return (
+          <div className="status-badge status-approved">
+            <FaCheckCircle className="status-icon" />
+            <span>Approved</span>
+          </div>
+        );
+      } else if (application.status === 'rejected') {
+        return (
+          <div className="status-badge status-rejected">
+            <FaTimesCircle className="status-icon" />
+            <span>Rejected</span>
+          </div>
+        );
+      } else {
+        return (
+          <div className="status-badge status-pending">
+            <FaClock className="status-icon" />
+            <span>Pending</span>
+          </div>
+        );
+      }
+    };
+
+    const getPaymentStatus = () => {
+      if (application.payment?.paid) {
+        return (
+          <div className="payment-status paid">
+            <FaCheckCircle />
+            <span>Payment Completed</span>
+            <span className="payment-date">({formatDate(application.payment.paidAt)})</span>
+          </div>
+        );
+      } else if (application.status === 'approved') {
+        return (
+          <div className="payment-status pending">
+            <FaClock />
+            <span>Payment Pending</span>
+          </div>
+        );
+      }
+      return null;
+    };
+
     return (
       <div key={application._id} className="application-card">
         <div className="application-header">
           <h3>{application.student.name || 'Unknown Student'}</h3>
-          <ApplicationStatus status={application.status || 'pending'} />
+          {getStatusDisplay()}
         </div>
 
         <div className="application-details">
           <p><strong>Application Number:</strong> {application.applicationNumber || 'N/A'}</p>
           <p><strong>Course:</strong> {application.course.name || 'N/A'}</p>
           <p><strong>Applied Date:</strong> {formatDate(application.createdAt)}</p>
+          {getPaymentStatus()}
         </div>
 
         <div className="student-details">

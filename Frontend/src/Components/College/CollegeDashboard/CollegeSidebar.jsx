@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { 
   FaChartBar, 
   FaBook, 
@@ -16,6 +17,34 @@ const CollegeSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
+  const [collegeInfo, setCollegeInfo] = useState({
+    name: '',
+    logo: ''
+  });
+
+  useEffect(() => {
+    fetchCollegeInfo();
+  }, []);
+
+  const fetchCollegeInfo = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/college/settings', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setCollegeInfo({
+          name: data.data.name || 'College Name',
+          logo: data.data.documents?.collegeLogo || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching college info:', error);
+    }
+  };
 
   const handleLogout = () => {
     Swal.fire({
@@ -81,9 +110,17 @@ const CollegeSidebar = () => {
   return (
     <div className="college-sidebar">
       <div className="sidebar-header">
-        <FaUniversity className="college-icon" />
+        {collegeInfo.logo ? (
+          <img 
+            src={collegeInfo.logo} 
+            alt={collegeInfo.name} 
+            className="college-logo"
+          />
+        ) : (
+          <FaUniversity className="college-icon" />
+        )}
         <div className="header-text">
-          <h2>College Portal</h2>
+          <h2>{collegeInfo.name}</h2>
           <p>{user?.name || 'College Admin'}</p>
         </div>
       </div>

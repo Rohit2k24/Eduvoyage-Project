@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { FaUser, FaEnvelope, FaPhone, FaGraduationCap, FaPassport, FaSpinner, FaFileUpload, FaCamera, FaSave, FaPlus, FaTrash, FaMapMarkerAlt, FaCheckCircle, FaEdit, FaCalendarAlt, FaExternalLinkAlt } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaPhone, FaGraduationCap, FaPassport, FaSpinner, FaFileUpload, FaCamera, FaSave, FaPlus, FaTrash, FaMapMarkerAlt, FaCheckCircle, FaEdit, FaCalendarAlt, FaExternalLinkAlt, FaUniversity } from 'react-icons/fa';
 import StudentSidebar from '../Sidebar/StudentSidebar';
 import Swal from 'sweetalert2';
 import axios from 'axios';
 import './StudentProfile.css';
+import { toast } from 'react-hot-toast';
 
 // Configure axios
 const axiosInstance = axios.create({
@@ -46,6 +47,11 @@ const StudentProfile = () => {
       expiryDate: '',
       document: null
     },
+    bankStatement: {
+      document: null,
+      uploadDate: null,
+      verified: false
+    },
     address: '',
     profilePic: '',
     gender: '',
@@ -57,6 +63,7 @@ const StudentProfile = () => {
   const [formData, setFormData] = useState({ ...profile });
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchProfile = async () => {
     try {
@@ -89,6 +96,11 @@ const StudentProfile = () => {
             number: '',
             expiryDate: '',
             document: null
+          },
+          bankStatement: profileData.bankStatement || {
+            document: null,
+            uploadDate: null,
+            verified: false
           },
           address: profileData.address || '',
           profilePic: profileData.profilePic || '',
@@ -189,62 +201,54 @@ const StudentProfile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    
     try {
-      setLoading(true);
+      const formData = new FormData();
+      const data = { ...profile };
       
-      // Create form data
-      const formDataToSend = new FormData();
-      
-      // Append basic fields
-      formDataToSend.append('name', formData.name);
-      formDataToSend.append('email', formData.email);
-      formDataToSend.append('phone', formData.phone);
-      formDataToSend.append('address', formData.address);
-      formDataToSend.append('gender', formData.gender);
-      formDataToSend.append('dateOfBirth', formData.dateOfBirth);
-
-      // Handle education data
-      if (formData.education) {
-        formDataToSend.append('education', JSON.stringify(formData.education));
-      }
-
-      // Handle passport data
-      if (formData.passport) {
-        formDataToSend.append('passport', JSON.stringify(formData.passport));
-      }
-
       // Handle file uploads
       if (selectedFile) {
-        formDataToSend.append('profilePic', selectedFile);
+        formData.append('profilePic', selectedFile);
       }
-
-      const response = await axiosInstance.put('/student/profile', formDataToSend, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
+      if (formData.passport.document instanceof File) {
+        formData.append('passportDocument', formData.passport.document);
+      }
+      if (formData.bankStatement?.document instanceof File) {
+        formData.append('bankStatement', formData.bankStatement.document);
+      }
+      if (formData.education?.qualifications?.length > 0) {
+        formData.education.qualifications.forEach((qual, index) => {
+          if (qual.documents instanceof File) {
+            formData.append(`educationDocuments[${index}]`, qual.documents);
+          }
+        });
+      }
+      
+      // Append other profile data as JSON
+      formData.append('data', JSON.stringify(data));
+      
+      const response = await axios.put(
+        `${import.meta.env.VITE_API_URL}/api/student/profile`,
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'multipart/form-data'
+          }
         }
-      });
+      );
 
       if (response.data.success) {
         setProfile(response.data.profile);
         setEditing(false);
-        Swal.fire({
-          icon: 'success',
-          title: 'Success',
-          text: 'Profile updated successfully'
-        });
-        
-        // Refresh profile data
-        await fetchProfile();
+        toast.success('Profile updated successfully!');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.response?.data?.message || 'Failed to update profile'
-      });
+      toast.error(error.response?.data?.message || 'Error updating profile');
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -334,6 +338,42 @@ const StudentProfile = () => {
     const today = new Date();
     const expiry = new Date(expiryDate);
     return expiry > today;
+  };
+
+  // Add bank statement document handler
+  const handleBankStatementChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Check file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        Swal.fire({
+          icon: 'error',
+          title: 'File too large',
+          text: 'Please select a document under 5MB'
+        });
+        return;
+      }
+
+      // Check file type
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+      if (!allowedTypes.includes(file.type)) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Invalid file type',
+          text: 'Please select a PDF or image file'
+        });
+        return;
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        bankStatement: {
+          ...prev.bankStatement,
+          document: file,
+          uploadDate: new Date().toISOString()
+        }
+      }));
+    }
   };
 
   return (
@@ -613,6 +653,51 @@ const StudentProfile = () => {
                   </div>
                 </section>
 
+                <section className="profile-section">
+                  <h3><FaUniversity /> Bank Statement</h3>
+                  <div className="document-upload">
+                    <label className="file-upload-label">
+                      <FaFileUpload className="icon" />
+                      Upload Bank Statement
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={handleBankStatementChange}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                    {formData.bankStatement?.document && (
+                      <div className="document-info">
+                        <span className="file-name">
+                          {formData.bankStatement.document instanceof File 
+                            ? formData.bankStatement.document.name 
+                            : 'Document uploaded'}
+                        </span>
+                        {!(formData.bankStatement.document instanceof File) && (
+                          <a 
+                            href={formData.bankStatement.document}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="document-link"
+                          >
+                            View Current Statement <FaExternalLinkAlt />
+                          </a>
+                        )}
+                      </div>
+                    )}
+                    {formData.bankStatement?.verified && (
+                      <span className="verification-badge">
+                        <FaCheckCircle /> Verified
+                      </span>
+                    )}
+                    {formData.bankStatement?.uploadDate && (
+                      <div className="upload-date">
+                        Uploaded on: {new Date(formData.bankStatement.uploadDate).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
+                </section>
+
                 <div className="form-group">
                   <label>Address</label>
                   <textarea
@@ -638,8 +723,8 @@ const StudentProfile = () => {
                 </div>
 
                 <div className="form-actions">
-                  <button type="submit" className="save-btn" disabled={loading}>
-                    {loading ? 'Saving...' : <><FaSave /> Save Changes</>}
+                  <button type="submit" className="save-btn" disabled={isSubmitting}>
+                    {isSubmitting ? 'Saving...' : <><FaSave /> Save Changes</>}
                   </button>
                   <button type="button" className="cancel-btn" onClick={() => setEditing(false)}>
                     Cancel
@@ -771,6 +856,38 @@ const StudentProfile = () => {
                         </a>
                       </div>
                     </div>
+                  )}
+                </div>
+
+                <div className="profile-section">
+                  <h3><FaUniversity /> Bank Statement</h3>
+                  {profile?.bankStatement?.document ? (
+                    <div className="info-item">
+                      <FaFileUpload className="icon" />
+                      <div>
+                        <label>Bank Statement</label>
+                        <a 
+                          href={profile.bankStatement.document}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="document-link"
+                        >
+                          View Statement <FaExternalLinkAlt />
+                        </a>
+                        {profile.bankStatement.verified && (
+                          <span className="verification-badge">
+                            <FaCheckCircle /> Verified
+                          </span>
+                        )}
+                        {profile.bankStatement.uploadDate && (
+                          <div className="upload-date">
+                            Uploaded on: {new Date(profile.bankStatement.uploadDate).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="no-data">No bank statement uploaded</p>
                   )}
                 </div>
 

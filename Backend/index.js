@@ -12,7 +12,7 @@ const adminRoutes = require('./routes/admin');
 const collegeRoutes = require('./routes/college');
 const studentRoutes = require('./routes/student');
 const courseRoutes = require('./routes/course');
-
+const aiRoutes = require('./routes/ai');
 // Load env vars
 dotenv.config();
 
@@ -60,7 +60,7 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/college', collegeRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/admin', adminRoutes);
-
+app.use('/api/ai', aiRoutes);
 // Add error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);

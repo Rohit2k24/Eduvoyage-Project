@@ -35,7 +35,7 @@ const College = require('../models/College');
 const Course = require('../models/Course');
 const Student = require('../models/Student');
 const User = require('../models/User');
-const cloudinary = require('../config/cloudinary');
+const { cloudinary } = require('../config/cloudinary');
 
 const { 
   createPayment, 
@@ -145,59 +145,62 @@ router.get('/profile', protect, async (req, res) => {
 router.put('/profile', protect, upload.fields([
   { name: 'profilePic', maxCount: 1 },
   { name: 'passportDocument', maxCount: 1 },
+  { name: 'bankStatement', maxCount: 1 },
   { name: 'educationDocuments', maxCount: 10 }
 ]), async (req, res) => {
   try {
-    console.log("entered profile update");
-    console.log("Request body:", req.body);
-    const updateData = { ...req.body };
-    
-    // Validate gender if provided
-    if (updateData.gender && !['male', 'female', 'other'].includes(updateData.gender)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid gender value. Must be "male", "female", or "other"'
-      });
-    }
+    console.log('Updating profile with files:', req.files);
+    const updateData = JSON.parse(req.body.data || '{}');
+    const studentUpdateData = { ...updateData };
 
-    // Handle file uploads first
-    if (req.files?.profilePic) {
-      const result = await cloudinary.uploader.upload(req.files.profilePic[0].path, {
-        folder: 'eduvoyage/profiles',
-        transformation: [
-          { width: 400, height: 400, crop: "fill" },
-          { quality: "auto" }
-        ]
-      });
-      updateData.profilePic = result.secure_url;
-    }
-
-    // Parse JSON strings if they exist
-    try {
-      if (updateData.education) {
-        updateData.education = JSON.parse(updateData.education);
+    // Handle file uploads
+    if (req.files) {
+      // Handle profile picture
+      if (req.files.profilePic) {
+        const result = await cloudinary.uploader.upload(req.files.profilePic[0].path, {
+          folder: 'student_profiles'
+        });
+        studentUpdateData.profilePic = result.secure_url;
       }
-      if (updateData.passport) {
-        updateData.passport = JSON.parse(updateData.passport);
+
+      // Handle passport document
+      if (req.files.passportDocument) {
+        const result = await cloudinary.uploader.upload(req.files.passportDocument[0].path, {
+          folder: 'passport_documents'
+        });
+        if (!studentUpdateData.passport) studentUpdateData.passport = {};
+        studentUpdateData.passport.document = result.secure_url;
       }
-    } catch (error) {
-      console.error('Error parsing JSON data:', error);
+
+      // Handle bank statement
+      if (req.files.bankStatement) {
+        const result = await cloudinary.uploader.upload(req.files.bankStatement[0].path, {
+          folder: 'bank_statements'
+        });
+        studentUpdateData.bankStatement = {
+          document: result.secure_url,
+          uploadDate: new Date()
+        };
+      }
+
+      // Handle education documents
+      if (req.files.educationDocuments) {
+        const uploadPromises = req.files.educationDocuments.map(file => 
+          cloudinary.uploader.upload(file.path, {
+            folder: 'education_documents'
+          })
+        );
+        const results = await Promise.all(uploadPromises);
+        
+        if (studentUpdateData.education && studentUpdateData.education.qualifications) {
+          results.forEach((result, index) => {
+            if (studentUpdateData.education.qualifications[index]) {
+              studentUpdateData.education.qualifications[index].documents = result.secure_url;
+            }
+          });
+        }
+      }
     }
-
-    // Prepare the student update data
-    const studentUpdateData = {
-      name: updateData.name,
-      email: updateData.email,
-      phone: updateData.phone,
-      address: updateData.address,
-      gender: updateData.gender,
-      dateOfBirth: updateData.dateOfBirth,
-      education: updateData.education,
-      passport: updateData.passport,
-      profilePic: updateData.profilePic
-    };
-
-    console.log("Student update data:", studentUpdateData);
 
     // Update both User and Student models
     const [user, student] = await Promise.all([

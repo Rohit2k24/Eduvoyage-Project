@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaClock, FaRupeeSign, FaCalendarAlt, FaUsers, FaCheckCircle } from 'react-icons/fa';
+import { FaArrowLeft, FaClock, FaRupeeSign, FaCalendarAlt, FaUsers, FaCheckCircle, FaBriefcase, FaRobot } from 'react-icons/fa';
 import StudentSidebar from '../Sidebar/StudentSidebar';
 import Swal from 'sweetalert2';
 import './CourseDetails.css';
@@ -11,6 +11,8 @@ const CourseDetails = () => {
   const [error, setError] = useState(null);
   const [profileComplete, setProfileComplete] = useState(false);
   const [missingFields, setMissingFields] = useState([]);
+  const [careerInfo, setCareerInfo] = useState(null);
+  const [loadingCareers, setLoadingCareers] = useState(false);
   const { courseId } = useParams();
   const navigate = useNavigate();
 
@@ -193,6 +195,62 @@ const CourseDetails = () => {
     }
   };
 
+  const handleCareerInfo = async () => {
+    if (!course?.name) return;
+
+    const loadingDialog = Swal.fire({
+      title: 'Analyzing Career Paths',
+      html: 'Please wait while our AI analyzes potential career paths...',
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    try {
+      const response = await fetch('http://localhost:3000/api/ai/career-paths', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ courseName: course.name })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch career information');
+      }
+
+      if (!data.success || !data.data || !data.data.careers) {
+        throw new Error('Invalid response format');
+      }
+
+      setCareerInfo(data.data);
+      await loadingDialog.close();
+
+      // Scroll to the career section
+      setTimeout(() => {
+        document.querySelector('.career-paths-section')?.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }, 100);
+
+    } catch (error) {
+      console.error('Error fetching career info:', error);
+      await loadingDialog.close();
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'Failed to fetch career information. Please try again.',
+        confirmButtonColor: '#3498db'
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="course-details-layout">
@@ -256,6 +314,9 @@ const CourseDetails = () => {
               <p>{course.college?.name}</p>
               <p>{course.college?.location}</p>
             </div>
+            <button onClick={handleCareerInfo} className="ai-career-btn">
+              <FaRobot /> AI Career Analysis
+            </button>
           </div>
 
           <div className="course-info-grid">
@@ -315,6 +376,45 @@ const CourseDetails = () => {
               {course.seats.available === 0 ? 'No Seats Available' : 'Apply Now'}
             </button>
           </div>
+
+          {careerInfo && (
+            <div className="career-paths-section">
+              <h2><FaBriefcase /> AI-Generated Career Paths</h2>
+              <div className="career-paths-grid">
+                {careerInfo.careers.map((career, index) => (
+                  <div key={index} className="career-card">
+                    <h3>{career.title}</h3>
+                    <p className="career-description">{career.description}</p>
+                    <div className="salary-ranges">
+                      <h4>Expected Salary Ranges:</h4>
+                      <ul>
+                        {Object.entries(career.salaryRanges).map(([level, range]) => (
+                          <li key={level}>
+                            <span className="level">{level}:</span>
+                            <span className="range">₹{range}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="skills-required">
+                      <h4>Key Skills Required:</h4>
+                      <ul>
+                        {career.requiredSkills.map((skill, idx) => (
+                          <li key={idx}>{skill}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    {career.additionalInfo && (
+                      <div className="additional-info">
+                        <h4>Additional Information:</h4>
+                        <p>{career.additionalInfo}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

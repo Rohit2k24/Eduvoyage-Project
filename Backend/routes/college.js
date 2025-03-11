@@ -25,6 +25,7 @@ const {
 } = require('../controllers/settingsController');
 const College = require('../models/College');
 const collegeController = require('../controllers/collegeController');
+const Student = require('../models/Student');
 
 // Configure multer for verification uploads
 const verificationFields = [
@@ -206,7 +207,7 @@ router.get('/applications', async (req, res) => {
     })
     .populate({
       path: 'student',
-      select: 'name email gender phone dateOfBirth education address profilePic',
+      select: 'name email gender phone dateOfBirth education address profilePic bankStatement',
       populate: {
         path: 'user',
         select: 'email'
@@ -236,7 +237,8 @@ router.get('/applications', async (req, res) => {
         dateOfBirth: app.student?.dateOfBirth,
         education: app.student?.education || { qualifications: [] },
         address: app.student?.address || 'N/A',
-        profilePic: app.student?.profilePic
+        profilePic: app.student?.profilePic,
+        bankStatement: app.student?.bankStatement || null
       },
       course: {
         _id: app.course?._id,
@@ -310,5 +312,67 @@ router.patch('/students/:id/status', protect, authorize('college'), collegeContr
 
 // Add this route for getting upload signatures
 router.get('/upload-signature', protect, authorize('college'), collegeController.getUploadSignature);
+
+// Student routes
+router.get('/students', async (req, res) => {
+  try {
+    // First find the college
+    const college = await College.findOne({ user: req.user.id });
+    if (!college) {
+      return res.status(404).json({
+        success: false,
+        message: 'College not found'
+      });
+    }
+
+    // Find all courses belonging to this college
+    const courses = await Course.find({ college: college._id });
+
+    // Find all accepted applications for these courses
+    const acceptedApplications = await Application.find({
+      course: { $in: courses.map(c => c._id) },
+      status: 'approved'
+    });
+
+    // Get unique student IDs from accepted applications
+    const studentIds = [...new Set(acceptedApplications.map(app => app.student))];
+
+    // Get student details
+    const students = await Student.find({
+      _id: { $in: studentIds }
+    })
+    .select('name email phone gender dateOfBirth education address profilePic bankStatement course academicDetails')
+    .populate('user', 'email')
+    .populate('course', 'name duration');
+
+    // Process students to ensure all required data is present
+    const processedStudents = students.map(student => ({
+      _id: student._id,
+      name: student.name || 'N/A',
+      email: student.user?.email || student.email || 'N/A',
+      phone: student.phone || 'N/A',
+      gender: student.gender || 'N/A',
+      dateOfBirth: student.dateOfBirth,
+      education: student.education || { qualifications: [] },
+      address: student.address || 'N/A',
+      profilePic: student.profilePic,
+      bankStatement: student.bankStatement || null,
+      course: student.course,
+      academicDetails: student.academicDetails || {},
+      enrollmentNumber: student.enrollmentNumber || 'N/A'
+    }));
+
+    res.status(200).json({
+      success: true,
+      students: processedStudents
+    });
+  } catch (error) {
+    console.error('Error fetching students:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching students'
+    });
+  }
+});
 
 module.exports = router; 
