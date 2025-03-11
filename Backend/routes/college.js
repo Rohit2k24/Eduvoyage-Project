@@ -175,11 +175,11 @@ router.route('/courses')
       });
     }
   })
-  .post(upload.single('image'), createCourse);
+  .post(createCourse);
 
 router.route('/courses/:id')
   .get(getCourse)
-  .put(upload.single('image'), updateCourse)
+  .put(updateCourse)
   .delete(deleteCourse);
 
 // Application routes

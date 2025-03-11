@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
 const { protect } = require('../middleware/auth');
-const upload = require('../middleware/upload');
 const {
   createCourse,
   updateCourse,
@@ -20,13 +18,12 @@ router.use((req, res, next) => {
     method: req.method,
     url: req.url,
     body: req.body,
-    files: req.files || req.file,
     headers: req.headers
   });
   next();
 });
 
-// Public routes - Order matters!
+// Public routes
 router.get('/college/:collegeId', async (req, res) => {
   try {
     const { collegeId } = req.params;
@@ -75,25 +72,23 @@ router.get('/college/:collegeId', async (req, res) => {
       error: error.message
     });
   }
-}); // This must come before /:id
+});
+
 router.get('/', getCourses);
 router.get('/:id', getCourse);
 
 // Protected routes
-router.post('/', protect, upload.single('image'), createCourse);
-router.put('/:id', protect, upload.single('image'), updateCourse);
+router.post('/', protect, createCourse);
+router.put('/:id', protect, updateCourse);
 router.delete('/:id', protect, deleteCourse);
 
 // Error handler
 router.use((error, req, res, next) => {
   console.error('Course Route Error:', error);
-  if (error instanceof multer.MulterError) {
-    return res.status(400).json({
-      success: false,
-      message: `Upload error: ${error.message}`
-    });
-  }
-  next(error);
+  res.status(500).json({
+    success: false,
+    message: `Server error: ${error.message}`
+  });
 });
 
 module.exports = router;

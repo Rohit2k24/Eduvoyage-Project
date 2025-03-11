@@ -41,7 +41,6 @@ const uploadToCloudinary = async (file) => {
 exports.createCourse = async (req, res) => {
   try {
     console.log('Creating course with data:', req.body);
-    console.log('File:', req.file);
 
     // Parse numeric values
     const totalSeats = parseInt(req.body.seats.total);
@@ -72,12 +71,21 @@ exports.createCourse = async (req, res) => {
       });
     }
 
+    // Find the college first
+    const college = await College.findOne({ user: req.user.id });
+    if (!college) {
+      return res.status(404).json({
+        success: false,
+        message: 'College not found'
+      });
+    }
+
     const courseData = {
       name: req.body.name,
       description: req.body.description,
       duration: duration,
       fees: fees,
-      college: req.user.id,
+      college: college._id,
       seats: {
         total: totalSeats,
         available: totalSeats
@@ -85,22 +93,9 @@ exports.createCourse = async (req, res) => {
       eligibilityCriteria: eligibilityCriteria,
       startDate: req.body.startDate,
       applicationDeadline: req.body.applicationDeadline,
-      status: req.body.status || 'active'
+      status: req.body.status || 'active',
+      image: req.body.image || '/default-course.jpg' // Provide default image if none provided
     };
-
-    // Handle image upload
-    if (req.file) {
-      try {
-        const imageUrl = await uploadToCloudinary(req.file);
-        courseData.image = imageUrl;
-      } catch (uploadError) {
-        console.error('Image upload failed:', uploadError);
-        return res.status(400).json({
-          success: false,
-          message: 'Failed to upload course image'
-        });
-      }
-    }
 
     console.log('Course data to save:', courseData);
 
@@ -136,7 +131,7 @@ exports.updateCourse = async (req, res) => {
     // Find the course using both course ID and college ID
     const existingCourse = await Course.findOne({
       _id: req.params.id,
-      college: college._id // Use college._id instead of req.user.id
+      college: college._id
     });
 
     if (!existingCourse) {
@@ -187,27 +182,9 @@ exports.updateCourse = async (req, res) => {
       },
       eligibilityCriteria: eligibilityCriteria,
       startDate: req.body.startDate,
-      applicationDeadline: req.body.applicationDeadline
+      applicationDeadline: req.body.applicationDeadline,
+      image: req.body.image || existingCourse.image // Keep existing image if no new one provided
     };
-
-    // Handle image upload
-    if (req.file) {
-      try {
-        // Delete old image from Cloudinary if exists
-        if (existingCourse.image && existingCourse.image.includes('cloudinary')) {
-          const publicId = existingCourse.image.split('/').pop().split('.')[0];
-          await cloudinary.uploader.destroy(`eduvoyage/courses/${publicId}`);
-        }
-        const imageUrl = await uploadToCloudinary(req.file);
-        courseData.image = imageUrl;
-      } catch (uploadError) {
-        console.error('Image update failed:', uploadError);
-        return res.status(400).json({
-          success: false,
-          message: 'Failed to update course image'
-        });
-      }
-    }
 
     console.log('Course data to update:', courseData);
 

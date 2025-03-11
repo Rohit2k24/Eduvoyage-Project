@@ -21,7 +21,7 @@ const CourseForm = () => {
     eligibilityCriteria: [''],
     startDate: '',
     applicationDeadline: '',
-    image: null
+    image: ''
   });
   const [imagePreview, setImagePreview] = useState(null);
 
@@ -71,7 +71,7 @@ const CourseForm = () => {
           eligibilityCriteria: data.data.eligibilityCriteria || [''],
           startDate: data.data.startDate || '',
           applicationDeadline: data.data.applicationDeadline || '',
-          image: data.data.image || null,
+          image: data.data.image || '',
           status: data.data.status || 'active'
         });
 
@@ -116,15 +116,58 @@ const CourseForm = () => {
     }
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData(prev => ({
-        ...prev,
-        image: file
-      }));
-      // Create preview URL for the new image
-      setImagePreview(URL.createObjectURL(file));
+      try {
+        // Get upload signature from backend
+        const signatureResponse = await fetch('http://localhost:3000/api/college/upload-signature?folder=courses', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        const signatureData = await signatureResponse.json();
+
+        if (!signatureData.success) {
+          throw new Error('Failed to get upload signature');
+        }
+
+        // Create form data for Cloudinary
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('api_key', signatureData.data.apiKey);
+        formData.append('timestamp', signatureData.data.timestamp);
+        formData.append('signature', signatureData.data.signature);
+        formData.append('folder', signatureData.data.folder);
+
+        // Upload to Cloudinary
+        const uploadResponse = await fetch(
+          `https://api.cloudinary.com/v1_1/${signatureData.data.cloudName}/image/upload`,
+          {
+            method: 'POST',
+            body: formData
+          }
+        );
+
+        const uploadResult = await uploadResponse.json();
+        if (uploadResult.secure_url) {
+          setFormData(prev => ({
+            ...prev,
+            image: uploadResult.secure_url
+          }));
+          setImagePreview(uploadResult.secure_url);
+        } else {
+          throw new Error('Upload failed');
+        }
+      } catch (error) {
+        console.error('Image upload error:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Upload Failed',
+          text: 'Failed to upload image. Please try again.',
+          confirmButtonColor: '#3498db'
+        });
+      }
     }
   };
 
@@ -184,34 +227,20 @@ const CourseForm = () => {
         throw new Error('At least one eligibility criterion is required');
       }
 
-      const formDataToSend = new FormData();
-
-      // Append basic fields
-      formDataToSend.append('name', formData.name.trim());
-      formDataToSend.append('description', formData.description.trim());
-      formDataToSend.append('duration', duration);
-      formDataToSend.append('fees', fees);
-      formDataToSend.append('startDate', formData.startDate);
-      formDataToSend.append('applicationDeadline', formData.applicationDeadline);
-
-      // Append seats data
-      formDataToSend.append('seats[total]', totalSeats);
-      formDataToSend.append('seats[available]', id ? availableSeats : totalSeats);
-
-      // Append eligibility criteria
-      validCriteria.forEach(criteria => {
-        formDataToSend.append('eligibilityCriteria', criteria);
-      });
-
-      // Handle image
-      if (formData.image instanceof File) {
-        formDataToSend.append('image', formData.image);
-      }
-
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
+      const courseData = {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        duration: duration,
+        fees: fees,
+        startDate: formData.startDate,
+        applicationDeadline: formData.applicationDeadline,
+        seats: {
+          total: totalSeats,
+          available: id ? availableSeats : totalSeats
+        },
+        eligibilityCriteria: validCriteria,
+        image: formData.image || ''
+      };
 
       const url = id 
         ? `http://localhost:3000/api/college/courses/${id}`
@@ -220,9 +249,10 @@ const CourseForm = () => {
       const response = await fetch(url, {
         method: id ? 'PUT' : 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: formDataToSend
+        body: JSON.stringify(courseData)
       });
 
       const data = await response.json();

@@ -147,13 +147,13 @@ const StudentList = ({ students }) => {
       ) : (
         <div className="student-grid">
           {students.map(student => (
-            <div key={student._id} className="student-card">
+          <div key={student._id} className="student-card">
               <div className="student-card-header">
-                <div className="student-avatar">
-                  <FaUserGraduate />
-                </div>
+              <div className="student-avatar">
+                <FaUserGraduate />
+              </div>
                 <div className="student-card-info">
-                  <h3>{student.name}</h3>
+                <h3>{student.name}</h3>
                   <p className="enrollment-number">
                     <FaIdCard /> {student.enrollmentNumber}
                   </p>
@@ -172,11 +172,11 @@ const StudentList = ({ students }) => {
                 <div className="info-row">
                   <FaPhone />
                   <span>{student.phone}</span>
-                </div>
               </div>
+            </div>
 
               <div className="student-card-actions">
-                <button 
+                <button
                   className="view-details-btn"
                   onClick={() => setSelectedStudent(student)}
                 >
@@ -185,7 +185,7 @@ const StudentList = ({ students }) => {
               </div>
             </div>
           ))}
-        </div>
+          </div>
       )}
       
       {selectedStudent && (
