@@ -70,10 +70,16 @@ const CourseManagement = () => {
       });
 
       if (result.isConfirmed) {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+
         const response = await fetch(`http://localhost:3000/api/college/courses/${courseId}`, {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         });
 
@@ -84,13 +90,14 @@ const CourseManagement = () => {
         }
 
         if (data.success) {
-          Swal.fire({
+          await Swal.fire({
             icon: 'success',
             title: 'Deleted!',
             text: 'Course has been deleted.',
             confirmButtonColor: '#3085d6'
           });
-          fetchCourses(); // Refresh the list
+          // Refresh the courses list
+          fetchCourses();
         }
       }
     } catch (error) {

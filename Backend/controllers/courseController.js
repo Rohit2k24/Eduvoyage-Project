@@ -209,10 +209,19 @@ exports.updateCourse = async (req, res) => {
 
 exports.deleteCourse = async (req, res) => {
   try {
-    const courseId = req.params.id;
+    // First find the college
+    const college = await College.findOne({ user: req.user.id });
+    if (!college) {
+      return res.status(404).json({
+        success: false,
+        message: 'College not found'
+      });
+    }
+
+    // Find the course using both course ID and college ID
     const course = await Course.findOne({
-      _id: courseId,
-      college: req.user.id // Use req.user.id directly
+      _id: req.params.id,
+      college: college._id
     });
 
     if (!course) {
@@ -222,8 +231,8 @@ exports.deleteCourse = async (req, res) => {
       });
     }
 
-    // Delete image from Cloudinary if exists
-    if (course.image && course.image.includes('cloudinary')) {
+    // Delete image from Cloudinary if exists and is not the default image
+    if (course.image && course.image.includes('cloudinary') && !course.image.includes('default-course')) {
       try {
         const publicId = course.image.split('/').pop().split('.')[0];
         await cloudinary.uploader.destroy(`eduvoyage/courses/${publicId}`);
@@ -232,7 +241,8 @@ exports.deleteCourse = async (req, res) => {
       }
     }
 
-    await Course.findByIdAndDelete(courseId);
+    // Delete the course
+    await Course.findByIdAndDelete(req.params.id);
 
     res.status(200).json({
       success: true,
@@ -242,7 +252,7 @@ exports.deleteCourse = async (req, res) => {
     console.error('Error deleting course:', error);
     res.status(500).json({
       success: false,
-      message: 'Error deleting course'
+      message: error.message || 'Error deleting course'
     });
   }
 };
