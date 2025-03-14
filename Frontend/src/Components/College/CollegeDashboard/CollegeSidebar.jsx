@@ -8,7 +8,8 @@ import {
   FaCog, 
   FaClipboardList,
   FaUniversity,
-  FaSignOutAlt 
+  FaSignOutAlt,
+  FaBed 
 } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import './CollegeSidebar.css';
@@ -88,12 +89,22 @@ const CollegeSidebar = () => {
     {
       path: '/college/applications',
       icon: <FaClipboardList />,
-      label: 'Applications'
+      label: 'Course Applications'
+    },
+    {
+      path: '/college/hostel-applications',
+      icon: <FaClipboardList />,
+      label: 'Hostel Applications'
     },
     {
       path: '/college/students',
       icon: <FaUserGraduate />,
       label: 'Students'
+    },
+    {
+      path: '/college/hostels',
+      icon: <FaBed />,
+      label: 'Hostels'
     },
     {
       path: '/college/notifications',

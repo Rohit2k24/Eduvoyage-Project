@@ -788,7 +788,7 @@ const checkAndFixCourseData = async (courseId) => {
 // Get all colleges
 exports.getColleges = asyncHandler(async (req, res) => {
   const colleges = await College.find({ verificationStatus: 'approved' })
-    .select('name location university documents totalCourses')
+    .select('name location university documents totalCourses accreditation establishmentYear')
     .lean();
 
   // Add total courses count for each college

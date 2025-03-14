@@ -6,7 +6,8 @@ import {
   FaBell, 
   FaUser, 
   FaCog, 
-  FaSignOutAlt 
+  FaSignOutAlt,
+  FaBed 
 } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import './StudentSidebar.css';
@@ -57,6 +58,11 @@ const StudentSidebar = () => {
         <Link to="/student/applications" className={`nav-item ${isActive('/student/applications') ? 'active' : ''}`}>
           <FaClipboardList className="nav-icon" />
           <span>My Applications</span>
+        </Link>
+
+        <Link to="/student/hostel-applications" className={`nav-item ${isActive('/student/hostel-applications') ? 'active' : ''}`}>
+          <FaBed className="nav-icon" />
+          <span>Hostel Applications</span>
         </Link>
 
         <Link to="/student/notifications" className={`nav-item ${isActive('/student/notifications') ? 'active' : ''}`}>

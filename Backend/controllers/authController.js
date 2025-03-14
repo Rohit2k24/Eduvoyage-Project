@@ -229,8 +229,10 @@ exports.verifyAndRegister = async (req, res) => {
       await Student.create({
         user: user._id,
         name: userData.name,
+        email: email,
         dateOfBirth: userData.dateOfBirth,
-        country: userData.country
+        country: userData.country,
+        gender: userData.gender
       });
     } else if (userData.role === 'college') {
       // Upload documents to Cloudinary if they exist

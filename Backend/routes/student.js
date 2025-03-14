@@ -110,6 +110,7 @@ router.get('/profile', protect, async (req, res) => {
         phone: user.phone || '',
         dateOfBirth: new Date(),
         country: 'Not specified',
+        gender: 'Not specified',
         education: {
           qualifications: [],
           highestQualification: ''
@@ -146,7 +147,18 @@ router.put('/profile', protect, upload.fields([
   { name: 'profilePic', maxCount: 1 },
   { name: 'passportDocument', maxCount: 1 },
   { name: 'bankStatement', maxCount: 1 },
-  { name: 'educationDocuments', maxCount: 10 }
+  { name: 'educationDocuments', maxCount: 10 },
+  // Add fields for each possible education document
+  { name: 'educationDocuments[0]', maxCount: 1 },
+  { name: 'educationDocuments[1]', maxCount: 1 },
+  { name: 'educationDocuments[2]', maxCount: 1 },
+  { name: 'educationDocuments[3]', maxCount: 1 },
+  { name: 'educationDocuments[4]', maxCount: 1 },
+  { name: 'educationDocuments[5]', maxCount: 1 },
+  { name: 'educationDocuments[6]', maxCount: 1 },
+  { name: 'educationDocuments[7]', maxCount: 1 },
+  { name: 'educationDocuments[8]', maxCount: 1 },
+  { name: 'educationDocuments[9]', maxCount: 1 }
 ]), async (req, res) => {
   try {
     console.log('Updating profile with files:', req.files);
@@ -156,7 +168,7 @@ router.put('/profile', protect, upload.fields([
     // Handle file uploads
     if (req.files) {
       // Handle profile picture
-      if (req.files.profilePic) {
+      if (req.files.profilePic?.[0]) {
         const result = await cloudinary.uploader.upload(req.files.profilePic[0].path, {
           folder: 'student_profiles'
         });
@@ -164,7 +176,7 @@ router.put('/profile', protect, upload.fields([
       }
 
       // Handle passport document
-      if (req.files.passportDocument) {
+      if (req.files.passportDocument?.[0]) {
         const result = await cloudinary.uploader.upload(req.files.passportDocument[0].path, {
           folder: 'passport_documents'
         });
@@ -173,7 +185,7 @@ router.put('/profile', protect, upload.fields([
       }
 
       // Handle bank statement
-      if (req.files.bankStatement) {
+      if (req.files.bankStatement?.[0]) {
         const result = await cloudinary.uploader.upload(req.files.bankStatement[0].path, {
           folder: 'bank_statements'
         });
@@ -184,15 +196,24 @@ router.put('/profile', protect, upload.fields([
       }
 
       // Handle education documents
-      if (req.files.educationDocuments) {
-        const uploadPromises = req.files.educationDocuments.map(file => 
-          cloudinary.uploader.upload(file.path, {
+      const educationFiles = Object.keys(req.files)
+        .filter(key => key.startsWith('educationDocuments['))
+        .sort((a, b) => {
+          const indexA = parseInt(a.match(/\[(\d+)\]/)[1]);
+          const indexB = parseInt(b.match(/\[(\d+)\]/)[1]);
+          return indexA - indexB;
+        });
+
+      if (educationFiles.length > 0) {
+        const uploadPromises = educationFiles.map(key => 
+          cloudinary.uploader.upload(req.files[key][0].path, {
             folder: 'education_documents'
           })
         );
+        
         const results = await Promise.all(uploadPromises);
         
-        if (studentUpdateData.education && studentUpdateData.education.qualifications) {
+        if (studentUpdateData.education?.qualifications) {
           results.forEach((result, index) => {
             if (studentUpdateData.education.qualifications[index]) {
               studentUpdateData.education.qualifications[index].documents = result.secure_url;
@@ -200,6 +221,13 @@ router.put('/profile', protect, upload.fields([
           });
         }
       }
+
+      // Clean up uploaded files
+      Object.values(req.files).flat().forEach(file => {
+        fs.unlink(file.path, err => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      });
     }
 
     // Update both User and Student models
@@ -224,12 +252,10 @@ router.put('/profile', protect, upload.fields([
       ).populate('user', 'email name phone')
     ]);
 
-    // Clean up uploaded files
-    if (req.files) {
-      Object.values(req.files).flat().forEach(file => {
-        fs.unlink(file.path, err => {
-          if (err) console.error('Error deleting file:', err);
-        });
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student profile not found'
       });
     }
 

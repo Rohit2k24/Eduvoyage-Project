@@ -273,24 +273,68 @@
 }
 
 .apply-btn {
-  width: 100%;
-  padding: 15px;
-  background-color: #3498db;
+  background: #3b82f6;
   color: white;
   border: none;
-  border-radius: 5px;
-  font-size: 16px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.apply-btn:hover {
-  background-color: #2980b9;
+.apply-btn:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-2px);
 }
 
 .apply-btn:disabled {
-  background-color: #bdc3c7;
+  background: #94a3b8;
   cursor: not-allowed;
+}
+
+.applied-btn {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.applied-btn:hover {
+  background: #059669;
+  transform: translateY(-2px);
+}
+
+.applied-btn[data-status="pending"] {
+  background: #f59e0b;
+}
+
+.applied-btn[data-status="pending"]:hover {
+  background: #d97706;
+}
+
+.applied-btn[data-status="rejected"] {
+  background: #ef4444;
+}
+
+.applied-btn[data-status="rejected"]:hover {
+  background: #dc2626;
+}
+
+.applied-btn .icon {
+  font-size: 1.1rem;
 }
 
 .ai-career-btn {

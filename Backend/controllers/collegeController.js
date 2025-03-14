@@ -630,10 +630,10 @@ exports.updateApplicationStatus = asyncHandler(async (req, res, next) => {
     // Create notification for student
     try {
       if (application.student?.user?._id) {
-        await Notification.create({
+    await Notification.create({
           recipient: application.student.user._id,
           type: 'application',
-          title: `Application ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+      title: `Application ${status.charAt(0).toUpperCase() + status.slice(1)}`,
           message: `Your application for ${application.course.name} has been ${status}${remarks ? `. Remarks: ${remarks}` : ''}`,
           data: {
             applicationId: application._id,
@@ -683,7 +683,7 @@ exports.getStudents = asyncHandler(async (req, res, next) => {
     })
     .populate({
       path: 'student',
-      select: 'name email phone gender dateOfBirth address education user',
+      select: 'name email phone gender dateOfBirth address education user passport bankStatement',
       populate: {
         path: 'user',
         select: 'email'
@@ -710,6 +710,8 @@ exports.getStudents = asyncHandler(async (req, res, next) => {
       status: collegeStudent.status,
       enrollmentDate: collegeStudent.enrollmentDate,
       education: collegeStudent.student?.education || { qualifications: [] },
+      passport: collegeStudent.student?.passport || {},
+      bankStatement: collegeStudent.student?.bankStatement || {},
       course: collegeStudent.course ? {
         _id: collegeStudent.course._id,
         name: collegeStudent.course.name,

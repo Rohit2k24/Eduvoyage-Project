@@ -30,6 +30,9 @@ import ErrorBoundary from './Components/ErrorBoundary'
 import Notifications from './Components/College/Notifications/Notifications'
 import Settings from './Components/College/Settings/Settings'
 import CourseApplication from './Components/Student/Applications/CourseApplication'
+import HostelManagement from './Components/College/Hostels/HostelManagement'
+import HostelApplicationManagement from './Components/College/Hostels/HostelApplicationManagement'
+import HostelApplications from './Components/Student/Hostels/HostelApplications'
 import './App.css'
 
 function App() {
@@ -184,6 +187,27 @@ function App() {
         <Route path="/college/settings" element={
           <ProtectedRoute allowedRoles={['college']}>
             <Settings />
+          </ProtectedRoute>
+        } />
+        <Route path="/college/hostels" element={
+          <ProtectedRoute allowedRoles={['college']}>
+            <ErrorBoundary>
+              <HostelManagement />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } />
+        <Route path="/college/hostel-applications" element={
+          <ProtectedRoute allowedRoles={['college']}>
+            <ErrorBoundary>
+              <HostelApplicationManagement />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } />
+        <Route path="/student/hostel-applications" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <ErrorBoundary>
+              <HostelApplications />
+            </ErrorBoundary>
           </ProtectedRoute>
         } />
       </Routes>

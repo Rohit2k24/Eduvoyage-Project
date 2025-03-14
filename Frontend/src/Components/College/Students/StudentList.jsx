@@ -8,12 +8,15 @@ import {
   FaCalendarAlt, 
   FaMapMarkerAlt,
   FaIdCard,
-  FaBookReader
+  FaBookReader,
+  FaPassport,
+  FaUniversity,
+  FaFileAlt
 } from 'react-icons/fa';
 import './StudentList.css';
 
-const StudentDetailsModal = ({ student, onClose }) => {
-  if (!student) return null;
+const StudentList = ({ students }) => {
+  const [selectedStudent, setSelectedStudent] = useState(null);
 
   const formatDate = (date) => {
     if (!date) return 'N/A';
@@ -24,146 +27,226 @@ const StudentDetailsModal = ({ student, onClose }) => {
     }
   };
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <div className="modal-title">
-            <FaUserGraduate />
-            <h2>Student Details</h2>
-          </div>
-          <button className="close-button" onClick={onClose}>&times;</button>
+  const PassportDetails = ({ passport }) => {
+    if (!passport || Object.keys(passport).length === 0) {
+      return (
+        <div className="details-section">
+          <h4><FaPassport /> Passport Details</h4>
+          <p className="no-data">No passport details available</p>
         </div>
-        
-        <div className="modal-body">
-          <div className="student-profile-header">
-            <div className="student-avatar-large">
-              <FaUserGraduate />
-            </div>
-            <div className="student-basic-info">
-              <h3>{student.name}</h3>
-              <span className="enrollment-badge">
-                <FaIdCard /> {student.enrollmentNumber}
-              </span>
-            </div>
-          </div>
+      );
+    }
 
-          <div className="info-section">
-            <h4><FaUserGraduate /> Personal Information</h4>
-            <div className="info-grid">
-              <div className="info-item">
-                <FaEnvelope /> 
-                <div className="info-content">
-                  <label>Email</label>
-                  <span>{student.email}</span>
-                </div>
-              </div>
-              <div className="info-item">
-                <FaPhone /> 
-                <div className="info-content">
-                  <label>Phone</label>
-                  <span>{student.phone}</span>
-                </div>
-              </div>
-              <div className="info-item">
-                <FaCalendarAlt /> 
-                <div className="info-content">
-                  <label>Date of Birth</label>
-                  <span>{formatDate(student.dateOfBirth)}</span>
-                </div>
-              </div>
-              <div className="info-item">
-                <FaMapMarkerAlt /> 
-                <div className="info-content">
-                  <label>Address</label>
-                  <span>{student.address}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {student.bankStatement && (
-            <div className="info-section">
-              <h4><FaIdCard /> Bank Statement</h4>
-              <div className="info-grid">
-                <div className="info-item">
-                  <div className="info-content">
-                    <label>Upload Date</label>
-                    <span>{formatDate(student.bankStatement.uploadDate)}</span>
-                  </div>
-                </div>
-                {student.bankStatement.document && (
-                  <div className="info-item">
-                    <div className="info-content">
-                      <label>Document</label>
-                      <a 
-                        href={student.bankStatement.document} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="document-link"
-                      >
-                        View Bank Statement
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </div>
+    return (
+      <div className="details-section">
+        <h4><FaPassport /> Passport Details</h4>
+        <div className="details-grid">
+          {passport.number && (
+            <div className="detail-item">
+              <label>Passport Number</label>
+              <p>{passport.number}</p>
             </div>
           )}
-
-          <div className="info-section">
-            <h4><FaGraduationCap /> Academic Information</h4>
-            <div className="info-grid">
-              <div className="info-item">
-                <FaBookReader />
-                <div className="info-content">
-                  <label>Course</label>
-                  <span>{student.course?.name}</span>
-                </div>
-              </div>
-              <div className="info-item">
-                <FaCalendarAlt />
-                <div className="info-content">
-                  <label>Duration</label>
-                  <span>{student.course?.duration} years</span>
-                </div>
-              </div>
-              <div className="info-item">
-                <FaIdCard />
-                <div className="info-content">
-                  <label>Batch</label>
-                  <span>{student.academicDetails?.batch}</span>
-                </div>
-              </div>
+          {passport.expiryDate && (
+            <div className="detail-item">
+              <label>Expiry Date</label>
+              <p>{formatDate(passport.expiryDate)}</p>
             </div>
+          )}
+          {passport.verified !== undefined && (
+            <div className="detail-item">
+              <label>Verification Status</label>
+              <p>{passport.verified ? 'Verified' : 'Not Verified'}</p>
+            </div>
+          )}
+          {passport.document && (
+            <div className="detail-item full-width">
+              <label>Passport Document</label>
+              <a 
+                href={passport.document}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="document-link"
+              >
+                View Passport Document <FaFileAlt />
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const BankStatement = ({ bankStatement }) => {
+    if (!bankStatement || !bankStatement.document) {
+      return (
+        <div className="details-section">
+          <h4><FaUniversity /> Bank Statement</h4>
+          <p className="no-data">No bank statement uploaded</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="details-section">
+        <h4><FaUniversity /> Bank Statement</h4>
+        <div className="details-grid">
+          <div className="detail-item">
+            <label>Upload Date</label>
+            <p>{formatDate(bankStatement.uploadDate)}</p>
           </div>
-
-          <div className="info-section">
-            <h4><FaGraduationCap /> Educational Background</h4>
-            <div className="education-list">
-              {student.education?.qualifications?.map((qual, index) => (
-                <div key={index} className="education-item">
-                  <div className="education-header">
-                    <h5>{qual.level}</h5>
-                    <span className="percentage">{qual.percentage}%</span>
-                  </div>
-                  <div className="education-details">
-                    <p><strong>Institute:</strong> {qual.institute}</p>
-                    <p><strong>Board:</strong> {qual.board}</p>
-                    <p><strong>Year:</strong> {qual.yearOfCompletion}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="detail-item">
+            <label>Document</label>
+            <a 
+              href={bankStatement.document}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="document-link"
+            >
+              View Bank Statement <FaFileAlt />
+            </a>
           </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
-const StudentList = ({ students }) => {
-  const [selectedStudent, setSelectedStudent] = useState(null);
+  const renderStudentCard = (student) => {
+    const isSelected = selectedStudent?._id === student._id;
+
+    // Add debug logs
+    if (isSelected) {
+      console.log('Selected student passport:', student.passport);
+      console.log('Selected student bank statement:', student.bankStatement);
+    }
+
+    return (
+      <div key={student._id} className="student-card">
+        <div className="student-card-header">
+          <div className="student-avatar">
+            <FaUserGraduate />
+          </div>
+          <div className="student-card-info">
+            <h3>{student.name}</h3>
+            <p className="enrollment-number">
+              <FaIdCard /> {student.enrollmentNumber}
+            </p>
+          </div>
+        </div>
+        
+        <div className="student-card-content">
+          <div className="info-row">
+            <FaGraduationCap />
+            <span>{student.course?.name}</span>
+          </div>
+          <div className="info-row">
+            <FaEnvelope />
+            <span>{student.email}</span>
+          </div>
+          <div className="info-row">
+            <FaPhone />
+            <span>{student.phone}</span>
+          </div>
+        </div>
+
+        <div className="student-card-actions">
+          <button
+            className={`view-details-btn ${isSelected ? 'active' : ''}`}
+            onClick={() => setSelectedStudent(isSelected ? null : student)}
+          >
+            <FaEye /> {isSelected ? 'Hide Details' : 'View Details'}
+          </button>
+        </div>
+
+        {isSelected && (
+          <div className="student-details-expanded">
+            <div className="details-section">
+              <h4><FaUserGraduate /> Personal Information</h4>
+              <div className="details-grid">
+                <div className="detail-item">
+                  <label>Full Name</label>
+                  <p>{student.name}</p>
+                </div>
+                <div className="detail-item">
+                  <label>Email</label>
+                  <p>{student.email}</p>
+                </div>
+                <div className="detail-item">
+                  <label>Phone</label>
+                  <p>{student.phone}</p>
+                </div>
+                <div className="detail-item">
+                  <label>Date of Birth</label>
+                  <p>{formatDate(student.dateOfBirth)}</p>
+                </div>
+                <div className="detail-item">
+                  <label>Address</label>
+                  <p>{student.address || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+
+            <PassportDetails passport={student.passport} />
+            <BankStatement bankStatement={student.bankStatement} />
+
+            <div className="details-section">
+              <h4><FaGraduationCap /> Academic Information</h4>
+              <div className="details-grid">
+                <div className="detail-item">
+                  <label>Course</label>
+                  <p>{student.course?.name || 'N/A'}</p>
+                </div>
+                <div className="detail-item">
+                  <label>Duration</label>
+                  <p>{student.course?.duration ? `${student.course.duration} years` : 'N/A'}</p>
+                </div>
+                <div className="detail-item">
+                  <label>Batch</label>
+                  <p>{student.academicDetails?.batch || 'N/A'}</p>
+                </div>
+                <div className="detail-item">
+                  <label>Enrollment Number</label>
+                  <p>{student.enrollmentNumber}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="details-section">
+              <h4><FaGraduationCap /> Educational Background</h4>
+              <div className="education-list">
+                {student.education?.qualifications?.map((qual, index) => (
+                  <div key={index} className="education-item">
+                    <div className="education-header">
+                      <h5>{qual.level || 'Education Level Not Specified'}</h5>
+                      <span className="percentage">{qual.percentage}%</span>
+                    </div>
+                    <div className="education-details">
+                      <p><strong>Institute:</strong> {qual.institute || 'N/A'}</p>
+                      <p><strong>Board:</strong> {qual.board || 'N/A'}</p>
+                      <p><strong>Year:</strong> {qual.yearOfCompletion || 'N/A'}</p>
+                      {qual.documents && (
+                        <p>
+                          <strong>Documents:</strong>
+                          <a 
+                            href={qual.documents} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="document-link"
+                          >
+                            View Documents
+                          </a>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )) || <p className="no-data">No educational background available</p>}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="student-list">
@@ -175,53 +258,8 @@ const StudentList = ({ students }) => {
         </div>
       ) : (
         <div className="student-grid">
-          {students.map(student => (
-          <div key={student._id} className="student-card">
-              <div className="student-card-header">
-              <div className="student-avatar">
-                <FaUserGraduate />
-              </div>
-                <div className="student-card-info">
-                <h3>{student.name}</h3>
-                  <p className="enrollment-number">
-                    <FaIdCard /> {student.enrollmentNumber}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="student-card-content">
-                <div className="info-row">
-                  <FaGraduationCap />
-                  <span>{student.course?.name}</span>
-                </div>
-                <div className="info-row">
-                  <FaEnvelope />
-                  <span>{student.email}</span>
-                </div>
-                <div className="info-row">
-                  <FaPhone />
-                  <span>{student.phone}</span>
-              </div>
-            </div>
-
-              <div className="student-card-actions">
-                <button
-                  className="view-details-btn"
-                  onClick={() => setSelectedStudent(student)}
-                >
-                  <FaEye /> View Details
-                </button>
-              </div>
-            </div>
-          ))}
-          </div>
-      )}
-      
-      {selectedStudent && (
-        <StudentDetailsModal 
-          student={selectedStudent} 
-          onClose={() => setSelectedStudent(null)} 
-        />
+          {students.map(renderStudentCard)}
+        </div>
       )}
     </div>
   );

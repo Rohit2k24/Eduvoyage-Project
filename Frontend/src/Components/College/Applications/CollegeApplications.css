@@ -76,6 +76,7 @@
   border-radius: 10px;
   padding: 20px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
 }
 
 .application-header {
@@ -292,27 +293,49 @@
   padding: 1rem;
   background-color: #f8f9fa;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
 }
 
 .bank-statement-section h4 {
-  color: #2d3748;
   margin-bottom: 1rem;
+  color: #2c3e50;
   font-size: 1.1rem;
 }
 
-.document-link {
+.bank-statement-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bank-statement-details .document-link {
+  margin-bottom: 0.5rem;
+}
+
+.view-document-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  color: #3b82f6;
+  padding: 0.5rem 1rem;
+  background-color: #3498db;
+  color: white;
+  border-radius: 4px;
   text-decoration: none;
-  margin-left: 0.5rem;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
 }
 
-.document-link:hover {
-  text-decoration: underline;
-  color: #2563eb;
+.view-document-btn:hover {
+  background-color: #2980b9;
+}
+
+.bank-statement-details .upload-info {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.bank-statement-section .no-data {
+  color: #666;
+  font-style: italic;
 }
 
 .status-badge {
@@ -373,4 +396,194 @@
   font-size: 0.85rem;
   opacity: 0.8;
   margin-left: 4px;
+}
+
+.application-brief {
+  margin: 15px 0;
+}
+
+.application-brief p {
+  margin: 8px 0;
+  color: #2c3e50;
+}
+
+.view-details-btn {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.view-details-btn.active {
+  background: #2c3e50;
+}
+
+.view-details-btn:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+.application-details-expanded {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.details-section {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+}
+
+.details-section:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.details-section h4 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #2c3e50;
+  margin: 0 0 15px;
+  font-size: 1.1rem;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.detail-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.detail-item label {
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.detail-item p {
+  color: #2c3e50;
+  margin: 0;
+}
+
+.document-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.document-link:hover {
+  background: #bbdefb;
+  transform: translateY(-2px);
+}
+
+.modal-status .status-badge {
+  display: inline-flex;
+}
+
+.no-data {
+  color: #64748b;
+  font-style: italic;
+  margin: 0;
+}
+
+/* Add hardware acceleration for smoother animations */
+.modal-content, 
+.details-section, 
+.detail-item {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Optimize scrollbar for better performance */
+.modal-body::-webkit-scrollbar {
+  width: 8px;
+  background-color: transparent;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Reduce paint operations during scroll */
+.modal-body * {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+  }
+
+  .modal-footer button {
+    width: 100%;
+  }
 } 

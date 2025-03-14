@@ -68,18 +68,21 @@ const StudentProfile = () => {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/student/profile');
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/student/profile`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       
       if (response.data.success) {
         const profileData = response.data.profile;
         setProfile({
           ...profileData,
-          email: profileData.user.email || profileData.email
+          email: profileData.user?.email || profileData.email || ''
         });
         setFormData({
-          ...formData,
           name: profileData.name || '',
-          email: profileData.user.email || profileData.email || '',
+          email: profileData.user?.email || profileData.email || '',
           phone: profileData.phone || '',
           education: profileData.education || {
             qualifications: [{
@@ -99,8 +102,7 @@ const StudentProfile = () => {
           },
           bankStatement: profileData.bankStatement || {
             document: null,
-            uploadDate: null,
-            verified: false
+            uploadDate: null
           },
           address: profileData.address || '',
           profilePic: profileData.profilePic || '',
@@ -114,11 +116,7 @@ const StudentProfile = () => {
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.response?.data?.message || 'Failed to load profile'
-      });
+      toast.error(error.response?.data?.message || 'Failed to load profile');
     } finally {
       setLoading(false);
     }
@@ -201,36 +199,76 @@ const StudentProfile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Show confirmation dialog
+    const confirmResult = await Swal.fire({
+      title: 'Save Changes?',
+      text: 'Are you sure you want to update your profile?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, save changes',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (!confirmResult.isConfirmed) {
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
-      const formData = new FormData();
-      const data = { ...profile };
+      const formDataToSend = new FormData();
       
       // Handle file uploads
       if (selectedFile) {
-        formData.append('profilePic', selectedFile);
+        formDataToSend.append('profilePic', selectedFile);
       }
-      if (formData.passport.document instanceof File) {
-        formData.append('passportDocument', formData.passport.document);
+      
+      if (formData.passport?.document instanceof File) {
+        formDataToSend.append('passportDocument', formData.passport.document);
       }
+      
       if (formData.bankStatement?.document instanceof File) {
-        formData.append('bankStatement', formData.bankStatement.document);
+        formDataToSend.append('bankStatement', formData.bankStatement.document);
       }
+      
+      // Handle education documents with indexed field names
       if (formData.education?.qualifications?.length > 0) {
         formData.education.qualifications.forEach((qual, index) => {
           if (qual.documents instanceof File) {
-            formData.append(`educationDocuments[${index}]`, qual.documents);
+            formDataToSend.append(`educationDocuments[${index}]`, qual.documents);
           }
         });
       }
       
+      // Create a clean data object without File instances
+      const cleanData = {
+        ...formData,
+        passport: {
+          ...formData.passport,
+          document: formData.passport?.document instanceof File ? null : formData.passport?.document
+        },
+        bankStatement: {
+          ...formData.bankStatement,
+          document: formData.bankStatement?.document instanceof File ? null : formData.bankStatement?.document
+        },
+        education: {
+          ...formData.education,
+          qualifications: formData.education?.qualifications?.map(qual => ({
+            ...qual,
+            documents: qual.documents instanceof File ? null : qual.documents
+          }))
+        }
+      };
+      
       // Append other profile data as JSON
-      formData.append('data', JSON.stringify(data));
+      formDataToSend.append('data', JSON.stringify(cleanData));
       
       const response = await axios.put(
         `${import.meta.env.VITE_API_URL}/api/student/profile`,
-        formData,
+        formDataToSend,
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -242,11 +280,26 @@ const StudentProfile = () => {
       if (response.data.success) {
         setProfile(response.data.profile);
         setEditing(false);
-        toast.success('Profile updated successfully!');
+        await fetchProfile(); // Refresh the profile data
+        
+        // Show success alert
+        await Swal.fire({
+          title: 'Success!',
+          text: 'Your profile has been updated successfully',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error(error.response?.data?.message || 'Error updating profile');
+      
+      // Show error alert
+      await Swal.fire({
+        title: 'Error',
+        text: error.response?.data?.message || 'Error updating profile',
+        icon: 'error'
+      });
     } finally {
       setIsSubmitting(false);
     }

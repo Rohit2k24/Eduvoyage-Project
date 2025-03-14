@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { FaCheckCircle, FaTimesCircle, FaSpinner, FaSearch, FaFilter, FaClock } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle, FaSpinner, FaSearch, FaFilter, FaClock, FaEye, FaPassport, FaFileAlt, FaUniversity, FaGraduationCap, FaTimes } from 'react-icons/fa';
 import CollegeSidebar from '../CollegeDashboard/CollegeSidebar';
 import ApplicationStatus from '../../Student/Applications/ApplicationStatus';
 import Swal from 'sweetalert2';
 import './CollegeApplications.css';
 import axios from 'axios';
+import React from 'react';
 
 const CollegeApplications = () => {
   const [applications, setApplications] = useState([]);
@@ -13,6 +14,7 @@ const CollegeApplications = () => {
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [processingIds, setProcessingIds] = useState(new Set());
+  const [selectedApplication, setSelectedApplication] = useState(null);
 
   useEffect(() => {
     fetchApplications();
@@ -274,7 +276,256 @@ const CollegeApplications = () => {
       return studentName.includes(searchQuery) || appNumber.includes(searchQuery);
     });
 
-  const renderEducationDetails = (education) => {
+  const getStatusDisplay = (application) => {
+    if (application.status === 'paid') {
+      return (
+        <div className="status-badge status-paid">
+          <FaCheckCircle className="status-icon" />
+          <span>Paid</span>
+        </div>
+      );
+    } else if (application.status === 'approved') {
+      return (
+        <div className="status-badge status-approved">
+          <FaCheckCircle className="status-icon" />
+          <span>Approved</span>
+        </div>
+      );
+    } else if (application.status === 'rejected') {
+      return (
+        <div className="status-badge status-rejected">
+          <FaTimesCircle className="status-icon" />
+          <span>Rejected</span>
+        </div>
+      );
+    } else {
+      return (
+        <div className="status-badge status-pending">
+          <FaClock className="status-icon" />
+          <span>Pending</span>
+        </div>
+      );
+    }
+  };
+
+  const getPaymentStatus = (application) => {
+    if (application.payment?.paid) {
+      return (
+        <div className="payment-status paid">
+          <FaCheckCircle />
+          <span>Payment Completed</span>
+          <span className="payment-date">({formatDate(application.payment.paidAt)})</span>
+        </div>
+      );
+    } else if (application.status === 'approved') {
+      return (
+        <div className="payment-status pending">
+          <FaClock />
+          <span>Payment Pending</span>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const formatDate = (date) => {
+    if (!date) return 'N/A';
+    try {
+      return new Date(date).toLocaleDateString();
+    } catch (error) {
+      return 'N/A';
+    }
+  };
+
+  const renderSimplifiedCard = (application) => {
+    if (!application || !application.student || !application.course) {
+      return null;
+    }
+
+    const isSelected = selectedApplication?._id === application._id;
+
+    return (
+      <div key={application._id} className="application-card">
+        <div className="application-header">
+          <h3>{application.student.name || 'Unknown Student'}</h3>
+          {getStatusDisplay(application)}
+        </div>
+
+        <div className="application-brief">
+          <p><strong>Application Number:</strong> {application.applicationNumber || 'N/A'}</p>
+          <p><strong>Course:</strong> {application.course.name || 'N/A'}</p>
+          <p><strong>Applied Date:</strong> {formatDate(application.createdAt)}</p>
+          {getPaymentStatus(application)}
+        </div>
+
+        <div className="application-actions">
+          <button
+            className={`view-details-btn ${isSelected ? 'active' : ''}`}
+            onClick={() => {
+              setSelectedApplication(isSelected ? null : application);
+            }}
+          >
+            <FaEye /> {isSelected ? 'Hide Details' : 'View Details'}
+          </button>
+          
+          {application.status === 'pending' && (
+            <>
+              <button
+                onClick={() => handleApprove(application._id)}
+                className="approve-btn"
+                disabled={processingIds.has(application._id)}
+              >
+                {processingIds.has(application._id) ? (
+                  <><FaSpinner className="spinner" /> Processing...</>
+                ) : (
+                  <><FaCheckCircle /> Approve</>
+                )}
+              </button>
+              <button
+                onClick={() => handleReject(application._id)}
+                className="reject-btn"
+                disabled={processingIds.has(application._id)}
+              >
+                {processingIds.has(application._id) ? (
+                  <><FaSpinner className="spinner" /> Processing...</>
+                ) : (
+                  <><FaTimesCircle /> Reject</>
+                )}
+              </button>
+            </>
+          )}
+        </div>
+
+        {isSelected && (
+          <div className="application-details-expanded">
+            <div className="details-section">
+              <h4>Personal Information</h4>
+              <div className="details-grid">
+                <div className="detail-item">
+                  <label>Full Name</label>
+                  <p>{application.student.name || 'N/A'}</p>
+                </div>
+                <div className="detail-item">
+                  <label>Email</label>
+                  <p>{application.student.email || 'N/A'}</p>
+                </div>
+                <div className="detail-item">
+                  <label>Phone</label>
+                  <p>{application.student.phone || 'N/A'}</p>
+                </div>
+                <div className="detail-item">
+                  <label>Gender</label>
+                  <p>{application.student.gender || 'N/A'}</p>
+                </div>
+                <div className="detail-item">
+                  <label>Date of Birth</label>
+                  <p>{formatDate(application.student.dateOfBirth)}</p>
+                </div>
+                <div className="detail-item">
+                  <label>Address</label>
+                  <p>{application.student.address || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+
+            <PassportDetails passport={application.student.passport} />
+            <BankStatement bankStatement={application.student.bankStatement} />
+
+            <div className="details-section">
+              <h4><FaGraduationCap /> Educational Background</h4>
+              <EducationDetails education={application.student.education} />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const PassportDetails = React.memo(({ passport }) => {
+    if (!passport || (Object.keys(passport).length === 0)) {
+      return (
+        <div className="details-section">
+          <h4><FaPassport /> Passport Details</h4>
+          <p className="no-data">No passport details available</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="details-section">
+        <h4><FaPassport /> Passport Details</h4>
+        <div className="details-grid">
+          {passport.number && (
+            <div className="detail-item">
+              <label>Passport Number</label>
+              <p>{passport.number}</p>
+            </div>
+          )}
+          {passport.expiryDate && (
+            <div className="detail-item">
+              <label>Expiry Date</label>
+              <p>{formatDate(passport.expiryDate)}</p>
+            </div>
+          )}
+          {passport.verified !== undefined && (
+            <div className="detail-item">
+              <label>Verification Status</label>
+              <p>{passport.verified ? 'Verified' : 'Not Verified'}</p>
+            </div>
+          )}
+          {passport.document && (
+            <div className="detail-item full-width">
+              <label>Passport Document</label>
+              <a 
+                href={passport.document}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="document-link"
+              >
+                View Passport Document <FaFileAlt />
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  });
+
+  const BankStatement = React.memo(({ bankStatement }) => {
+    if (!bankStatement || !bankStatement.document) {
+      return (
+        <div className="details-section">
+          <h4><FaUniversity /> Bank Statement</h4>
+          <p className="no-data">No bank statement uploaded</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="details-section">
+        <h4><FaUniversity /> Bank Statement</h4>
+        <div className="details-grid">
+          <div className="detail-item">
+            <label>Upload Date</label>
+            <p>{formatDate(bankStatement.uploadDate)}</p>
+          </div>
+          <div className="detail-item">
+            <label>Document</label>
+            <a 
+              href={bankStatement.document}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="document-link"
+            >
+              View Bank Statement <FaFileAlt />
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  });
+
+  const EducationDetails = React.memo(({ education }) => {
     if (!education || !education.qualifications || !Array.isArray(education.qualifications)) {
       return <p>No educational details available</p>;
     }
@@ -298,133 +549,7 @@ const CollegeApplications = () => {
         </div>
       </div>
     ));
-  };
-
-  const renderApplicationCard = (application) => {
-    if (!application || !application.student || !application.course) {
-      return null;
-    }
-
-    const formatDate = (date) => {
-      if (!date) return 'N/A';
-      try {
-        return new Date(date).toLocaleDateString();
-      } catch (error) {
-        return 'N/A';
-      }
-    };
-
-    const getStatusDisplay = () => {
-      if (application.status === 'paid') {
-        return (
-          <div className="status-badge status-paid">
-            <FaCheckCircle className="status-icon" />
-            <span>Paid</span>
-          </div>
-        );
-      } else if (application.status === 'approved') {
-        return (
-          <div className="status-badge status-approved">
-            <FaCheckCircle className="status-icon" />
-            <span>Approved</span>
-          </div>
-        );
-      } else if (application.status === 'rejected') {
-        return (
-          <div className="status-badge status-rejected">
-            <FaTimesCircle className="status-icon" />
-            <span>Rejected</span>
-          </div>
-        );
-      } else {
-        return (
-          <div className="status-badge status-pending">
-            <FaClock className="status-icon" />
-            <span>Pending</span>
-          </div>
-        );
-      }
-    };
-
-    const getPaymentStatus = () => {
-      if (application.payment?.paid) {
-        return (
-          <div className="payment-status paid">
-            <FaCheckCircle />
-            <span>Payment Completed</span>
-            <span className="payment-date">({formatDate(application.payment.paidAt)})</span>
-          </div>
-        );
-      } else if (application.status === 'approved') {
-        return (
-          <div className="payment-status pending">
-            <FaClock />
-            <span>Payment Pending</span>
-          </div>
-        );
-      }
-      return null;
-    };
-
-    return (
-      <div key={application._id} className="application-card">
-        <div className="application-header">
-          <h3>{application.student.name || 'Unknown Student'}</h3>
-          {getStatusDisplay()}
-        </div>
-
-        <div className="application-details">
-          <p><strong>Application Number:</strong> {application.applicationNumber || 'N/A'}</p>
-          <p><strong>Course:</strong> {application.course.name || 'N/A'}</p>
-          <p><strong>Applied Date:</strong> {formatDate(application.createdAt)}</p>
-          {getPaymentStatus()}
-        </div>
-
-        <div className="student-details">
-          <h4>Personal Information</h4>
-          <div className="info-row">
-            <p><strong>Email:</strong> {application.student.email || 'N/A'}</p>
-            <p><strong>Phone:</strong> {application.student.phone || 'N/A'}</p>
-            <p><strong>Gender:</strong> {application.student.gender || 'N/A'}</p>
-          </div>
-          <div className="info-row">
-            <p><strong>Date of Birth:</strong> {formatDate(application.student.dateOfBirth)}</p>
-            <p><strong>Address:</strong> {application.student.address || 'N/A'}</p>
-          </div>
-
-          <h4>Educational Background</h4>
-          {renderEducationDetails(application.student.education)}
-        </div>
-
-        {application.status === 'pending' && (
-          <div className="application-actions">
-            <button
-              onClick={() => handleApprove(application._id)}
-              className="approve-btn"
-              disabled={processingIds.has(application._id)}
-            >
-              {processingIds.has(application._id) ? (
-                <><FaSpinner className="spinner" /> Processing...</>
-              ) : (
-                <><FaCheckCircle /> Approve</>
-              )}
-            </button>
-            <button
-              onClick={() => handleReject(application._id)}
-              className="reject-btn"
-              disabled={processingIds.has(application._id)}
-            >
-              {processingIds.has(application._id) ? (
-                <><FaSpinner className="spinner" /> Processing...</>
-              ) : (
-                <><FaTimesCircle /> Reject</>
-              )}
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
+  });
 
   // Add this for debugging
   useEffect(() => {
@@ -478,7 +603,7 @@ const CollegeApplications = () => {
           </div>
         ) : (
           <div className="applications-grid">
-            {filteredApplications.map(renderApplicationCard)}
+            {filteredApplications.map(renderSimplifiedCard)}
           </div>
         )}
       </div>

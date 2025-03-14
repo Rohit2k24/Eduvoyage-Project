@@ -72,136 +72,70 @@
   gap: 0.5rem;
 }
 
-.college-info-section {
+.college-content {
   background: white;
-  padding: 2rem;
   border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.tabs {
+  display: flex;
+  gap: 1.5rem;
   margin-bottom: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 1rem;
 }
 
-.college-quick-info {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 2rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.info-item label {
-  color: #64748b;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.info-item span {
-  color: #1e293b;
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.college-description {
-  color: #475569;
-  line-height: 1.6;
-}
-
-.courses-section {
-  background: white;
-  padding: 2rem;
-  border-radius: 20px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-.courses-section h2 {
-  color: #1e293b;
-  margin-bottom: 1.5rem;
-  font-size: 1.5rem;
-}
-
-.courses-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
-}
-
-.course-card {
-  background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.course-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-}
-
-.course-card h3 {
-  color: #1e293b;
-  font-size: 1.25rem;
-  margin-bottom: 1rem;
-}
-
-.course-brief {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.course-brief span {
+.tab {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: #f1f5f9;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  color: #64748b;
-}
-
-.view-details-btn {
-  width: 100%;
-  padding: 0.75rem;
-  background: linear-gradient(45deg, #3b82f6, #60a5fa);
-  color: white;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
   border: none;
-  border-radius: 12px;
-  font-weight: 600;
+  background: none;
+  color: #64748b;
+  font-size: 1.1rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
+  border-radius: 8px;
+  position: relative;
 }
 
-.view-details-btn:hover {
-  background: linear-gradient(45deg, #2563eb, #3b82f6);
-  transform: translateY(-2px);
+.tab:hover {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
 }
 
-.college-content {
-  display: grid;
-  gap: 2rem;
-  margin-top: 2rem;
+.tab.active {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
 }
 
-.college-main-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1rem;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #3b82f6;
+}
+
+.tab svg {
+  font-size: 1.25rem;
+}
+
+.tab-content {
+  min-height: 400px;
 }
 
 .info-section {
   background: white;
   padding: 2rem;
   border-radius: 20px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
 }
 
 .info-section h2 {
@@ -288,6 +222,71 @@
   font-size: 1.25rem;
 }
 
+.courses-section {
+  margin-top: 1rem;
+}
+
+.courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.course-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.course-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.course-card h3 {
+  color: #1e293b;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.course-brief {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.course-brief span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f1f5f9;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.view-details-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background: linear-gradient(45deg, #3b82f6, #60a5fa);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.view-details-btn:hover {
+  background: linear-gradient(45deg, #2563eb, #3b82f6);
+  transform: translateY(-2px);
+}
+
 @media (max-width: 768px) {
   .college-courses-container {
     padding: 1rem;
@@ -301,150 +300,35 @@
     font-size: 1.75rem;
   }
 
+  .college-content {
+    padding: 1.5rem;
+  }
+
+  .tabs {
+    gap: 1rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .tab {
+    padding: 0.75rem 1.25rem;
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  .info-section {
+    padding: 1.5rem;
+  }
+
+  .info-grid,
+  .facilities-grid,
   .courses-grid {
     grid-template-columns: 1fr;
   }
 
-  .college-quick-info {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .college-content {
-    gap: 1.5rem;
-  }
-
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .facilities-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Add these new styles */
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background: #f8fafc;
-}
-
-.loading-spinner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  color: #3b82f6;
-}
-
-.loading-spinner::after {
-  content: '';
-  width: 50px;
-  height: 50px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #3b82f6;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-.error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 2rem;
-  background: #f8fafc;
-  text-align: center;
-}
-
-.error-container h2 {
-  color: #ef4444;
-  margin-bottom: 1rem;
-}
-
-.error-container p {
-  color: #64748b;
-  margin-bottom: 2rem;
-}
-
-.error-container button {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.error-container button:hover {
-  background: #2563eb;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.college-gallery {
-  margin: 20px 0;
-}
-
-.gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
-  margin-top: 15px;
-}
-
-.gallery-item {
-  position: relative;
-  border-radius: 12px;
-  overflow: hidden;
-  aspect-ratio: 4/3;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
-  cursor: pointer;
-}
-
-.gallery-item:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.gallery-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.3s ease;
-}
-
-.gallery-item:hover img {
-  transform: scale(1.05);
-}
-
-.no-images {
-  text-align: center;
-  padding: 40px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  color: #6c757d;
-  border: 2px dashed #dee2e6;
-}
-
-@media (max-width: 768px) {
-  .gallery-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 15px;
+  .course-card {
+    padding: 1.25rem;
   }
 }
 
@@ -547,5 +431,72 @@
   
   .modal-content.zoomed img {
     transform: scale(1.5);
+  }
+}
+
+.hostel-application-status {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-badge.pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.approved {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.status-badge.cancelled {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.view-application-btn {
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.view-application-btn:hover {
+  background-color: #2563eb;
+}
+
+.hostel-list {
+  display: grid;
+  gap: 2rem;
+  padding: 1rem;
+}
+
+@media (max-width: 768px) {
+  .hostel-application-status {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
 } 

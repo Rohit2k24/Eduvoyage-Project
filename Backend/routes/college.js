@@ -207,7 +207,7 @@ router.get('/applications', async (req, res) => {
     })
     .populate({
       path: 'student',
-      select: 'name email gender phone dateOfBirth education address profilePic bankStatement',
+      select: 'name email gender phone dateOfBirth education address profilePic bankStatement passport',
       populate: {
         path: 'user',
         select: 'email'
@@ -218,6 +218,9 @@ router.get('/applications', async (req, res) => {
       select: 'name description duration fees eligibilityCriteria'
     })
     .sort('-createdAt');
+
+    console.log('Sample student data:', applications[0]?.student);
+    console.log('Sample passport data:', applications[0]?.student?.passport);
 
     console.log(`Found ${applications.length} applications`);
 
@@ -238,7 +241,8 @@ router.get('/applications', async (req, res) => {
         education: app.student?.education || { qualifications: [] },
         address: app.student?.address || 'N/A',
         profilePic: app.student?.profilePic,
-        bankStatement: app.student?.bankStatement || null
+        bankStatement: app.student?.bankStatement || null,
+        passport: app.student?.passport || null
       },
       course: {
         _id: app.course?._id,

@@ -2,7 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const path = require('path');
+const path = require('path'); 
 const fs = require('fs');
 const session = require('express-session');
 
@@ -13,6 +13,7 @@ const collegeRoutes = require('./routes/college');
 const studentRoutes = require('./routes/student');
 const courseRoutes = require('./routes/course');
 const aiRoutes = require('./routes/ai');
+const hostelRoutes = require('./routes/hostel');
 // Load env vars
 dotenv.config();
 
@@ -62,6 +63,7 @@ app.use('/api/student', studentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ai', aiRoutes);
 // Add error handling middleware
+app.use('/api/hostel', hostelRoutes);
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(err.statusCode || 500).json({

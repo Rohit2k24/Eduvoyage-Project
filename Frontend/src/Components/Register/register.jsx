@@ -49,7 +49,8 @@ const Register = ({ userType }) => {
     confirmPassword: '',
     ...(userType === 'student' ? {
       dateOfBirth: '',
-      country: ''
+      country: '',
+      gender: ''
     } : {
       name: '',
       country: '',
@@ -248,6 +249,9 @@ const Register = ({ userType }) => {
       }
       if (!formData.dateOfBirth) {
         newErrors.dateOfBirth = 'Date of birth is required';
+      }
+      if (!formData.gender) {
+        newErrors.gender = 'Gender is required';
       }
       if (!formData.country) {
         newErrors.country = 'Country is required';
@@ -515,6 +519,25 @@ const Register = ({ userType }) => {
                       onChange={handleInputChange}
                     />
                     {errors.dateOfBirth && <span className="error-message"><FaExclamationCircle /> {errors.dateOfBirth}</span>}
+                  </div>
+
+                  <div className="input-group">
+                    <label htmlFor="gender">
+                      <FaUser className="input-icon" />
+                      Gender
+                    </label>
+                    <select
+                      id="gender"
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                    {errors.gender && <span className="error-message"><FaExclamationCircle /> {errors.gender}</span>}
                   </div>
 
                   <div className="input-group">

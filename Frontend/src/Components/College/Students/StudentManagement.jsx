@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaSearch, FaFilter, FaSpinner } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaSpinner, FaUserGraduate } from 'react-icons/fa';
 import CollegeSidebar from '../CollegeDashboard/CollegeSidebar';
 import StudentList from './StudentList';
 import Swal from 'sweetalert2';
@@ -71,26 +71,34 @@ const StudentManagement = () => {
       <CollegeSidebar />
       
       <div className="student-management-main">
-        <h1>Student Management</h1>
+        <div className="management-header">
+          <h1>
+            <FaUserGraduate />
+            Student Management
+          </h1>
 
-        <div className="student-controls">
-          <div className="search-box">
-            <FaSearch className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search by name, email, or phone..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+          <div className="student-controls">
+            <div className="search-box">
+              <FaSearch className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search by name, email, or phone..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
 
-          <div className="filter-box">
-            <FaFilter className="filter-icon" />
-            <select value={filter} onChange={(e) => setFilter(e.target.value)}>
-              <option value="all">All Students</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+            <div className="filter-box">
+              <FaFilter className="filter-icon" />
+              <select 
+                value={filter} 
+                onChange={(e) => setFilter(e.target.value)}
+              >
+                <option value="all">All Students</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -103,12 +111,18 @@ const StudentManagement = () => {
           <div className="error">
             <h2>Error</h2>
             <p>{error}</p>
-            <button onClick={fetchStudents} className="retry-btn">Retry</button>
+            <button onClick={fetchStudents} className="retry-btn">
+              Retry
+            </button>
           </div>
         ) : filteredStudents.length === 0 ? (
           <div className="no-students">
             <h2>No Students Found</h2>
-            <p>There are no students matching your criteria.</p>
+            <p>
+              {searchTerm || filter !== 'all'
+                ? 'There are no students matching your search criteria.'
+                : 'There are no students registered yet.'}
+            </p>
           </div>
         ) : (
           <StudentList 

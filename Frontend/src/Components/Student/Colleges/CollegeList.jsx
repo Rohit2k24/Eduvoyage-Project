@@ -30,6 +30,7 @@ const CollegeList = () => {
       });
       const data = await response.json();
       setColleges(data.colleges);
+      console.log("data.colleges",data.colleges);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching colleges:', error);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaClock, FaRupeeSign, FaCalendarAlt, FaUsers, FaCheckCircle, FaBriefcase, FaRobot } from 'react-icons/fa';
+import { FaArrowLeft, FaClock, FaRupeeSign, FaCalendarAlt, FaUsers, FaCheckCircle, FaBriefcase, FaRobot, FaCheck } from 'react-icons/fa';
 import StudentSidebar from '../Sidebar/StudentSidebar';
 import Swal from 'sweetalert2';
 import './CourseDetails.css';
@@ -13,12 +13,15 @@ const CourseDetails = () => {
   const [missingFields, setMissingFields] = useState([]);
   const [careerInfo, setCareerInfo] = useState(null);
   const [loadingCareers, setLoadingCareers] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
+  const [applicationStatus, setApplicationStatus] = useState(null);
   const { courseId } = useParams();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchCourseDetails();
     checkProfileCompletion();
+    checkApplicationStatus();
   }, [courseId]);
 
   const fetchCourseDetails = async () => {
@@ -104,6 +107,30 @@ const CourseDetails = () => {
     }
   };
 
+  const checkApplicationStatus = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/student/applications', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch applications');
+      }
+
+      const data = await response.json();
+      const existingApplication = data.data.find(app => app.course._id === courseId);
+      
+      if (existingApplication) {
+        setHasApplied(true);
+        setApplicationStatus(existingApplication.status);
+      }
+    } catch (error) {
+      console.error('Error checking application status:', error);
+    }
+  };
+
   const handleApply = async () => {
     try {
       await checkProfileCompletion();
@@ -174,6 +201,9 @@ const CourseDetails = () => {
         if (!response.ok) {
           throw new Error(data.message || 'Failed to submit application');
         }
+
+        setHasApplied(true);
+        setApplicationStatus('pending');
 
         await Swal.fire({
           icon: 'success',
@@ -251,6 +281,33 @@ const CourseDetails = () => {
     }
   };
 
+  const getApplicationButton = () => {
+    if (hasApplied) {
+      return (
+        <button 
+          className="applied-btn"
+          onClick={() => navigate('/student/applications')}
+        >
+          <FaCheck className="icon" />
+          {applicationStatus === 'pending' ? 'Application Pending' : 
+           applicationStatus === 'approved' ? 'Application Approved' :
+           applicationStatus === 'rejected' ? 'Application Rejected' :
+           applicationStatus === 'paid' ? 'Application Completed' : 'Applied'}
+        </button>
+      );
+    }
+
+    return (
+      <button 
+        className="apply-btn"
+        disabled={course.seats.available === 0}
+        onClick={handleApply}
+      >
+        {course.seats.available === 0 ? 'No Seats Available' : 'Apply Now'}
+      </button>
+    );
+  };
+
   if (loading) {
     return (
       <div className="course-details-layout">
@@ -304,7 +361,7 @@ const CourseDetails = () => {
       <StudentSidebar />
       <div className="course-details-main">
         <button onClick={() => navigate(-1)} className="back-btn">
-          <FaArrowLeft /> Back
+          <FaArrowLeft /> Back to Courses
         </button>
 
         <div className="course-details-content">
@@ -368,13 +425,7 @@ const CourseDetails = () => {
               </div>
             </div>
 
-            <button 
-              className="apply-btn"
-              disabled={course.seats.available === 0}
-              onClick={handleApply}
-            >
-              {course.seats.available === 0 ? 'No Seats Available' : 'Apply Now'}
-            </button>
+            {getApplicationButton()}
           </div>
 
           {careerInfo && (
