@@ -11,7 +11,10 @@ import {
   FaEnvelope,
   FaUser,
   FaFilter,
-  FaSearch
+  FaSearch,
+  FaGraduationCap,
+  FaMoneyBill,
+  FaReceipt
 } from 'react-icons/fa';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -40,7 +43,7 @@ const HostelApplicationManagement = () => {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
-
+      console.log(response.data);
       if (response.data.success) {
         setApplications(response.data.data);
       }
@@ -138,6 +141,24 @@ const HostelApplicationManagement = () => {
     }
   };
 
+  const getPaymentStatusBadge = (application) => {
+    if (!application.payment) {
+      return (
+        <div className="status-badge payment-pending">
+          <FaMoneyBill />
+          Payment Pending
+        </div>
+      );
+    }
+
+    return (
+      <div className="status-badge payment-completed">
+        <FaCheckCircle />
+        Payment Completed
+      </div>
+    );
+  };
+
   const filteredApplications = applications.filter(application => {
     if (filters.status !== 'all' && application.status !== filters.status) {
       return false;
@@ -160,7 +181,7 @@ const HostelApplicationManagement = () => {
   });
 
   const renderApplicationCard = (application) => {
-    const { student, hostel, status, roomType, applicationNumber, createdAt } = application;
+    const { student, hostel, status, roomType, applicationNumber, createdAt, payment } = application;
     const selectedRoom = hostel.roomTypes.find(room => room.type === roomType);
 
     return (
@@ -181,9 +202,12 @@ const HostelApplicationManagement = () => {
             </div>
           </div>
           <div className="application-meta">
-            <div className={`status-badge ${status}`}>
-              {getStatusIcon(status)}
-              {getStatusText(status)}
+            <div className="status-badges">
+              <div className={`status-badge ${status}`}>
+                {getStatusIcon(status)}
+                {getStatusText(status)}
+              </div>
+              {getPaymentStatusBadge(application)}
             </div>
             <p className="application-number">Application #{applicationNumber}</p>
             <p className="application-date">
@@ -193,8 +217,83 @@ const HostelApplicationManagement = () => {
         </div>
 
         <div className="application-details">
+          <div className="application-status-section">
+            <h4><FaReceipt /> Application Status</h4>
+            <div className="status-timeline">
+              <div className="timeline-item">
+                <div className={`timeline-icon ${status !== 'cancelled' ? 'completed' : 'cancelled'}`}>
+                  <FaClock />
+                </div>
+                <div className="timeline-content">
+                  <h5>Application Submitted</h5>
+                  <p>{new Date(createdAt).toLocaleString()}</p>
+                </div>
+              </div>
+              {payment && (
+                <div className="timeline-item">
+                  <div className="timeline-icon completed">
+                    <FaMoneyBill />
+                  </div>
+                  <div className="timeline-content">
+                    <h5>Payment Completed</h5>
+                    <p>{new Date(payment.createdAt).toLocaleString()}</p>
+                    <div className="payment-details">
+                      <p><strong>Transaction ID:</strong> {payment.transactionId}</p>
+                      <p><strong>Amount Paid:</strong> ₹{payment.amount}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {status !== 'pending' && (
+                <div className="timeline-item">
+                  <div className={`timeline-icon ${status}`}>
+                    {getStatusIcon(status)}
+                  </div>
+                  <div className="timeline-content">
+                    <h5>{getStatusText(status)}</h5>
+                    <p>{application.updatedAt ? new Date(application.updatedAt).toLocaleString() : 'N/A'}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="student-details-section">
+            <h4><FaUser /> Student Details</h4>
+            <div className="details-grid">
+              <div className="detail-item">
+                <label>Full Name</label>
+                <p>{student.name}</p>
+              </div>
+              <div className="detail-item">
+                <label>Email</label>
+                <p>{student.email}</p>
+              </div>
+              <div className="detail-item">
+                <label>Phone</label>
+                <p>{student.phone}</p>
+              </div>
+              <div className="detail-item">
+                <label>Gender</label>
+                <p>{student.gender || 'N/A'}</p>
+              </div>
+              <div className="detail-item">
+                <label>Date of Birth</label>
+                <p>{new Date(student.dateOfBirth).toLocaleDateString()}</p>
+              </div>
+              <div className="detail-item">
+                <label>Address</label>
+                <p>{student.address || 'N/A'}</p>
+              </div>
+              {/* <div className="detail-item">
+                <label>Emergency Contact</label>
+                <p>{student.emergencyContact || 'N/A'}</p>
+              </div> */}
+            </div>
+          </div>
+
           <div className="hostel-details">
-            <h4>Hostel Details</h4>
+            <h4><FaBed /> Hostel Details</h4>
             <div className="detail-row">
               <div className="detail-item">
                 <FaBed />
@@ -220,31 +319,29 @@ const HostelApplicationManagement = () => {
             </div>
           </div>
 
-          <div className="student-details">
-            <h4>Student Details</h4>
-            <div className="detail-row">
-              <div className="detail-item">
-                <FaMapMarkerAlt />
-                <div>
-                  <span className="label">Address</span>
-                  <span className="value">{student.address}</span>
-                </div>
-              </div>
-              <div className="detail-item">
-                <FaPhone />
-                <div>
-                  <span className="label">Emergency Contact</span>
-                  <span className="value">{student.emergencyContact}</span>
-                </div>
+          {student.education && (
+            <div className="education-details">
+              <h4><FaGraduationCap /> Educational Background</h4>
+              <div className="education-grid">
+                {student.education.qualifications?.map((qual, index) => (
+                  <div key={index} className="education-item">
+                    <h5>{qual.level}</h5>
+                    <p><strong>Institute:</strong> {qual.institute}</p>
+                    <p><strong>Board:</strong> {qual.board}</p>
+                    <p><strong>Year:</strong> {qual.yearOfCompletion}</p>
+                    <p><strong>Percentage:</strong> {qual.percentage}%</p>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
+          )}
 
           {status === 'pending' && (
             <div className="application-actions">
               <button
                 className="approve-btn"
                 onClick={() => handleUpdateStatus(application._id, 'approved')}
+                disabled={!payment}
               >
                 <FaCheckCircle /> Approve
               </button>
@@ -288,12 +385,13 @@ const HostelApplicationManagement = () => {
       <div className="hostel-application-management">
         <div className="header">
           <h1><FaBed /> Hostel Applications</h1>
-          <div className="filters-section">
+          
+          <div className="header-controls">
             <div className="search-bar">
               <FaSearch />
               <input
                 type="text"
-                placeholder="Search by student name, hostel, or application number..."
+                placeholder="Search applications..."
                 value={filters.searchQuery}
                 onChange={(e) => setFilters(prev => ({ ...prev, searchQuery: e.target.value }))}
               />

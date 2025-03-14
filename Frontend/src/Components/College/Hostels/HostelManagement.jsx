@@ -10,7 +10,9 @@ import {
   FaMapMarkerAlt,
   FaRupeeSign,
   FaCheckCircle,
-  FaTimesCircle
+  FaTimesCircle,
+  FaSearch,
+  FaFilter
 } from 'react-icons/fa';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -24,6 +26,8 @@ const HostelManagement = () => {
   const [error, setError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedHostel, setSelectedHostel] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('all');
 
   useEffect(() => {
     fetchHostels();
@@ -152,6 +156,25 @@ const HostelManagement = () => {
     }
   };
 
+  const filteredHostels = hostels.filter(hostel => {
+    // Filter by type
+    if (filterType !== 'all' && hostel.type !== filterType) {
+      return false;
+    }
+    
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      return (
+        hostel.name.toLowerCase().includes(query) ||
+        hostel.location?.address?.toLowerCase().includes(query) ||
+        hostel.type.toLowerCase().includes(query)
+      );
+    }
+    
+    return true;
+  });
+
   const renderHostelCard = (hostel) => {
     const totalBeds = hostel.roomTypes.reduce((acc, room) => acc + room.totalBeds, 0);
     const availableBeds = hostel.roomTypes.reduce((acc, room) => acc + room.availableBeds, 0);
@@ -268,18 +291,51 @@ const HostelManagement = () => {
     );
   }
 
+  // Get unique hostel types for filter
+  const hostelTypes = [...new Set(hostels.map(hostel => hostel.type))];
+
   return (
     <>
       <CollegeSidebar />
       <div className="hostel-management">
         <div className="header">
           <h1><FaBed /> Hostel Management</h1>
-          <button 
-            className="add-hostel-btn"
-            onClick={() => setShowAddForm(true)}
-          >
-            <FaPlus /> Add New Hostel
-          </button>
+          
+          <div className="header-controls">
+            <div className="search-bar">
+              <FaSearch />
+              <input
+                type="text"
+                placeholder="Search hostels..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            
+            <div className="filters">
+              <div className="filter-group">
+                <FaFilter />
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                >
+                  <option value="all">All Types</option>
+                  {hostelTypes.map((type, index) => (
+                    <option key={index} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
+            <button 
+              className="add-hostel-btn"
+              onClick={() => setShowAddForm(true)}
+            >
+              <FaPlus /> Add Hostel
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -289,7 +345,15 @@ const HostelManagement = () => {
         )}
 
         <div className="hostels-grid">
-          {hostels.map(renderHostelCard)}
+          {filteredHostels.length > 0 ? (
+            filteredHostels.map(renderHostelCard)
+          ) : (
+            <div className="no-hostels">
+              <FaBed />
+              <h3>No Hostels Found</h3>
+              <p>There are no hostels matching your filters.</p>
+            </div>
+          )}
         </div>
 
         {(showAddForm || selectedHostel) && (

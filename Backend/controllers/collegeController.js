@@ -13,6 +13,7 @@ const asyncHandler = require('../middleware/async');
 const ErrorResponse = require('../utils/errorResponse');
 const CollegeStudent = require('../models/CollegeStudent');
 const { generateSignature } = require('../config/cloudinary');
+const { sendVerificationEmail, sendPasswordResetEmail, sendRejectionEmail } = require('../utils/emailService');
 
 // Move Razorpay initialization inside the functions where it's needed
 const getRazorpayInstance = () => {
@@ -590,6 +591,22 @@ exports.updateApplicationStatus = asyncHandler(async (req, res, next) => {
 
     await application.save();
 
+    // If application is rejected, send rejection email
+    if (status === 'rejected' && application.student?.user?.email) {
+      try {
+        await sendRejectionEmail(application.student.user.email, {
+          studentName: application.student.name,
+          courseName: application.course.name,
+          applicationNumber: application.applicationNumber,
+          appliedDate: application.createdAt,
+          rejectionReason: remarks || 'No specific reason provided'
+        });
+      } catch (emailError) {
+        console.error('Failed to send rejection email:', emailError);
+        // Don't throw error here, just log it
+      }
+    }
+
     // If application is approved, create CollegeStudent record
     if (status === 'approved') {
       try {
@@ -630,10 +647,10 @@ exports.updateApplicationStatus = asyncHandler(async (req, res, next) => {
     // Create notification for student
     try {
       if (application.student?.user?._id) {
-    await Notification.create({
+        await Notification.create({
           recipient: application.student.user._id,
           type: 'application',
-      title: `Application ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+          title: `Application ${status.charAt(0).toUpperCase() + status.slice(1)}`,
           message: `Your application for ${application.course.name} has been ${status}${remarks ? `. Remarks: ${remarks}` : ''}`,
           data: {
             applicationId: application._id,

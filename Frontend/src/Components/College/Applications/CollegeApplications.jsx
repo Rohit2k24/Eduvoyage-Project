@@ -187,16 +187,32 @@ const CollegeApplications = () => {
     try {
       const { value: remarks } = await Swal.fire({
         title: 'Reject Application',
-        input: 'textarea',
-        inputLabel: 'Reason for rejection',
-        inputPlaceholder: 'Enter the reason for rejection...',
+        html: `
+          <div class="rejection-dialog">
+            <p>Please provide a reason for rejecting this application:</p>
+            <textarea 
+              id="rejection-reason" 
+              class="swal2-textarea" 
+              placeholder="Enter the reason for rejection..."
+              required
+            ></textarea>
+            <div class="rejection-note">
+              <p><strong>Note:</strong> This reason will be sent to the student via email.</p>
+            </div>
+          </div>
+        `,
         showCancelButton: true,
         confirmButtonColor: '#dc3545',
         cancelButtonColor: '#6c757d',
-        inputValidator: (value) => {
-          if (!value) {
-            return 'Please enter a reason for rejection';
+        confirmButtonText: 'Reject Application',
+        cancelButtonText: 'Cancel',
+        preConfirm: () => {
+          const reason = document.getElementById('rejection-reason').value;
+          if (!reason) {
+            Swal.showValidationMessage('Please provide a reason for rejection');
+            return false;
           }
+          return reason;
         }
       });
 
@@ -234,9 +250,9 @@ const CollegeApplications = () => {
           await Swal.fire({
             icon: 'success',
             title: 'Application Rejected',
-            text: 'The application has been rejected successfully.',
+            text: 'The application has been rejected and the student has been notified via email.',
             showConfirmButton: false,
-            timer: 1500
+            timer: 2000
           });
         }
       }

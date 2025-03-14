@@ -260,7 +260,7 @@ exports.getHostelApplications = asyncHandler(async (req, res, next) => {
   const applications = await HostelApplication.find({ college: college._id })
     .populate({
       path: 'student',
-      select: 'name email phone address emergencyContact'
+      select: 'name email gender dateOfBirth phone address emergencyContact'
     })
     .populate({
       path: 'hostel',

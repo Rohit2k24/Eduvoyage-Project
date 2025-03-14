@@ -125,7 +125,52 @@ const sendPasswordResetEmail = async (email, resetUrl) => {
   }
 };
 
+const sendRejectionEmail = async (email, applicationDetails) => {
+  try {
+    const transporter = await createTransporter();
+
+    const mailOptions = {
+      from: {
+        name: 'EduVoyage',
+        address: process.env.EMAIL_USER
+      },
+      to: email,
+      subject: 'EduVoyage - Application Rejection Notice',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2c3e50;">Application Status Update</h2>
+          <p>Dear ${applicationDetails.studentName},</p>
+          <p>We regret to inform you that your application for ${applicationDetails.courseName} has been rejected.</p>
+          
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="color: #2c3e50; margin-top: 0;">Application Details:</h3>
+            <p><strong>Application Number:</strong> ${applicationDetails.applicationNumber}</p>
+            <p><strong>Course:</strong> ${applicationDetails.courseName}</p>
+            <p><strong>Applied Date:</strong> ${new Date(applicationDetails.appliedDate).toLocaleDateString()}</p>
+          </div>
+
+          <div style="background: #fff3f3; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="color: #dc3545; margin-top: 0;">Rejection Reason:</h3>
+            <p>${applicationDetails.rejectionReason}</p>
+          </div>
+
+          <p>If you have any questions or concerns, please don't hesitate to contact us.</p>
+          <p>Best regards,<br>EduVoyage Team</p>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Rejection email sent:', info.response);
+    return true;
+  } catch (error) {
+    console.error('Email error details:', error);
+    throw new Error(`Failed to send rejection email: ${error.message}`);
+  }
+};
+
 module.exports = { 
   sendVerificationEmail, 
-  sendPasswordResetEmail 
+  sendPasswordResetEmail,
+  sendRejectionEmail 
 }; 
