@@ -7,6 +7,9 @@ const asyncHandler = require('../middleware/async');
 const { cloudinary } = require('../config/cloudinary');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
+const Application = require('../models/Application');
+const Course = require('../models/Course');
+const Payment = require('../models/Payment');
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -386,87 +389,182 @@ exports.getHostelsByCollege = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Apply for hostel
-// @route   POST /api/hostel/apply
+// @desc    Validate student eligibility for hostel application
+// @route   GET /api/hostel/validate-eligibility/:collegeId
 // @access  Private (Student)
-exports.applyForHostel = asyncHandler(async (req, res, next) => {
-  const { hostelId, roomType, preferredFloor, specialRequirements, medicalConditions, emergencyContact } = req.body;
-
-  // Get student
+exports.validateStudentEligibility = asyncHandler(async (req, res, next) => {
+  const { collegeId } = req.params;
+  
+  // Get student details
   const student = await Student.findOne({ user: req.user._id });
   if (!student) {
     return next(new ErrorResponse('Student not found', 404));
   }
-
-  // Get hostel
-  const hostel = await Hostel.findById(hostelId);
-  if (!hostel) {
-    return next(new ErrorResponse('Hostel not found', 404));
+  console.log("student", student);
+  console.log("student._id", student._id);
+  console.log("collegeId", collegeId);
+  // Check if student has an active course registration with completed payment
+  const application = await Application.findOne({
+    student: student._id,
+    college: collegeId,
+    status: 'paid'
+  }).populate('course');
+  console.log("application", application);
+  if (!application) {
+    return next(
+      new ErrorResponse(
+        'You must have an approved and paid course application to apply for hostel',
+        400
+      )
+    );
   }
 
-  // Check if student already has any active applications for this hostel
-  const existingApplication = await HostelApplication.findOne({
+  // Check if student already has an active hostel application
+  const existingHostelApplication = await HostelApplication.findOne({
     student: student._id,
-    hostel: hostelId,
-    status: { $in: ['pending', 'approved', 'waitlisted'] }
+    college: collegeId,
+    status: { $in: ['pending', 'pending_payment', 'paid'] }
   });
-
-  if (existingApplication) {
-    return next(new ErrorResponse(`You already have an ${existingApplication.status} application for this hostel`, 400));
+  console.log("existingHostelApplication", existingHostelApplication);
+  if (existingHostelApplication) {
+    return next(
+      new ErrorResponse(
+        'You already have an active hostel application for this college',
+        400
+      )
+    );
   }
 
-  // Check if student has an approved application in any hostel of this college
-  const approvedApplication = await HostelApplication.findOne({
-    student: student._id,
-    college: hostel.college,
-    status: 'approved'
-  });
-
-  if (approvedApplication) {
-    return next(new ErrorResponse('You already have an approved hostel application in this college', 400));
-  }
-
-  // Check if room type exists and has available beds
-  const selectedRoomType = hostel.roomTypes.find(rt => rt.type === roomType);
-  if (!selectedRoomType) {
-    return next(new ErrorResponse('Invalid room type', 400));
-  }
-
-  if (selectedRoomType.availableBeds <= 0) {
-    return next(new ErrorResponse('No beds available for this room type', 400));
-  }
-
-  // Create application
-  const application = await HostelApplication.create({
-    student: student._id,
-    hostel: hostelId,
-    college: hostel.college,
-    roomType,
-    preferredFloor: preferredFloor || 'any',
-    specialRequirements,
-    medicalConditions,
-    emergencyContact,
-    duration: {
-      startDate: new Date(),
-      endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+  // Return success response with course details
+  res.status(200).json({
+    success: true,
+    data: {
+      isEligible: true,
+      student: {
+        id: student._id,
+        name: student.name,
+        email: student.email,
+        phone: student.phone
+      },
+      course: {
+        id: application.course._id,
+        name: application.course.name,
+        duration: application.course.duration
+      },
+      application: {
+        id: application._id,
+        applicationNumber: application.applicationNumber,
+        status: application.status
+      }
     }
   });
+});
 
-  // Populate the response data
-  const populatedApplication = await HostelApplication.findById(application._id)
-    .populate({
-      path: 'hostel',
-      select: 'name type roomTypes images location wardenContact'
-    })
-    .populate({
-      path: 'student',
-      select: 'name email phone'
+// @desc    Apply for hostel
+// @route   POST /api/hostel/apply
+// @access  Private (Student)
+exports.applyForHostel = asyncHandler(async (req, res, next) => {
+  try {
+    const { hostelId, roomType } = req.body;
+
+    // Get student details
+    const student = await Student.findOne({ user: req.user._id });
+    if (!student) {
+      return next(new ErrorResponse('Student not found', 404));
+    }
+
+    // Get hostel details
+    const hostel = await Hostel.findById(hostelId);
+    if (!hostel) {
+      return next(new ErrorResponse('Hostel not found', 404));
+    }
+
+    // Check if student has a paid course application
+    const courseApplication = await Application.findOne({
+      student: student._id,
+      college: hostel.college,
+      status: 'paid'
     });
 
-  res.status(201).json({
-    success: true,
-    data: populatedApplication
-  });
+    if (!courseApplication) {
+      return next(
+        new ErrorResponse(
+          'You must have a paid course application to apply for hostel',
+          400
+        )
+      );
+    }
+
+    // Check room availability
+    const selectedRoomType = hostel.roomTypes.find(room => room.type === roomType);
+    if (!selectedRoomType) {
+      return next(new ErrorResponse('Invalid room type selected', 400));
+    }
+
+    if (selectedRoomType.availableBeds <= 0) {
+      return next(new ErrorResponse('No beds available for selected room type', 400));
+    }
+
+    // Check for existing active application
+    const existingApplication = await HostelApplication.findOne({
+      student: student._id,
+      college: hostel.college,
+      status: { $in: ['pending', 'pending_payment', 'paid'] }
+    });
+
+    if (existingApplication) {
+      return next(
+        new ErrorResponse(
+          'You already have an active hostel application',
+          400
+        )
+      );
+    }
+
+    // Create hostel application
+    const application = new HostelApplication({
+      student: student._id,
+      hostel: hostelId,
+      college: hostel.college,
+      roomType,
+      status: 'pending_payment',
+      applicationNumber: `HST${Date.now()}`,
+      amount: selectedRoomType.price
+    });
+
+    // Create Razorpay payment order
+    const order = await razorpay.orders.create({
+      amount: selectedRoomType.price * 100, // Convert to paise
+      currency: 'INR',
+      receipt: application._id.toString(),
+      notes: {
+        applicationId: application._id.toString(),
+        hostelId: hostel._id.toString(),
+        studentId: student._id.toString(),
+        roomType: roomType
+      }
+    });
+
+    // Update application with payment order details
+    application.payment = {
+      orderId: order.id,
+      amount: order.amount / 100, // Convert back to rupees for storage
+      currency: order.currency
+    };
+
+    await application.save();
+
+    res.status(201).json({
+      success: true,
+      data: {
+        application,
+        paymentOrder: order
+      }
+    });
+  } catch (error) {
+    console.error('Error in applyForHostel:', error);
+    return next(new ErrorResponse('Error processing hostel application', 500));
+  }
 });
 
 // @desc    Get student's hostel applications
@@ -629,63 +727,107 @@ exports.createPaymentOrder = asyncHandler(async (req, res, next) => {
 // @route   POST /api/hostel/applications/:id/verify-payment
 // @access  Private (Student)
 exports.verifyPayment = asyncHandler(async (req, res, next) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
-  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-    return next(new ErrorResponse('Missing payment verification details', 400));
-  }
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return next(new ErrorResponse('Missing payment verification details', 400));
+    }
 
-  const application = await HostelApplication.findById(req.params.id);
-  
-  if (!application) {
-    return next(new ErrorResponse('Application not found', 404));
-  }
+    const application = await HostelApplication.findById(req.params.id);
+    
+    if (!application) {
+      return next(new ErrorResponse('Application not found', 404));
+    }
 
-  // Get student
-  const student = await Student.findOne({ user: req.user._id });
-  if (!student) {
-    return next(new ErrorResponse('Student not found', 404));
-  }
+    // Get student
+    const student = await Student.findOne({ user: req.user._id });
+    if (!student) {
+      return next(new ErrorResponse('Student not found', 404));
+    }
 
-  // Check if application belongs to logged in student
-  if (application.student.toString() !== student._id.toString()) {
-    return next(new ErrorResponse('Not authorized to access this application', 401));
-  }
+    // Check if application belongs to logged in student
+    if (application.student.toString() !== student._id.toString()) {
+      return next(new ErrorResponse('Not authorized to access this application', 401));
+    }
 
-  const body = razorpay_order_id + "|" + razorpay_payment_id;
-  const expectedSignature = crypto
-    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-    .update(body.toString())
-    .digest("hex");
+    // Verify payment signature
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(body.toString())
+      .digest("hex");
 
-  if (expectedSignature !== razorpay_signature) {
-    return next(new ErrorResponse('Invalid payment signature', 400));
-  }
+    if (expectedSignature !== razorpay_signature) {
+      // Update application with failed payment status
+      application.payment = {
+        ...application.payment,
+        status: 'failed',
+        failureReason: 'Invalid payment signature',
+        lastAttempt: new Date(),
+        retryCount: (application.payment?.retryCount || 0) + 1
+      };
+      await application.save();
+      return next(new ErrorResponse('Invalid payment signature', 400));
+    }
 
-  // Update application payment status
-  application.payment = {
-    status: 'completed',
-    transactionId: razorpay_payment_id,
-    orderId: razorpay_order_id,
-    amount: req.body.amount,
-    paidAt: Date.now()
-  };
+    // Verify payment status with Razorpay
+    const paymentDetails = await razorpay.payments.fetch(razorpay_payment_id);
+    
+    if (paymentDetails.status !== 'captured') {
+      // Update application with failed payment status
+      application.payment = {
+        ...application.payment,
+        status: 'failed',
+        failureReason: `Payment not captured: ${paymentDetails.status}`,
+        lastAttempt: new Date(),
+        retryCount: (application.payment?.retryCount || 0) + 1
+      };
+      await application.save();
+      return next(new ErrorResponse('Payment not captured', 400));
+    }
 
-  await application.save();
+    // Update application with successful payment
+    application.payment = {
+      status: 'completed',
+      transactionId: razorpay_payment_id,
+      orderId: razorpay_order_id,
+      amount: paymentDetails.amount / 100, // Convert from paise to rupees
+      currency: paymentDetails.currency,
+      paidAt: new Date(),
+      lastAttempt: new Date()
+    };
 
-  // Fetch the updated application with populated fields
-  const updatedApplication = await HostelApplication.findById(application._id)
-    .populate({
-      path: 'hostel',
-      select: 'name type roomTypes images location wardenContact'
-    })
-    .populate({
-      path: 'student',
-      select: 'name email phone'
+    // Update hostel room availability
+    const hostel = await Hostel.findById(application.hostel);
+    if (hostel) {
+      const roomType = hostel.roomTypes.find(rt => rt.type === application.roomType);
+      if (roomType) {
+        roomType.availableBeds = Math.max(0, roomType.availableBeds - 1);
+        hostel.availableRooms = Math.max(0, hostel.availableRooms - 1);
+        await hostel.save();
+      }
+    }
+
+    await application.save();
+
+    // Fetch the updated application with populated fields
+    const updatedApplication = await HostelApplication.findById(application._id)
+      .populate({
+        path: 'hostel',
+        select: 'name type roomTypes images location wardenContact'
+      })
+      .populate({
+        path: 'student',
+        select: 'name email phone'
+      });
+
+    res.status(200).json({
+      success: true,
+      data: updatedApplication
     });
-
-  res.status(200).json({
-    success: true,
-    data: updatedApplication
-  });
+  } catch (error) {
+    console.error('Payment verification error:', error);
+    return next(new ErrorResponse('Error verifying payment', 500));
+  }
 }); 

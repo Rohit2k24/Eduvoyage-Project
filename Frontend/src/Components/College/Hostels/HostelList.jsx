@@ -67,22 +67,46 @@ const HostelList = ({
     }
   };
 
+  const checkEligibility = async (hostel) => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/hostel/validate-eligibility/${collegeId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      console.log("response", response.data);
+      if (response.data.success) {
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking eligibility:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Not Eligible',
+        text: error.response?.data?.message || 'You are not eligible to apply for hostel'
+      });
+      return false;
+    }
+  };
+
   const handleApplyHostel = async (hostel, roomType) => {
     try {
-      if (existingApplication) {
-        const result = await Swal.fire({
-          title: 'Existing Application Found',
-          text: 'You already have an application for this college. Would you like to view it?',
-          icon: 'info',
-          showCancelButton: true,
-          confirmButtonText: 'View Application',
-          cancelButtonText: 'Cancel'
-        });
-
-        if (result.isConfirmed) {
-          navigate('/student/hostel-applications');
+      // Check eligibility first
+      const eligibilityResponse = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/hostel/validate-eligibility/${collegeId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
         }
-        return;
+      );
+
+      if (!eligibilityResponse.data.success) {
+        throw new Error(eligibilityResponse.data.message);
       }
 
       const result = await Swal.fire({
@@ -91,10 +115,11 @@ const HostelList = ({
           <p>You are applying for a ${roomType.type} room.</p>
           <p>Price: ₹${roomType.price} per month</p>
           <p>Available Beds: ${roomType.availableBeds}</p>
+          <p><strong>Note:</strong> Payment will be required immediately after application.</p>
         `,
         icon: 'question',
         showCancelButton: true,
-        confirmButtonText: 'Apply',
+        confirmButtonText: 'Apply & Pay',
         cancelButtonText: 'Cancel'
       });
 
@@ -112,21 +137,82 @@ const HostelList = ({
           }
         );
 
-        await Swal.fire({
-          title: 'Success!',
-          text: 'Your application has been submitted successfully.',
-          icon: 'success',
-          confirmButtonText: 'View Application'
-        });
+        if (response.data.success) {
+          const { application, paymentOrder } = response.data.data;
+          
+          // Initialize Razorpay payment
+          const options = {
+            key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+            amount: paymentOrder.amount,
+            currency: paymentOrder.currency,
+            name: "EduVoyage",
+            description: `Hostel fee for ${hostel.name} - ${roomType.type} room`,
+            order_id: paymentOrder.id,
+            handler: async function(response) {
+              try {
+                const verifyResponse = await axios.post(
+                  `${import.meta.env.VITE_API_URL}/api/hostel/applications/${application._id}/verify-payment`,
+                  {
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_signature: response.razorpay_signature,
+                    amount: paymentOrder.amount / 100 // Convert back to rupees
+                  },
+                  {
+                    headers: {
+                      Authorization: `Bearer ${localStorage.getItem('token')}`
+                    }
+                  }
+                );
 
-        navigate('/student/hostel-applications');
+                if (verifyResponse.data.success) {
+                  await Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Your hostel room has been booked successfully.',
+                    confirmButtonText: 'View Application'
+                  });
+
+                  navigate('/student/hostel-applications');
+                }
+              } catch (error) {
+                console.error('Payment verification error:', error);
+                Swal.fire({
+                  icon: 'error',
+                  title: 'Payment Verification Failed',
+                  text: error.response?.data?.message || 'Failed to verify payment. Please contact support.'
+                });
+              }
+            },
+            prefill: {
+              name: localStorage.getItem('userName'),
+              email: localStorage.getItem('userEmail'),
+              contact: localStorage.getItem('userPhone')
+            },
+            theme: {
+              color: "#10b981"
+            },
+            modal: {
+              ondismiss: function() {
+                Swal.fire({
+                  icon: 'warning',
+                  title: 'Payment Cancelled',
+                  text: 'Your hostel application is pending payment. You can complete the payment later from your applications page.'
+                });
+              }
+            }
+          };
+
+          const razorpay = new window.Razorpay(options);
+          razorpay.open();
+        }
       }
     } catch (error) {
       console.error('Error applying for hostel:', error);
       Swal.fire({
         icon: 'error',
-        title: 'Error',
-        text: error.response?.data?.message || 'Failed to submit hostel application'
+        title: 'Application Failed',
+        text: error.response?.data?.message || error.message || 'Failed to apply for hostel. Please try again.'
       });
     }
   };

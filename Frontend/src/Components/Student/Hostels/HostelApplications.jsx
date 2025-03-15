@@ -241,37 +241,47 @@ const HostelApplications = () => {
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'approved':
-        return <FaCheckCircle className="status-icon approved" />;
-      case 'rejected':
-        return <FaTimesCircle className="status-icon rejected" />;
-      case 'cancelled':
-        return <FaTimesCircle className="status-icon cancelled" />;
-      default:
-        return <FaClock className="status-icon pending" />;
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'approved':
-        return 'Approved';
-      case 'rejected':
-        return 'Rejected';
-      case 'cancelled':
-        return 'Cancelled';
-      default:
-        return 'Pending';
+  const getStatusDisplay = (status, payment) => {
+    if (payment.status === 'completed') {
+      return (
+        <div className="status-badge status-paid">
+          <FaCheckCircle className="status-icon" />
+          <span>Paid</span>
+        </div>
+      );
+    } else if (status === 'pending_payment' || payment?.status === 'pending') {
+      return (
+        <div className="status-badge status-pending">
+          <FaMoneyBill className="status-icon" />
+          <span>Payment Pending</span>
+        </div>
+      );
+    } else if (status === 'cancelled') {
+      return (
+        <div className="status-badge status-cancelled">
+          <FaTimesCircle className="status-icon" />
+          <span>Cancelled</span>
+        </div>
+      );
+    } else if (payment?.status === 'failed') {
+      return (
+        <div className="status-badge status-failed">
+          <FaTimesCircle className="status-icon" />
+          <span>Payment Failed</span>
+        </div>
+      );
+    } else {
+      return (
+        <div className="status-badge status-pending">
+          <FaClock className="status-icon" />
+          <span>Processing</span>
+        </div>
+      );
     }
   };
 
   const renderApplicationCard = (application) => {
-    if (!application || !application.hostel) {
-      console.log("Invalid application data:", application);
-      return null;
-    }
+    if (!application || !application.hostel) return null;
 
     const { hostel, status, roomType, applicationNumber, createdAt, payment } = application;
     const selectedRoom = hostel.roomTypes?.find(room => room.type === roomType) || {};
@@ -289,10 +299,7 @@ const HostelApplications = () => {
           <div className="application-info">
             <div className="application-title">
               <h3>{hostel.name || 'Unnamed Hostel'}</h3>
-              <div className={`status-badge ${status || 'pending'}`}>
-                {getStatusIcon(status)}
-                {getStatusText(status)}
-              </div>
+              {getStatusDisplay(status, payment)}
             </div>
             <p className="application-number">Application #{applicationNumber || 'N/A'}</p>
             <p className="application-date">
@@ -348,63 +355,52 @@ const HostelApplications = () => {
             )}
           </div>
 
-          {payment && (
-            <div className="detail-row">
-              <div className="detail-item">
-                <FaMoneyBill />
-                <div>
-                  <span className="label">Payment Status</span>
-                  <span className="value">{payment.status || 'N/A'}</span>
-                </div>
-              </div>
-              {payment.transactionId && (
-                <div className="detail-item">
-                  <FaMoneyBill />
-                  <div>
-                    <span className="label">Transaction ID</span>
-                    <span className="value">{payment.transactionId}</span>
-                  </div>
+          {(status === 'pending_payment' || payment?.status === 'pending' || payment?.status === 'failed') && (
+            <div className="application-actions">
+              <button
+                className="pay-btn"
+                onClick={() => handlePayment(application)}
+              >
+                <FaMoneyBill /> {payment?.status === 'failed' ? 'Retry Payment' : 'Pay Now'}
+              </button>
+              <button
+                className="cancel-btn"
+                onClick={() => handleCancelApplication(application._id)}
+              >
+                <FaTimesCircle /> Cancel Application
+              </button>
+            </div>
+          )}
+
+          {status === 'paid' && payment?.status === 'completed' && (
+            <div className="success-message">
+              <FaCheckCircle />
+              <p>Payment completed! Your hostel room is confirmed.</p>
+              {payment && (
+                <div className="payment-details">
+                  <p><strong>Transaction ID:</strong> {payment.transactionId}</p>
+                  <p><strong>Paid Amount:</strong> ₹{payment.amount}</p>
+                  <p><strong>Payment Date:</strong> {payment.paidAt ? new Date(payment.paidAt).toLocaleString() : 'N/A'}</p>
+                  <p><strong>Payment Status:</strong> {payment.status}</p>
                 </div>
               )}
             </div>
           )}
+
+          {payment?.status === 'failed' && (
+            <div className="error-message payment-failed">
+              <FaTimesCircle />
+              <p>Payment failed. Please try again.</p>
+            </div>
+          )}
+
+          {status === 'cancelled' && (
+            <div className="cancelled-message">
+              <FaTimesCircle />
+              <p>Application cancelled</p>
+            </div>
+          )}
         </div>
-
-        {status === 'approved' && (!payment || payment.status === 'pending') && (
-          <div className="application-actions">
-            <button
-              className="pay-btn"
-              onClick={() => handlePayment(application)}
-            >
-              <FaMoneyBill /> Process Payment
-            </button>
-          </div>
-        )}
-
-        {status === 'pending' && (
-          <div className="application-actions">
-            <button
-              className="cancel-btn"
-              onClick={() => handleCancelApplication(application._id)}
-            >
-              <FaTimesCircle /> Cancel Application
-            </button>
-          </div>
-        )}
-
-        {status === 'approved' && payment?.status === 'completed' && (
-          <div className="approval-message">
-            <FaCheckCircle />
-            <p>Your application has been approved and payment is completed!</p>
-          </div>
-        )}
-
-        {status === 'rejected' && application.remarks && (
-          <div className="rejection-message">
-            <FaTimesCircle />
-            <p>{application.remarks}</p>
-          </div>
-        )}
       </div>
     );
   };

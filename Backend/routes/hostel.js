@@ -8,20 +8,14 @@ const {
   updateHostel,
   deleteHostel,
   getHostelApplications,
-  updateHostelApplication,
-  addHostelReview,
   getHostelsByCollege,
   applyForHostel,
   getStudentHostelApplications,
   updateHostelPayment,
   cancelHostelApplication,
-  createApplication,
-  getStudentApplications,
-  getApplicationById,
-  updateApplicationStatus,
-  cancelApplication,
   createPaymentOrder,
-  verifyPayment
+  verifyPayment,
+  validateStudentEligibility
 } = require('../controllers/hostelController');
 
 const multer = require('multer');
@@ -31,28 +25,34 @@ const upload = multer({ dest: 'uploads/' });
 router.route('/student/applications')
   .get(protect, authorize('student'), getStudentHostelApplications);
 
-router.route('/applications/:id/payment')
-  .put(protect, authorize('student'), updateHostelPayment);
+// Validate student eligibility before applying
+router.route('/validate-eligibility/:collegeId')
+  .get(protect, authorize('student'), validateStudentEligibility);
 
+// Apply for hostel and create payment
+router.route('/apply')
+  .post(protect, authorize('student'), applyForHostel);
+
+// Payment routes
+router.route('/applications/:id/create-payment')
+  .post(protect, authorize('student'), createPaymentOrder);
+
+router.route('/applications/:id/verify-payment')
+  .post(protect, authorize('student'), verifyPayment);
+
+// Cancel application
 router.route('/applications/:id/cancel')
   .put(protect, authorize('student'), cancelHostelApplication);
 
-// Hostel application routes - Place these BEFORE the :id routes
+// Get hostel applications (for college admin)
 router.route('/applications')
   .get(protect, authorize('college'), getHostelApplications);
-
-router.route('/applications/:id')
-  .put(protect, authorize('college'), updateHostelApplication);
 
 // Get hostels by college ID
 router.route('/college/:collegeId')
   .get(protect, getHostelsByCollege);
 
-// Apply for hostel
-router.route('/apply')
-  .post(protect, authorize('student'), applyForHostel);
-
-// Hostel routes
+// Hostel management routes
 router.route('/')
   .get(protect, getHostels)
   .post(
@@ -77,16 +77,5 @@ router.route('/:id')
     updateHostel
   )
   .delete(protect, authorize('college'), deleteHostel);
-
-// Hostel review routes
-router.route('/:id/reviews')
-  .post(protect, authorize('student'), addHostelReview);
-
-// Payment routes
-router.route('/applications/:id/create-payment')
-  .post(protect, authorize('student'), createPaymentOrder);
-
-router.route('/applications/:id/verify-payment')
-  .post(protect, authorize('student'), verifyPayment);
 
 module.exports = router; 
