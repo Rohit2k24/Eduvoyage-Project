@@ -2,15 +2,99 @@ const axios = require('axios');
 const asyncHandler = require('../middleware/async');
 
 // Ensure API key is set
-if (!process.env.OPENAI_API_KEY) {
-  console.error('OPENAI_API_KEY is not set in environment variables');
-  throw new Error('OPENAI_API_KEY is required');
+if (!process.env.GEMINI_API_KEY) {
+  console.error('GEMINI_API_KEY is not set in environment variables');
+  throw new Error('GEMINI_API_KEY is required');
 }
 
-const API_URL = "https://api.openai.com/v1/chat/completions";
-const headers = {
-  "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-  "Content-Type": "application/json"
+const API_KEY = process.env.GEMINI_API_KEY;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 2000; // 2 seconds
+
+// Use the stable model
+const MODELS = [
+  'gemini-2.0-flash',
+  'gemini-2.0-Flash-lite'
+];
+
+/**
+ * Sleep function for delay between retries
+ */
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Makes API request with retry logic
+ */
+const makeRequestWithRetry = async (model, prompt, retryCount = 0) => {
+  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+  
+  try {
+    console.log(`Attempting request with model: ${model}, attempt: ${retryCount + 1}`);
+    
+    const response = await axios.post(
+      `${API_URL}?key=${API_KEY}`,
+      {
+        contents: [{
+          parts: [{ 
+            text: prompt 
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.3,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 4096,
+          stopSequences: []
+        },
+        safetySettings: [
+          {
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_HATE_SPEECH",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          }
+        ]
+      },
+      { 
+        timeout: 60000, // Increased timeout
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error(`Error with ${model}:`, error.message);
+    
+    // If we have retries left and it's a retryable error
+    if (retryCount < MAX_RETRIES && 
+        (error.response?.status === 503 || error.response?.status === 429)) {
+      // Wait before retrying
+      await sleep(RETRY_DELAY * (retryCount + 1));
+      
+      // Try the next model if available
+      const nextModelIndex = MODELS.indexOf(model) + 1;
+      if (nextModelIndex < MODELS.length) {
+        return makeRequestWithRetry(MODELS[nextModelIndex], prompt, retryCount + 1);
+      }
+      
+      // If no more models, retry with the same model
+      return makeRequestWithRetry(model, prompt, retryCount + 1);
+    }
+    
+    throw error;
+  }
 };
 
 /**
@@ -22,10 +106,18 @@ const extractAndParseJSON = (text) => {
     const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
     let jsonText = codeBlockMatch ? codeBlockMatch[1] : text;
 
+    // Find the first [ and last ] to extract the JSON array
+    const startIndex = jsonText.indexOf('[');
+    const endIndex = jsonText.lastIndexOf(']');
+    
+    if (startIndex === -1 || endIndex === -1) {
+      throw new Error('No JSON array found in response');
+    }
+
+    jsonText = jsonText.substring(startIndex, endIndex + 1);
+
     // Clean up the text
     jsonText = jsonText
-      .replace(/^\s*\[/, '[') // Remove leading whitespace before [
-      .replace(/\]\s*$/, ']') // Remove trailing whitespace after ]
       .replace(/\n/g, ' ')
       .replace(/\r/g, '')
       .replace(/\t/g, '')
@@ -89,11 +181,11 @@ const extractAndParseJSON = (text) => {
 };
 
 /**
- * AI-powered career path analysis.
+ * AI-powered career path analysis using Google's Gemini AI.
  */
 exports.analyzeCareerPaths = asyncHandler(async (req, res) => {
   try {
-    console.log("Analyzing career paths...");
+    console.log("Starting career path analysis...");
     const { courseName } = req.body;
 
     if (!courseName) {
@@ -103,54 +195,54 @@ exports.analyzeCareerPaths = asyncHandler(async (req, res) => {
       });
     }
 
-    // AI Prompt
-    const systemPrompt = `You are a career advisor specializing in technology and education. 
-    When providing career information, always return a properly formatted JSON array containing exactly 4 career paths. 
-    Include realistic salary ranges in Indian Rupees (LPA), current market data, and specific required skills.
-    Return ONLY the JSON array with no additional text or explanation.`;
+    // AI Prompt with explicit JSON formatting instructions
+    const prompt = `You are a career advisor specializing in technology and education. Generate 4 detailed career paths for ${courseName} graduates.
+    
+Your response must be a valid JSON array containing exactly 4 career objects. Follow this structure precisely:
 
-    const userPrompt = `Generate 1 career paths for ${courseName} graduates with this exact structure:
 [
   {
-    "title": "Specific Job Title",
-    "description": "2-3 sentences about role and responsibilities",
+    "title": "Software Developer",
+    "description": "Develops and maintains software applications using modern programming languages and frameworks. Collaborates with teams to design and implement solutions.",
     "salaryRanges": {
-      "Fresher (0-2 years)": "₹X-Y LPA",
-      "Intermediate (2-5 years)": "₹X-Y LPA",
-      "Senior (5-8 years)": "₹X-Y LPA",
-      "Expert (8+ years)": "₹X-Y LPA"
+      "Fresher (0-2 years)": "₹3-6 LPA",
+      "Intermediate (2-5 years)": "₹6-12 LPA",
+      "Senior (5-8 years)": "₹12-20 LPA",
+      "Expert (8+ years)": "₹20-35 LPA"
     },
-    "requiredSkills": ["skill1", "skill2", "skill3"],
-    "additionalInfo": "Growth prospects and industry demand"
+    "requiredSkills": ["JavaScript", "Python", "SQL", "Problem Solving", "Team Collaboration"],
+    "additionalInfo": "High demand across industries with excellent growth prospects. Opportunities in product companies, startups, and enterprises."
   }
-]`;
+]
 
-    // Make request to OpenAI API
-    const response = await axios.post(
-      API_URL,
-      {
-        model: "gpt-4o-mini",
-        store: true,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ]
-      },
-      { 
-        headers,
-        timeout: 60000 // 60 second timeout
-      }
-    );
+Ensure:
+1. Each career path is relevant to ${courseName}
+2. Salary ranges are realistic for the Indian market
+3. Skills include both technical and soft skills
+4. Description is 2-3 sentences
+5. Additional info covers growth prospects and industry demand
+6. Response is properly formatted JSON with no extra text
 
-    if (!response.data?.choices?.[0]?.message?.content) {
-      console.error("Invalid API response structure:", response.data);
-      throw new Error('Invalid response from AI service');
+Generate 4 unique career paths following this exact format.`;
+
+    // Try to get response with retry logic
+    const responseData = await makeRequestWithRetry(MODELS[0], prompt);
+
+    // Check if response has the expected structure
+    if (!responseData?.candidates?.[0]?.content?.parts) {
+      console.error("Invalid API response structure:", responseData);
+      throw new Error('Invalid response structure from Gemini AI');
     }
 
-    console.log("Raw AI Response:", response.data.choices[0].message.content);
+    // Get all text parts from the response
+    const allText = responseData.candidates[0].content.parts
+      .map(part => part.text || '')
+      .join(' ');
+
+    console.log("Combined Response Text:", allText);
 
     // Extract and parse AI response
-    const parsedData = extractAndParseJSON(response.data.choices[0].message.content);
+    const parsedData = extractAndParseJSON(allText);
 
     console.log("Final Parsed Data:", JSON.stringify(parsedData, null, 2));
 
@@ -175,12 +267,15 @@ exports.analyzeCareerPaths = asyncHandler(async (req, res) => {
       } else if (error.response.status === 429) {
         errorMessage = "Rate limit exceeded. Please try again later.";
         statusCode = 429;
-      } else if (error.response.status === 500) {
-        errorMessage = "AI service is currently unavailable. Please try again later.";
+      } else if (error.response.status === 404) {
+        errorMessage = "AI model not found. Please contact support.";
+        statusCode = 404;
+      } else if (error.response.status === 503) {
+        errorMessage = "AI service is temporarily busy. Please try again in a few moments.";
         statusCode = 503;
       }
     } else if (error.message.includes("timeout")) {
-      errorMessage = "AI service request timed out. Please try again.";
+      errorMessage = "Request timed out. Please try again.";
       statusCode = 504;
     } else if (error.message.includes("Failed to parse")) {
       errorMessage = "Unable to process AI response. Please try again.";

@@ -230,7 +230,15 @@ const CourseDetails = () => {
 
     const loadingDialog = Swal.fire({
       title: 'Analyzing Career Paths',
-      html: 'Please wait while our AI analyzes potential career paths...',
+      html: `
+        <div class="ai-loading">
+          <div class="ai-loading-icon">
+            <i class="fas fa-robot fa-spin"></i>
+          </div>
+          <p>Our AI is analyzing potential career paths for ${course.name}...</p>
+          <p class="ai-loading-subtitle">This may take a few seconds</p>
+        </div>
+      `,
       allowOutsideClick: false,
       showConfirmButton: false,
       didOpen: () => {
@@ -261,22 +269,55 @@ const CourseDetails = () => {
       setCareerInfo(data.data);
       await loadingDialog.close();
 
-      // Scroll to the career section
+      // Show success message
+      await Swal.fire({
+        icon: 'success',
+        title: 'Analysis Complete',
+        text: 'Career paths have been analyzed successfully!',
+        timer: 1500,
+        showConfirmButton: false
+      });
+
+      // Scroll to the career section with a smooth animation
       setTimeout(() => {
-        document.querySelector('.career-paths-section')?.scrollIntoView({ 
-          behavior: 'smooth',
-          block: 'start'
-        });
+        const careerSection = document.querySelector('.career-paths-section');
+        if (careerSection) {
+          careerSection.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+          });
+          
+          // Add a highlight effect
+          careerSection.classList.add('highlight-section');
+          setTimeout(() => {
+            careerSection.classList.remove('highlight-section');
+          }, 1000);
+        }
       }, 100);
 
     } catch (error) {
       console.error('Error fetching career info:', error);
       await loadingDialog.close();
+      
+      let errorMessage = 'Failed to fetch career information. Please try again.';
+      
+      // Customize error message based on the error
+      if (error.message.includes('API key')) {
+        errorMessage = 'Service configuration error. Please contact support.';
+      } else if (error.message.includes('Rate limit')) {
+        errorMessage = 'Too many requests. Please try again in a few minutes.';
+      } else if (error.message.includes('unavailable')) {
+        errorMessage = 'Service is temporarily unavailable. Please try again later.';
+      } else if (error.message.includes('timeout')) {
+        errorMessage = 'Request timed out. Please try again.';
+      }
+
       Swal.fire({
         icon: 'error',
-        title: 'Error',
-        text: error.message || 'Failed to fetch career information. Please try again.',
-        confirmButtonColor: '#3498db'
+        title: 'Analysis Failed',
+        text: errorMessage,
+        confirmButtonColor: '#3498db',
+        confirmButtonText: 'Try Again'
       });
     }
   };

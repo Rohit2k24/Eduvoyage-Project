@@ -463,3 +463,131 @@
   color: #636e72;
   line-height: 1.6;
 }
+
+/* AI Loading Animation */
+.ai-loading {
+  text-align: center;
+  padding: 20px;
+}
+
+.ai-loading-icon {
+  font-size: 48px;
+  color: #3498db;
+  margin-bottom: 15px;
+}
+
+.ai-loading-subtitle {
+  color: #666;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+/* Career Paths Section Highlight Effect */
+.career-paths-section {
+  transition: all 0.3s ease;
+}
+
+.highlight-section {
+  background-color: rgba(52, 152, 219, 0.1);
+  box-shadow: 0 0 15px rgba(52, 152, 219, 0.2);
+  transform: translateY(-5px);
+}
+
+/* Improve Career Cards */
+.career-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.career-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+.career-card h3 {
+  color: #2c3e50;
+  margin-bottom: 15px;
+  font-size: 1.4em;
+}
+
+.career-description {
+  color: #34495e;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.salary-ranges {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.salary-ranges h4 {
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.salary-ranges ul {
+  list-style: none;
+  padding: 0;
+}
+
+.salary-ranges li {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  color: #34495e;
+}
+
+.salary-ranges .level {
+  font-weight: 500;
+}
+
+.salary-ranges .range {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.skills-required {
+  margin-bottom: 20px;
+}
+
+.skills-required h4 {
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.skills-required ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+}
+
+.skills-required li {
+  background: #e1f0ff;
+  color: #3498db;
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-size: 0.9em;
+}
+
+.additional-info {
+  border-top: 1px solid #eee;
+  padding-top: 15px;
+}
+
+.additional-info h4 {
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.additional-info p {
+  color: #34495e;
+  line-height: 1.6;
+}
