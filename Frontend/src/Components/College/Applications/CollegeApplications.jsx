@@ -281,6 +281,7 @@ const CollegeApplications = () => {
   const filteredApplications = applications
     .filter(app => {
       if (filter === 'all') return true;
+      if (filter === 'pending') return app?.status === 'pending' || app?.status === 'pending_payment';
       return app?.status === filter;
     })
     .filter(app => {
@@ -600,8 +601,9 @@ const CollegeApplications = () => {
             <select value={filter} onChange={(e) => setFilter(e.target.value)}>
               <option value="all">All Applications</option>
               <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
+              <option value="paid">Paid</option>
               <option value="rejected">Rejected</option>
+              <option value="cancelled">Cancelled</option>
             </select>
           </div>
         </div>
