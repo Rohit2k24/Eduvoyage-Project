@@ -312,6 +312,11 @@ const CollegeApplications = () => {
         <div className="status-badge status-rejected">
           <FaTimesCircle className="status-icon" />
           <span>Rejected</span>
+          {application.remarks && (
+            <div className="rejection-note">
+              <strong>Reason:</strong> {application.remarks}
+            </div>
+          )}
         </div>
       );
     } else {
