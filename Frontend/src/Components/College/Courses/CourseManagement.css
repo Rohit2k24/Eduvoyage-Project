@@ -11,61 +11,186 @@
 }
 
 .course-management-header {
+  background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+  padding: 2rem 3rem;
+  border-radius: 15px;
+  margin: 2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  position: relative;
+  overflow: hidden;
 }
 
-.course-management-header h1 {
-  color: #2c3e50;
+.header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.header-title {
+  color: white;
+  font-size: 2.2rem;
+  font-weight: 600;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
   margin: 0;
 }
 
 .add-course-btn {
+  background-color: white;
+  color: #2193b0;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: #3498db;
-  color: white;
-  border: none;
-  border-radius: 8px;
+  gap: 0.5rem;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .add-course-btn:hover {
-  background: #2980b9;
   transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+  background-color: #f8f9fa;
+}
+
+.add-course-btn svg {
+  font-size: 1.1rem;
+}
+
+.header-stats {
+  display: flex;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.stat-item {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stat-item svg {
+  color: white;
+}
+
+.stat-item span {
+  color: white;
+  font-size: 0.9rem;
+}
+
+.search-container {
+  display: flex;
+  justify-content: center;
+  margin: 0 2rem;
+  position: relative;
+  top: -25px;
 }
 
 .search-bar {
   position: relative;
-  margin-bottom: 30px;
+  width: 80%;
+  max-width: 700px;
+  background: white;
+  border-radius: 50px;
+  box-shadow: 0 10px 25px rgba(33, 147, 176, 0.15);
+  display: flex;
+  align-items: center;
+  padding: 0.2rem;
+  border: 3px solid white;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  
 }
 
-.search-icon {
-  position: absolute;
-  left: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #95a5a6;
+.search-bar:focus-within {
+  box-shadow: 0 15px 30px rgba(33, 147, 176, 0.2);
+  transform: translateY(-2px);
+  border-color: rgba(33, 147, 176, 0.1);
 }
 
 .search-bar input {
-  width: 100%;
-  padding: 12px 12px 12px 45px;
-  border: 2px solid #e1e5ea;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: all 0.3s ease;
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.9rem 1.5rem;
+  font-size: 1rem;
+  color: #2c3e50;
+  outline: none;
+  
 }
 
-.search-bar input:focus {
-  border-color: #3498db;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+.search-bar input::placeholder {
+  color: #95a5a6;
+  font-weight: 400;
+}
+
+.search-button {
+  background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+  border: none;
+  color: white;
+  padding: 0.9rem 1.8rem;
+  border-radius: 50px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(33, 147, 176, 0.2);
+}
+
+.search-button:hover {
+  background: linear-gradient(135deg, #1c7a94 0%, #5bc0d9 100%);
+  box-shadow: 0 6px 15px rgba(33, 147, 176, 0.3);
+}
+
+.search-icon {
+  font-size: 1.1rem;
+}
+
+.search-text {
+  display: inline-block;
+}
+
+/* Search bar responsive styles */
+@media (max-width: 768px) {
+  .search-container {
+    margin: 0 1rem;
+    top: -15px;
+  }
+  
+  .search-bar {
+    width: 95%;
+  }
+  
+  .search-bar input {
+    padding: 0.7rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .search-button {
+    padding: 0.7rem 1.2rem;
+  }
+  
+  .search-text {
+    display: none;
+  }
 }
 
 .courses-grid {
@@ -227,7 +352,19 @@
 
   .course-management-header {
     flex-direction: column;
-    gap: 15px;
+    gap: 1rem;
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+
+  .header-stats {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .add-course-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .courses-grid {

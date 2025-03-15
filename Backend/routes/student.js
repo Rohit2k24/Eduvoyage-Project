@@ -46,7 +46,6 @@ const {
 const upload = require('../middleware/upload');
 const fs = require('fs');
 
-console.log('Initializing student routes');
 
 // Add this at the top of the file to see all incoming requests
 router.use((req, res, next) => {
@@ -450,11 +449,11 @@ router.post('/check-course/:courseId', protect, async (req, res) => {
 });
 
 // Log registered routes
-console.log('Student Routes:');
+
 router.stack.forEach((r) => {
   if (r.route && r.route.path) {
     const methods = Object.keys(r.route.methods);
-    console.log(`${methods.join(',').toUpperCase()} ${r.route.path}`);
+    
   }
 });
 

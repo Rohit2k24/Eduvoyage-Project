@@ -395,22 +395,28 @@ exports.getHostelsByCollege = asyncHandler(async (req, res, next) => {
 exports.validateStudentEligibility = asyncHandler(async (req, res, next) => {
   const { collegeId } = req.params;
   
-  // Get student details
+  // Add file logging
+  const fs = require('fs');
+  const logMessage = `Validating eligibility for student: ${req.user._id}, college: ${collegeId}\n`;
+  fs.appendFileSync('D:/Eduvoyage/Backend/hostel_logs.txt', logMessage);
+  
   const student = await Student.findOne({ user: req.user._id });
   if (!student) {
+    fs.appendFileSync('D:/Eduvoyage/Backend/hostel_logs.txt', 'Student not found\n');
     return next(new ErrorResponse('Student not found', 404));
   }
-  console.log("student", student);
-  console.log("student._id", student._id);
-  console.log("collegeId", collegeId);
+  
+  fs.appendFileSync('D:/Eduvoyage/Backend/hostel_logs.txt', `Student found: ${student._id}\n`);
+  
   // Check if student has an active course registration with completed payment
   const application = await Application.findOne({
     student: student._id,
     college: collegeId,
     status: 'paid'
   }).populate('course');
-  console.log("application", application);
+  
   if (!application) {
+    fs.appendFileSync('D:/Eduvoyage/Backend/hostel_logs.txt', 'No paid course application found\n');
     return next(
       new ErrorResponse(
         'You must have an approved and paid course application to apply for hostel',
@@ -418,44 +424,34 @@ exports.validateStudentEligibility = asyncHandler(async (req, res, next) => {
       )
     );
   }
-
+  
+  fs.appendFileSync('D:/Eduvoyage/Backend/hostel_logs.txt', `Paid course application found: ${application._id}\n`);
+  
   // Check if student already has an active hostel application
   const existingHostelApplication = await HostelApplication.findOne({
     student: student._id,
     college: collegeId,
     status: { $in: ['pending', 'pending_payment', 'paid'] }
   });
-  console.log("existingHostelApplication", existingHostelApplication);
+  
   if (existingHostelApplication) {
+    fs.appendFileSync('D:/Eduvoyage/Backend/hostel_logs.txt', `Existing hostel application found: ${existingHostelApplication._id}\n`);
     return next(
       new ErrorResponse(
-        'You already have an active hostel application for this college',
+        'You already have an active hostel application',
         400
       )
     );
   }
-
-  // Return success response with course details
+  
+  fs.appendFileSync('D:/Eduvoyage/Backend/hostel_logs.txt', 'Student is eligible for hostel application\n');
+  
   res.status(200).json({
     success: true,
+    message: 'Student is eligible for hostel application',
     data: {
-      isEligible: true,
-      student: {
-        id: student._id,
-        name: student.name,
-        email: student.email,
-        phone: student.phone
-      },
-      course: {
-        id: application.course._id,
-        name: application.course.name,
-        duration: application.course.duration
-      },
-      application: {
-        id: application._id,
-        applicationNumber: application.applicationNumber,
-        status: application.status
-      }
+      student: student._id,
+      course: application.course
     }
   });
 });

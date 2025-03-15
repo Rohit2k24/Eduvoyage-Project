@@ -6,7 +6,7 @@ const User = require('../models/User');
 exports.protect = asyncHandler(async (req, res, next) => {
   try {
     let token;
-    console.log('Auth headers:', req.headers); // Debug log
+     // Debug log
 
     if (
       req.headers.authorization &&

@@ -65,7 +65,7 @@ app.use('/api/ai', aiRoutes);
 // Add error handling middleware
 app.use('/api/hostel', hostelRoutes);
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  
   res.status(err.statusCode || 500).json({
     success: false,
     message: err.message || 'Server Error',
@@ -74,7 +74,6 @@ app.use((err, req, res, next) => {
 });
 
 // Print all registered routes
-console.log('Registered Routes:');
 app._router.stack.forEach((middleware) => {
   if (middleware.route) {
     console.log(`${Object.keys(middleware.route.methods)} ${middleware.route.path}`);

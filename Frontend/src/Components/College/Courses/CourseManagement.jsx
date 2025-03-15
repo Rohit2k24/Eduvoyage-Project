@@ -147,7 +147,20 @@ const CourseManagement = () => {
       <CollegeSidebar />
       <div className="course-management-main">
         <div className="course-management-header">
-          <h1>Course Management</h1>
+          <div className="header-content">
+            <h1 className="header-title">Course Management</h1>
+            <p className="header-subtitle">Manage your college courses and programs</p>
+            <div className="header-stats">
+              <div className="stat-item">
+                <FaGraduationCap />
+                <span>Total Courses: {courses.length}</span>
+              </div>
+              {/* <div className="stat-item">
+                <FaGraduationCap />
+                <span>Active Courses: {courses.filter(course => course.status === 'active').length}</span>
+              </div> */}
+            </div>
+          </div>
           <button 
             onClick={() => navigate('/college/courses/add')} 
             className="add-course-btn"
@@ -156,14 +169,20 @@ const CourseManagement = () => {
           </button>
         </div>
 
-        <div className="search-bar">
-          <FaSearch className="search-icon" />
-          <input
-            type="text"
-            placeholder="Search courses..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="search-container">
+          <div className="search-bar">
+            <input
+              type="text"
+              placeholder="Find courses by name or description..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Search courses"
+            />
+            <button className="search-button" onClick={() => {/* Optional search button action */}}>
+              <FaSearch className="search-icon" />
+              <span className="search-text">Search</span>
+            </button>
+          </div>
         </div>
 
         {filteredCourses.length > 0 ? (
