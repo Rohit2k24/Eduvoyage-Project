@@ -55,7 +55,7 @@ const HostelList = ({
 
   const checkExistingApplication = async () => {
     try {
-      const response = await axios.get('/api/v1/hostels/student/applications');
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/hostels/student/applications`);
       const applications = response.data.data;
       const existingApp = applications.find(app => 
         app.hostel.college.toString() === collegeId.toString() &&

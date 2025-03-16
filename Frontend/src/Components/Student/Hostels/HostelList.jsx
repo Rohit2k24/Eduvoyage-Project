@@ -35,7 +35,7 @@ const HostelList = () => {
   const fetchHostels = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/student/hostels', {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/student/hostels`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -75,7 +75,7 @@ const HostelList = () => {
         preConfirm: async () => {
           try {
             const response = await axios.post(
-              '/api/student/hostel-applications',
+              `${import.meta.env.VITE_API_URL}/api/student/hostel-applications`,
               {
                 hostelId: hostel._id,
                 roomType: roomType.type
