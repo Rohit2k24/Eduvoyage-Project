@@ -25,7 +25,7 @@ const CollegeApplications = () => {
       setLoading(true);
       setError(null);
       
-      const response = await axios.get('http://localhost:3000/api/college/applications', {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/college/applications`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -65,7 +65,7 @@ const CollegeApplications = () => {
     try {
       setProcessingIds(prev => new Set([...prev, applicationId]));
 
-      const response = await fetch(`/api/college/applications/${applicationId}/status`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/college/applications/${applicationId}/status`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -126,7 +126,7 @@ const CollegeApplications = () => {
         setProcessingIds(prev => new Set([...prev, applicationId]));
         
         const response = await axios.put(
-          `http://localhost:3000/api/college/applications/${applicationId}/status`,
+          `${import.meta.env.VITE_API_URL}/api/college/applications/${applicationId}/status`,
           {
             status: 'approved'
           },
