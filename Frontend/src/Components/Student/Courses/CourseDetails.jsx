@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaClock, FaRupeeSign, FaCalendarAlt, FaUsers, FaCheckCircle, FaBriefcase, FaRobot, FaCheck } from 'react-icons/fa';
 import StudentSidebar from '../Sidebar/StudentSidebar';
+import ReviewSection from '../../Common/ReviewSection';
 import Swal from 'sweetalert2';
 import './CourseDetails.css';
 
@@ -120,10 +121,13 @@ const CourseDetails = () => {
       }
 
       const data = await response.json();
+      console.log("data",data);
       const existingApplication = data.data.find(app => app.course._id === courseId);
       
       if (existingApplication) {
         setHasApplied(true);
+        console.log("existingApplication",existingApplication);
+        console.log("existingApplication.status",existingApplication.status);
         setApplicationStatus(existingApplication.status);
       }
     } catch (error) {
@@ -507,6 +511,12 @@ const CourseDetails = () => {
               </div>
             </div>
           )}
+
+          <ReviewSection
+            type="course"
+            id={courseId}
+            canReview={applicationStatus === 'paid'}
+          />
         </div>
       </div>
     </div>

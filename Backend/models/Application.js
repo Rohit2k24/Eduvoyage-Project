@@ -39,6 +39,10 @@ const ApplicationSchema = new mongoose.Schema({
     type: String // paths to uploaded documents
   }],
   remarks: String,
+  hasReview: {
+    type: Boolean,
+    default: false
+  }
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
@@ -78,5 +82,20 @@ ApplicationSchema.index({ student: 1 });
 ApplicationSchema.index({ course: 1 });
 ApplicationSchema.index({ status: 1 });
 ApplicationSchema.index({ college: 1 });
+
+// Update hasReview when a review is created
+ApplicationSchema.methods.updateReviewStatus = async function() {
+  const Review = require('./Review');
+  const review = await Review.findOne({
+    student: this.student,
+    $or: [
+      { course: this.course },
+      { college: this.college }
+    ]
+  });
+
+  this.hasReview = !!review;
+  await this.save();
+};
 
 module.exports = mongoose.model('Application', ApplicationSchema); 

@@ -54,9 +54,30 @@ const CourseSchema = new mongoose.Schema({
     type: String,
     enum: ['active', 'inactive'],
     default: 'active'
+  },
+  averageRating: {
+    type: Number,
+    min: [1, 'Rating must be at least 1'],
+    max: [5, 'Rating cannot be more than 5'],
+    default: 0
+  },
+  numReviews: {
+    type: Number,
+    default: 0
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Virtual populate with reviews
+CourseSchema.virtual('reviews', {
+  ref: 'Review',
+  localField: '_id',
+  foreignField: 'course',
+  justOne: false,
+  match: { status: 'approved' }
 });
 
 module.exports = mongoose.model('Course', CourseSchema);

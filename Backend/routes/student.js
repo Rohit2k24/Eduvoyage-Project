@@ -17,7 +17,8 @@ const {
   updateSettings,
   getCourseDetails,
   getColleges,
-  getCollegeDetails
+  getCollegeDetails,
+  getCollegeApplicationStatus
 } = require('../controllers/studentController');
 
 const {
@@ -447,6 +448,9 @@ router.post('/check-course/:courseId', protect, async (req, res) => {
     });
   }
 });
+
+// Add this route with your other student routes
+router.get('/applications/college/:collegeId/status', protect, getCollegeApplicationStatus);
 
 // Log registered routes
 

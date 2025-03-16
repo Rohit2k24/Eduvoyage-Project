@@ -16,6 +16,7 @@ import {
   FaBed
 } from 'react-icons/fa';
 import HostelList from '../../College/Hostels/HostelList';
+import ReviewSection from '../../Common/ReviewSection';
 import './CollegeCourses.css';
 import axios from 'axios';
 
@@ -28,12 +29,14 @@ const CollegeCourses = () => {
   const [isZoomed, setIsZoomed] = useState(false);
   const [activeTab, setActiveTab] = useState('about');
   const [hostelApplications, setHostelApplications] = useState([]);
+  const [hasAppliedAndPaid, setHasAppliedAndPaid] = useState(false);
   const { collegeId } = useParams();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchCollegeAndCourses();
     fetchHostelApplications();
+    checkApplicationStatus();
   }, [collegeId]);
 
   const fetchHostelApplications = async () => {
@@ -98,6 +101,29 @@ const CollegeCourses = () => {
       setCourses([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkApplicationStatus = async () => {
+    try {
+      // Check if student has any paid applications for any courses in this college
+      const response = await fetch(`http://localhost:3000/api/student/applications/college/${collegeId}/status`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      const data = await response.json();
+      console.log('College application status data:', data);
+
+      if (data.success) {
+        // Set hasAppliedAndPaid to true if there's any paid application for this college
+        const hasPaidApplication = data.applications && data.applications.some(app => app.status === 'paid');
+        console.log('Has paid application:', hasPaidApplication);
+        setHasAppliedAndPaid(hasPaidApplication);
+      }
+    } catch (error) {
+      console.error('Error checking application status:', error);
     }
   };
 
@@ -224,6 +250,12 @@ const CollegeCourses = () => {
           </div>
         </div>
       </div>
+
+      <ReviewSection
+        type="college"
+        id={collegeId}
+        canReview={hasAppliedAndPaid}
+      />
     </>
   );
 

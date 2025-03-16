@@ -826,4 +826,30 @@ exports.getCollegeDetails = asyncHandler(async (req, res) => {
     college,
     courses
   });
+});
+
+// @desc    Get college application status
+// @route   GET /api/student/applications/college/:collegeId/status
+// @access  Private (Student)
+exports.getCollegeApplicationStatus = asyncHandler(async (req, res, next) => {
+  const { collegeId } = req.params;
+
+  // Get student
+  const student = await Student.findOne({ user: req.user._id });
+  if (!student) {
+    return next(new ErrorResponse('Student not found', 404));
+  }
+
+  // Find all applications for this student in this college
+  const applications = await Application.find({
+    student: student._id,
+    college: collegeId
+  }).select('status course college');
+
+  console.log(`Found ${applications.length} applications for college ${collegeId}`);
+
+  res.status(200).json({
+    success: true,
+    applications
+  });
 }); 

@@ -106,12 +106,33 @@ const collegeSchema = new mongoose.Schema({
       type: Boolean,
       default: true
     }
+  },
+  averageRating: {
+    type: Number,
+    min: [1, 'Rating must be at least 1'],
+    max: [5, 'Rating cannot be more than 5'],
+    default: 0
+  },
+  numReviews: {
+    type: Number,
+    default: 0
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
 // Add index for faster queries
 collegeSchema.index({ user: 1 });
+
+// Virtual populate with reviews
+collegeSchema.virtual('reviews', {
+  ref: 'Review',
+  localField: '_id',
+  foreignField: 'college',
+  justOne: false,
+  match: { status: 'approved' }
+});
 
 module.exports = mongoose.model('College', collegeSchema); 
