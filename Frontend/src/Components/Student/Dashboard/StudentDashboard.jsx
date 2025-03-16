@@ -48,7 +48,7 @@ const StudentDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3000/api/student/dashboard', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/dashboard`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
