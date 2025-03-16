@@ -38,7 +38,7 @@ const StudentSettings = () => {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/student/settings', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/settings`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -79,7 +79,7 @@ const StudentSettings = () => {
         }
       };
 
-      const response = await fetch('http://localhost:3000/api/student/settings', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/settings`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -130,7 +130,7 @@ const StudentSettings = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/student/change-password', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/change-password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -179,7 +179,7 @@ const StudentSettings = () => {
     };
 
     try {
-      const response = await fetch('http://localhost:3000/api/student/notification-preferences', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/notification-preferences`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -247,7 +247,7 @@ const StudentSettings = () => {
 
   const setFontSize = async (size) => {
     try {
-      const response = await fetch('http://localhost:3000/api/student/font-size-preferences', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/font-size-preferences`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

@@ -21,7 +21,7 @@ const StudentManagement = () => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('http://localhost:3000/api/college/students', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/college/students`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

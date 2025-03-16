@@ -23,7 +23,7 @@ const CollegeList = () => {
 
   const fetchColleges = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/student/colleges', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/colleges`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

@@ -14,7 +14,7 @@ const StudentNotifications = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/student/notifications', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/notifications`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -41,7 +41,7 @@ const StudentNotifications = () => {
 
   const markAsRead = async (notificationId) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/student/notifications/${notificationId}/read`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/notifications/${notificationId}/read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

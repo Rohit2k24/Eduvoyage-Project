@@ -44,7 +44,7 @@ const CourseForm = () => {
   const fetchCourseDetails = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3000/api/college/courses/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/college/courses/${id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -121,7 +121,7 @@ const CourseForm = () => {
     if (file) {
       try {
         // Get upload signature from backend
-        const signatureResponse = await fetch('http://localhost:3000/api/college/upload-signature?folder=courses', {
+        const signatureResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/college/upload-signature?folder=courses`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -243,8 +243,8 @@ const CourseForm = () => {
       };
 
       const url = id 
-        ? `http://localhost:3000/api/college/courses/${id}`
-        : 'http://localhost:3000/api/college/courses';
+        ? `${import.meta.env.VITE_API_URL}/api/college/courses/${id}`
+        : `${import.meta.env.VITE_API_URL}/api/college/courses`;
       
       const response = await fetch(url, {
         method: id ? 'PUT' : 'POST',

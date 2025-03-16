@@ -14,7 +14,7 @@ const Notifications = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/college/notifications', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/college/notifications`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -33,7 +33,7 @@ const Notifications = () => {
 
   const markAsRead = async (id) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/college/notifications/${id}/read`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/college/notifications/${id}/read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -55,7 +55,7 @@ const Notifications = () => {
 
   const markAllAsRead = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/college/notifications/read-all', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/college/notifications/read-all`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -86,7 +86,7 @@ const Notifications = () => {
       });
 
       if (result.isConfirmed) {
-        const response = await fetch(`http://localhost:3000/api/college/notifications/${id}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/college/notifications/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`

@@ -34,7 +34,7 @@ const ACCREDITATIONS = [
 ];
 
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL: `${import.meta.env.VITE_API_URL}/api`,
   timeout: 30000, // 30 seconds
   headers: {
     'Content-Type': 'multipart/form-data'
@@ -323,7 +323,7 @@ const Register = ({ userType }) => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-        const response = await fetch(`${API_BASE_URL}/api/auth/send-verification`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/send-verification`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -401,7 +401,7 @@ const Register = ({ userType }) => {
         })
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/auth/verify-and-register`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/verify-and-register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

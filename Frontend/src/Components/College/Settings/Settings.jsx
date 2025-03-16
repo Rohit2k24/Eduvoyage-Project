@@ -50,7 +50,7 @@ const Settings = () => {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/college/settings', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/college/settings`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -142,7 +142,7 @@ const Settings = () => {
   const handleFileUpload = async (file, folder) => {
     try {
       // Get upload signature from backend
-      const signatureRes = await fetch(`http://localhost:3000/api/college/upload-signature?folder=${folder}`, {
+      const signatureRes = await fetch(`${import.meta.env.VITE_API_URL}/api/college/upload-signature?folder=${folder}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -338,7 +338,7 @@ const Settings = () => {
         }
       };
 
-      const response = await fetch('http://localhost:3000/api/college/settings', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/college/settings`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

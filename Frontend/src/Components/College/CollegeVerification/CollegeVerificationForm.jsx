@@ -63,7 +63,7 @@ const CollegeVerificationForm = () => {
         formDataToSend.append('collegeImages', image);
       });
 
-      const response = await fetch('http://localhost:3000/api/college/submit-verification', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/college/submit-verification`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

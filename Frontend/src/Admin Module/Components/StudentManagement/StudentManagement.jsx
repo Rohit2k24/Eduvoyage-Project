@@ -21,7 +21,7 @@ const StudentManagement = () => {
 
   const fetchStudents = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/admin/students', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/students`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -50,7 +50,7 @@ const StudentManagement = () => {
 
       if (result.isConfirmed) {
         const response = await fetch(
-          `http://localhost:3000/api/admin/students/${studentId}/deactivate`, 
+          `${import.meta.env.VITE_API_URL}/api/admin/students/${studentId}/deactivate`, 
           {
             method: 'PUT',
             headers: {
@@ -85,7 +85,7 @@ const StudentManagement = () => {
 
       if (result.isConfirmed) {
         const response = await fetch(
-          `http://localhost:3000/api/admin/students/${studentId}/toggle-status`,
+          `${import.meta.env.VITE_API_URL}/api/admin/students/${studentId}/toggle-status`,
           {
             method: 'PUT',
             headers: {
@@ -116,7 +116,7 @@ const StudentManagement = () => {
     e.preventDefault();
     try {
       const response = await fetch(
-        `http://localhost:3000/api/admin/students/${selectedStudent._id}`,
+        `${import.meta.env.VITE_API_URL}/api/admin/students/${selectedStudent._id}`,
         {
           method: 'PUT',
           headers: {

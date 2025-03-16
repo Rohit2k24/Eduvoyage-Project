@@ -42,7 +42,7 @@ const CollegeManagement = () => {
 
   const handleViewDetails = async (collegeId) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/colleges/${collegeId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/colleges/${collegeId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -120,7 +120,7 @@ const CollegeManagement = () => {
         }
       });
 
-      const response = await fetch(`http://localhost:3000/api/admin/colleges/${collegeId}/status`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/colleges/${collegeId}/status`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -181,7 +181,7 @@ const CollegeManagement = () => {
 
   const handleSaveEdit = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/colleges/${selectedCollege._id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/colleges/${selectedCollege._id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

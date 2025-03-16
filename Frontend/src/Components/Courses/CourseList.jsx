@@ -21,7 +21,7 @@ const CourseList = () => {
 
   const fetchCourses = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/courses');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/courses`);
       const data = await response.json();
       if (data.success) {
         setCourses(data.courses);
@@ -35,7 +35,7 @@ const CourseList = () => {
 
   const fetchColleges = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/colleges');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/colleges`);
       const data = await response.json();
       if (data.success) {
         setColleges(data.colleges);

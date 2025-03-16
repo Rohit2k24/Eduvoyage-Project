@@ -41,7 +41,7 @@ const CollegeCourses = () => {
 
   const fetchHostelApplications = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/api/hostel/student/applications', {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/hostel/student/applications`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -66,7 +66,7 @@ const CollegeCourses = () => {
 
       console.log('Fetching details for college:', collegeId);
       
-      const response = await fetch(`http://localhost:3000/api/courses/college/${collegeId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/courses/college/${collegeId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -107,7 +107,7 @@ const CollegeCourses = () => {
   const checkApplicationStatus = async () => {
     try {
       // Check if student has any paid applications for any courses in this college
-      const response = await fetch(`http://localhost:3000/api/student/applications/college/${collegeId}/status`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/applications/college/${collegeId}/status`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

@@ -29,7 +29,7 @@ const CollegeSidebar = () => {
 
   const fetchCollegeInfo = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/college/settings', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/college/settings`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

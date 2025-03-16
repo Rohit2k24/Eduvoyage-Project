@@ -41,7 +41,7 @@ const HostelApplications = () => {
       setLoading(true);
       setError(null);
       
-      const response = await axios.get('http://localhost:3000/api/hostel/student/applications', {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/hostel/student/applications`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -72,7 +72,7 @@ const HostelApplications = () => {
   const verifyPayment = async (application, paymentData) => {
     try {
       const verifyResponse = await axios.post(
-        `http://localhost:3000/api/hostel/applications/${application._id}/verify-payment`,
+        `${import.meta.env.VITE_API_URL}/api/hostel/applications/${application._id}/verify-payment`,
         {
           razorpay_payment_id: paymentData.razorpay_payment_id,
           razorpay_order_id: paymentData.razorpay_order_id,
@@ -117,7 +117,7 @@ const HostelApplications = () => {
       setLoading(true);
       
       const orderResponse = await axios.post(
-        `http://localhost:3000/api/hostel/applications/${application._id}/create-payment`,
+        `${import.meta.env.VITE_API_URL}/api/hostel/applications/${application._id}/create-payment`,
         {},
         {
           headers: {
@@ -201,7 +201,7 @@ const HostelApplications = () => {
         preConfirm: async () => {
           try {
             const response = await axios.put(
-              `http://localhost:3000/api/hostel/applications/${applicationId}/cancel`,
+              `${import.meta.env.VITE_API_URL}/api/hostel/applications/${applicationId}/cancel`,
               {},
               {
                 headers: {

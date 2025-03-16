@@ -18,7 +18,7 @@ const StudentApplications = () => {
   const fetchApplications = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3000/api/student/applications', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/applications`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -68,7 +68,7 @@ const StudentApplications = () => {
       if (result.isConfirmed) {
         setCancellingIds(prev => new Set([...prev, applicationId]));
         
-        const response = await fetch(`http://localhost:3000/api/student/applications/${applicationId}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/applications/${applicationId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -125,7 +125,7 @@ const StudentApplications = () => {
         // Otherwise, fetch the latest application data
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        const response = await fetch(`http://localhost:3000/api/student/applications/${applicationId}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/applications/${applicationId}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -152,7 +152,7 @@ const StudentApplications = () => {
 
   const handleDownloadReceipt = async (applicationId) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/student/applications/${applicationId}/receipt`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/applications/${applicationId}/receipt`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

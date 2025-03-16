@@ -25,7 +25,7 @@ const AdminDashboard = () => {
 
   const fetchDashboardStats = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/admin/dashboard-stats', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/dashboard-stats`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

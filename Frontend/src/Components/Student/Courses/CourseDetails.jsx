@@ -28,7 +28,7 @@ const CourseDetails = () => {
   const fetchCourseDetails = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3000/api/courses/${courseId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/courses/${courseId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -60,7 +60,7 @@ const CourseDetails = () => {
 
   const checkProfileCompletion = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/student/profile', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/profile`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -110,7 +110,7 @@ const CourseDetails = () => {
 
   const checkApplicationStatus = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/student/applications', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/applications`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -189,7 +189,7 @@ const CourseDetails = () => {
       });
 
       if (result.isConfirmed) {
-        const response = await fetch('http://localhost:3000/api/student/applications', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/applications`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -251,7 +251,7 @@ const CourseDetails = () => {
     });
 
     try {
-      const response = await fetch('http://localhost:3000/api/ai/career-paths', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/ai/career-paths`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

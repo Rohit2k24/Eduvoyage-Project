@@ -39,7 +39,7 @@ const ApplicationStatus = ({ application, onPaymentComplete }) => {
   const verifyPayment = async (paymentData) => {
     try {
       const verifyResponse = await axios.post(
-        'http://localhost:3000/api/student/verify-payment',
+        `${import.meta.env.VITE_API_URL}/api/student/verify-payment`,
         {
           applicationId: application._id,
           paymentId: paymentData.razorpay_payment_id,
@@ -95,7 +95,7 @@ const ApplicationStatus = ({ application, onPaymentComplete }) => {
       setLoading(true);
       
       const orderResponse = await axios.post(
-        'http://localhost:3000/api/student/create-payment',
+        `${import.meta.env.VITE_API_URL}/api/student/create-payment`,
         { applicationId: application._id },
         {
           headers: {

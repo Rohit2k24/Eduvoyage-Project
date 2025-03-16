@@ -21,7 +21,7 @@ const CourseManagement = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:3000/api/college/courses', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/college/courses`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -75,7 +75,7 @@ const CourseManagement = () => {
           throw new Error('Authentication token not found');
         }
 
-        const response = await fetch(`http://localhost:3000/api/college/courses/${courseId}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/college/courses/${courseId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`,

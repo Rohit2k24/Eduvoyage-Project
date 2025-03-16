@@ -51,7 +51,7 @@ const CollegeDashboard = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:3000/api/college/status', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/college/status`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -107,7 +107,7 @@ const CollegeDashboard = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:3000/api/college/dashboard-stats', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/college/dashboard-stats`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -162,7 +162,7 @@ const CollegeDashboard = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/college/notifications', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/college/notifications`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

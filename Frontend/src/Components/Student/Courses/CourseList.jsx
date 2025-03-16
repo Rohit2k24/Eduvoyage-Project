@@ -26,7 +26,7 @@ const CourseList = () => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('http://localhost:3000/api/courses', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/courses`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -59,7 +59,7 @@ const CourseList = () => {
 
   const handleApply = async (courseId) => {
     try {
-      const response = await fetch('http://localhost:3000/api/student/applications', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/applications`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

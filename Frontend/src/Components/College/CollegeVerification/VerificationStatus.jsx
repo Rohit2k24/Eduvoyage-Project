@@ -23,7 +23,7 @@ const VerificationStatus = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:3000/api/college/status', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/college/status`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -69,7 +69,7 @@ const VerificationStatus = () => {
         }
       });
 
-      const response = await fetch('http://localhost:3000/api/college/initiate-payment', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/college/initiate-payment`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -94,7 +94,7 @@ const VerificationStatus = () => {
           description: 'College Registration Payment',
           handler: async function(response) {
             try {
-              const verifyResponse = await fetch('http://localhost:3000/api/college/verify-payment', {
+              const verifyResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/college/verify-payment`, {
                 method: 'POST',
                 headers: {
                   'Authorization': `Bearer ${localStorage.getItem('token')}`,

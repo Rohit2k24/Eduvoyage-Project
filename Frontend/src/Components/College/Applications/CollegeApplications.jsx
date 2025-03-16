@@ -220,7 +220,7 @@ const CollegeApplications = () => {
         setProcessingIds(prev => new Set([...prev, applicationId]));
         
         const response = await axios.put(
-          `http://localhost:3000/api/college/applications/${applicationId}/status`,
+          `${import.meta.env.VITE_API_URL}/api/college/applications/${applicationId}/status`,
           {
             status: 'rejected',
             remarks
