@@ -198,7 +198,8 @@ const CollegeList = () => {
                       <FaGraduationCap />
                       <span>{college.totalCourses} Courses Available</span>
                     </div>
-                    <button className="view-courses-btn">
+                    <button id ="course" 
+                    className="view-courses-btn">
                       View Courses
                     </button>
                   </div>

@@ -254,7 +254,7 @@ const StudentDashboard = () => {
           <div className="recommendations-section glass-card">
             <div className="section-header">
               <h2>Recommended Colleges</h2>
-              <button className="view-all" onClick={() => navigate('/student/colleges')}>
+              <button id="explorepp" className="view-all" onClick={() => navigate('/student/colleges')}>
                 Explore More
               </button>
             </div>

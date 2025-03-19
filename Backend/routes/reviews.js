@@ -31,32 +31,28 @@ router.get('/:reviewId/ownership', protect, authorize('student'), async (req, re
         message: 'Student not found'
       });
     }
-
+    console.log(req.params.reviewId);
+    console.log("student", student);
+   
+    console.log("review.student._id", review.student._id);
     const review = await Review.findById(req.params.reviewId);
-    console.log('Review ID:', req.params.reviewId);
-    console.log('Student:', student._id);
-    
     if (!review) {
       return res.status(404).json({
         success: false,
         message: 'Review not found'
       });
     }
-    
-    console.log('Review student ID:', review.student);
+
     const isOwner = review.student.toString() === student._id.toString();
-    console.log('Is owner:', isOwner);
     
     res.status(200).json({
       success: true,
       isOwner
     });
   } catch (error) {
-    console.error('Error in ownership check:', error);
     res.status(500).json({
       success: false,
-      message: 'Error checking review ownership',
-      error: error.message
+      message: 'Error checking review ownership'
     });
   }
 });

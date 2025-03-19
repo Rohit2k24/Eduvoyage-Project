@@ -1,0 +1,35 @@
+Validating eligibility for student: 67d6aa7b44736dc5460ff5cc, college: 67a4e29912cf38c24639bb40
+Student found: 67d6aa7c44736dc5460ff5ce
+Paid course application found: 67d6ab6044736dc5460ff65e
+Student is eligible for hostel application
+Validating eligibility for student: 67d6aa7b44736dc5460ff5cc, college: 67a4e29912cf38c24639bb40
+Student found: 67d6aa7c44736dc5460ff5ce
+Paid course application found: 67d6ab6044736dc5460ff65e
+Student is eligible for hostel application
+Validating eligibility for student: 67d6aa7b44736dc5460ff5cc, college: 67a4e29912cf38c24639bb40
+Student found: 67d6aa7c44736dc5460ff5ce
+Paid course application found: 67d6ab6044736dc5460ff65e
+Student is eligible for hostel application
+Validating eligibility for student: 67d9041cc31161622101c0ed, college: 67a4e29912cf38c24639bb40
+Student found: 67d9041dc31161622101c0ef
+No paid course application found
+Validating eligibility for student: 67d2900179ccc3f7db7bca06, college: 67a4e29912cf38c24639bb40
+Student found: 67d2900179ccc3f7db7bca08
+Paid course application found: 67d5bacd070581f5b8f4fbb7
+Existing hostel application found: 67d5beee5eee901b31e1b0a6
+Validating eligibility for student: 67d2900179ccc3f7db7bca06, college: 67a4e29912cf38c24639bb40
+Student found: 67d2900179ccc3f7db7bca08
+Paid course application found: 67d5bacd070581f5b8f4fbb7
+Student is eligible for hostel application
+Validating eligibility for student: 67d2900179ccc3f7db7bca06, college: 67a4e29912cf38c24639bb40
+Student found: 67d2900179ccc3f7db7bca08
+Paid course application found: 67d5bacd070581f5b8f4fbb7
+Student is eligible for hostel application
+Validating eligibility for student: 67d9041cc31161622101c0ed, college: 67a4e29912cf38c24639bb40
+Student found: 67d9041dc31161622101c0ef
+Paid course application found: 67d93c00b4c523112356ce7c
+Student is eligible for hostel application
+Validating eligibility for student: 67d9041cc31161622101c0ed, college: 67a4e29912cf38c24639bb40
+Student found: 67d9041dc31161622101c0ef
+Paid course application found: 67d93c00b4c523112356ce7c
+Existing hostel application found: 67da4dffb4c523112356da3e

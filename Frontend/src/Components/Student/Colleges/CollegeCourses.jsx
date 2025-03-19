@@ -274,7 +274,7 @@ const CollegeCourses = () => {
               <span className="course-duration">{course.duration} Years</span>
               <span className="course-seats">{course.seats.available} Seats</span>
             </div>
-            <button 
+            <button id = "viewcoursespp"
               className="view-details-btn"
               onClick={(e) => {
                 e.stopPropagation();
@@ -353,7 +353,7 @@ const CollegeCourses = () => {
           >
             <FaUniversity /> About
           </button>
-          <button
+          <button id="coursespp"
             className={`tab ${activeTab === 'courses' ? 'active' : ''}`}
             onClick={() => setActiveTab('courses')}
           >

@@ -344,6 +344,7 @@ const CourseDetails = () => {
 
     return (
       <button 
+      id="applynow"
         className="apply-btn"
         disabled={course.seats.available === 0}
         onClick={handleApply}
@@ -416,7 +417,7 @@ const CourseDetails = () => {
               <p>{course.college?.name}</p>
               <p>{course.college?.location}</p>
             </div>
-            <button onClick={handleCareerInfo} className="ai-career-btn">
+            <button id="aipp"onClick={handleCareerInfo} className="ai-career-btn">
               <FaRobot /> AI Career Analysis
             </button>
           </div>

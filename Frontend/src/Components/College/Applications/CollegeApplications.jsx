@@ -392,7 +392,7 @@ const CollegeApplications = () => {
           
           {application.status === 'pending' && (
             <>
-              <button
+              <button id="approvepp"
                 onClick={() => handleApprove(application._id)}
                 className="approve-btn"
                 disabled={processingIds.has(application._id)}
@@ -403,7 +403,7 @@ const CollegeApplications = () => {
                   <><FaCheckCircle /> Approve</>
                 )}
               </button>
-              <button
+              <button id="rejectpp"
                 onClick={() => handleReject(application._id)}
                 className="reject-btn"
                 disabled={processingIds.has(application._id)}

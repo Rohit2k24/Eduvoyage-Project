@@ -216,7 +216,7 @@ const StudentApplications = () => {
 
       <div className="application-actions">
         {application.status === 'pending' && (
-          <button 
+          <button  id="cancelpp"
             onClick={() => handleCancelApplication(application._id)}
             className="cancel-btn"
             disabled={cancellingIds.has(application._id)}

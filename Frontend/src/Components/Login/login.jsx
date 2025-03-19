@@ -252,6 +252,7 @@ const Login = () => {
             <label htmlFor="password">Password</label>
             <div className="input-field">
               <input
+              
                 type="password"
                 id="password"
                 name="password"
@@ -273,6 +274,7 @@ const Login = () => {
           </div>
 
           <button 
+          id ="login"
             type="submit" 
             className="login-button" 
             disabled={loading}
