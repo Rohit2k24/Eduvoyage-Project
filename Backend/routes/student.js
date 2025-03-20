@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const auth = require('../middleware/auth');
+const { generateBudgetEstimate } = require('../controllers/budgetController');
 const { protect } = require('../middleware/auth');
 const { 
   getDashboardStats, 
@@ -460,5 +462,8 @@ router.stack.forEach((r) => {
     
   }
 });
+
+// Add the budget-estimate route with proper middleware
+router.post('/budget-estimate', protect, generateBudgetEstimate);
 
 module.exports = router; 

@@ -14,7 +14,8 @@ import {
   FaBookOpen,
   FaAward,
   FaTimesCircle,
-  FaSpinner
+  FaSpinner,
+  FaCalculator
 } from 'react-icons/fa';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import StudentSidebar from '../Sidebar/StudentSidebar';
@@ -92,10 +93,16 @@ const StudentDashboard = () => {
       color: 'var(--gradient-green)'
     },
     {
+      title: 'Budget Estimator',
+      icon: <FaCalculator />,
+      path: '/student/budget-estimator',
+      color: 'var(--gradient-purple)'
+    },
+    {
       title: `Notifications ${dashboardData.unreadNotifications > 0 ? `(${dashboardData.unreadNotifications})` : ''}`,
       icon: <FaBell />,
       path: '/student/notifications',
-      color: 'var(--gradient-purple)'
+      color: 'var(--gradient-orange)'
     }
   ];
 

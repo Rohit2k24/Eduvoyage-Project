@@ -33,6 +33,7 @@ import CourseApplication from './Components/Student/Applications/CourseApplicati
 import HostelManagement from './Components/College/Hostels/HostelManagement'
 import HostelApplicationManagement from './Components/College/Hostels/HostelApplicationManagement'
 import HostelApplications from './Components/Student/Hostels/HostelApplications'
+import BudgetEstimator from './Components/Student/BudgetEstimator/BudgetEstimator'
 import './App.css'
 
 function App() {
@@ -207,6 +208,13 @@ function App() {
           <ProtectedRoute allowedRoles={['student']}>
             <ErrorBoundary>
               <HostelApplications />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        } />
+        <Route path="/student/budget-estimator" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <ErrorBoundary>
+              <BudgetEstimator />
             </ErrorBoundary>
           </ProtectedRoute>
         } />
