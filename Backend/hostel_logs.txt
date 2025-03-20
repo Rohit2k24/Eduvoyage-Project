@@ -33,3 +33,15 @@ Validating eligibility for student: 67d9041cc31161622101c0ed, college: 67a4e2991
 Student found: 67d9041dc31161622101c0ef
 Paid course application found: 67d93c00b4c523112356ce7c
 Existing hostel application found: 67da4dffb4c523112356da3e
+Validating eligibility for student: 67d9041cc31161622101c0ed, college: 67a4e29912cf38c24639bb40
+Student found: 67d9041dc31161622101c0ef
+Paid course application found: 67d93c00b4c523112356ce7c
+Existing hostel application found: 67da4dffb4c523112356da3e
+Validating eligibility for student: 67d9041cc31161622101c0ed, college: 67a4e29912cf38c24639bb40
+Student found: 67d9041dc31161622101c0ef
+Paid course application found: 67d93c00b4c523112356ce7c
+Existing hostel application found: 67da4dffb4c523112356da3e
+Validating eligibility for student: 67d9041cc31161622101c0ed, college: 67a4e29912cf38c24639bb40
+Student found: 67d9041dc31161622101c0ef
+Paid course application found: 67d93c00b4c523112356ce7c
+Existing hostel application found: 67da4dffb4c523112356da3e

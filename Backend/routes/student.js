@@ -48,6 +48,7 @@ const {
 
 const upload = require('../middleware/upload');
 const fs = require('fs');
+const { getJobsByCountry } = require('../controllers/jobController');
 
 
 // Add this at the top of the file to see all incoming requests
@@ -465,5 +466,8 @@ router.stack.forEach((r) => {
 
 // Add the budget-estimate route with proper middleware
 router.post('/budget-estimate', protect, generateBudgetEstimate);
+
+// Add job listings route
+router.get('/jobs/:country', protect, getJobsByCountry);
 
 module.exports = router; 

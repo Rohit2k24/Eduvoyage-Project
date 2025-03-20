@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaCalculator, FaChartLine, FaGlobe, FaHome, FaPlane, FaGraduationCap } from 'react-icons/fa';
+import { FaCalculator, FaChartLine, FaGlobe, FaHome, FaPlane, FaGraduationCap, FaBriefcase, FaClock, FaMapMarkerAlt, FaDollarSign } from 'react-icons/fa';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './BudgetEstimator.css';
@@ -17,13 +17,18 @@ const BudgetEstimator = () => {
   const [estimates, setEstimates] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [jobListings, setJobListings] = useState([]);
+  const [jobsLoading, setJobsLoading] = useState(false);
 
   const countries = [
-    { value: 'USA', label: 'United States' },
-    { value: 'UK', label: 'United Kingdom' },
-    { value: 'Canada', label: 'Canada' },
-    { value: 'Australia', label: 'Australia' },
-    { value: 'Germany', label: 'Germany' }
+    { value: 'USA', label: 'United States', currency: 'USD' },
+    { value: 'UK', label: 'United Kingdom', currency: 'GBP' },
+    { value: 'Canada', label: 'Canada', currency: 'CAD' },
+    { value: 'Australia', label: 'Australia', currency: 'AUD' },
+    { value: 'Germany', label: 'Germany', currency: 'EUR' },
+    { value: 'France', label: 'France', currency: 'EUR' },
+    { value: 'Ireland', label: 'Ireland', currency: 'EUR' },
+    { value: 'Netherlands', label: 'Netherlands', currency: 'EUR' }
   ];
 
   const courseTypes = [
@@ -37,6 +42,31 @@ const BudgetEstimator = () => {
     { value: 'offCampus', label: 'Off-Campus Housing' },
     { value: 'homestay', label: 'Homestay' }
   ];
+
+  useEffect(() => {
+    if (formData.country) {
+      fetchJobListings(formData.country);
+    }
+  }, [formData.country]);
+
+  const fetchJobListings = async (country) => {
+    setJobsLoading(true);
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/student/jobs/${country}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      setJobListings(response.data.data);
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+    } finally {
+      setJobsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -240,6 +270,79 @@ const BudgetEstimator = () => {
             <div className="empty-state">
               <FaCalculator className="calculator-icon" />
               <p>Fill in the form to get your personalized budget estimate</p>
+            </div>
+          )}
+
+          {formData.country && (
+            <div className="job-listings-section">
+              <h3><FaBriefcase /> Part-Time Job Opportunities</h3>
+              {jobsLoading ? (
+                <div className="loading-state">
+                  <div className="spinner"></div>
+                  <p>Loading job opportunities...</p>
+                </div>
+              ) : jobListings.length > 0 ? (
+                <div className="job-cards">
+                  {jobListings.map((job, index) => (
+                    <div key={index} className="job-card">
+                      <div className="job-header">
+                        <h4>{job.title}</h4>
+                        <span className="job-type">{job.type}</span>
+                      </div>
+                      
+                      <div className="job-company">
+                        <FaBriefcase />
+                        <span>{job.company}</span>
+                      </div>
+                      
+                      <div className="job-location">
+                        <FaMapMarkerAlt />
+                        <span>{job.location}</span>
+                      </div>
+                      
+                      <div className="job-salary">
+                        <FaDollarSign />
+                        <span>
+                          {job.salary.amount} {job.salary.currency}/{job.salary.period}
+                        </span>
+                      </div>
+                      
+                      <div className="job-hours">
+                        <FaClock />
+                        <span>{job.workingHours.min}-{job.workingHours.max} hours/week</span>
+                      </div>
+                      
+                      <div className="job-description">
+                        <p>{job.description}</p>
+                      </div>
+                      
+                      {job.requirements.length > 0 && (
+                        <div className="job-requirements">
+                          <h5>Requirements:</h5>
+                          <ul>
+                            {job.requirements.map((req, i) => (
+                              <li key={i}>{req}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+{/*                       
+                      <a 
+                        href={job.applicationLink} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="apply-button"
+                      >
+                        Apply Now
+                      </a> */}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="no-jobs">
+                  <p>No job listings available for this country at the moment.</p>
+                </div>
+              )}
             </div>
           )}
         </div>
